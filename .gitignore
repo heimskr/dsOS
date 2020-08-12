@@ -1,6 +1,7 @@
 kernel
 iso
 kernel.iso
+.dep
 
 # Prerequisites
 *.d

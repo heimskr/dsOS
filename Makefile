@@ -8,8 +8,9 @@ CFLAGS       = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
 ASFLAGS      = $(SHARED_FLAGS) -Wa,--divide
 GRUB        ?= grub
 
-ASSEMBLED := boot.o
-COMPILED  := $(shell find src/**/*.cpp src/*.cpp)
+ASSEMBLED := boot.S
+COMPILED  := $(shell find src/*.cpp)
+SOURCES    = $(ASSEMBLED) $(COMPILED)
 
 OBJS       = $(ASSEMBLED) $(patsubst %.cpp,%.o,$(COMPILED))
 ISO_FILE  := kernel.iso
@@ -22,7 +23,7 @@ $(patsubst %.cpp,%.o,$(1)): $(1)
 endef
 
 define ASSEMBLED_TEMPLATE
-$(1): $(patsubst %.o,%.S,$(1))
+$(patsubst %.S,%.o,$(1)): $(1)
 	$(AS) $(ASFLAGS) -c $$< -o $$@
 endef
 
@@ -44,7 +45,17 @@ run: $(ISO_FILE)
 	qemu-system-x86_64 -cdrom $(ISO_FILE) -serial stdio -m 1024M
 
 clean:
-	find -name "*~" -delete
 	rm -rf *.o **/*.o kernel iso kernel.iso
 
 $(OBJS): Makefile
+
+DEPFILE  = .dep
+DEPTOKEN = "\# MAKEDEPENDS"
+DEPFLAGS = -f $(DEPFILE) -s $(DEPTOKEN)
+
+depend:
+	@ echo $(DEPTOKEN) > $(DEPFILE)
+	makedepend $(DEPFLAGS) -- $(CC) $(CFLAGS) -- $(SOURCES) 2>/dev/null
+	@ rm $(DEPFILE).bak
+
+sinclude $(DEPFILE)

@@ -11,6 +11,7 @@
 
 void kernel_main(void) {
 	DsOS::Terminal::init();
+	// DsOS::Terminal::write("Hello there!");
 	DsOS::Kernel kernel;
 	kernel.main();
 }

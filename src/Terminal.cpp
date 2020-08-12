@@ -2,12 +2,12 @@
 #include "Util.h"
 
 namespace DsOS {
-	void Terminal::init() {
-		Terminal::row = 0;
-		Terminal::column = 0;
-		Terminal::color = vgaEntryColor(VGAColor::LightGray, VGAColor::Black);
-		Terminal::buffer = reinterpret_cast<uint16_t *>(0xB8000);
+	size_t Terminal::row = 0;
+	size_t Terminal::column = 0;
+	uint8_t Terminal::color = vgaEntryColor(VGAColor::LightGray, VGAColor::Black);
+	uint16_t * Terminal::buffer = reinterpret_cast<uint16_t *>(0xB8000);
 
+	void Terminal::init() {
 		for (size_t y = 0; y < VGA_HEIGHT; y++)
 			for (size_t x = 0; x < VGA_WIDTH; x++) {
 				const size_t index = y * VGA_WIDTH + x;
