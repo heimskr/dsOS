@@ -2,7 +2,7 @@
 
 #include "arch/x86_64/gdt.h"
 #include "arch/x86_64/mmu.h"
-#include "kernel.h"
+#include "kernel_core.h"
 #include "sizes.h"
 #include "multiboot2.h"
 #include "arch/x86_64/msr.h"

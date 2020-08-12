@@ -1,54 +1,28 @@
-/* Based on code by Ring Zero and Lower: http://ringzeroandlower.com/2017/08/08/x86-64-kernel-boot.html */
-
 ENTRY(_start)
 
+/* Tell where the various sections of the object files will be put in the final
+   kernel image. */
 SECTIONS {
 	. = 4M;
-	_kernel_physical_start = .;
 
-	.boottext : {
-		boot.o (.multiboot)
-		boot.o (.text)
-	}
-
-	.bootrodata : {
-		boot.o (.rodata)
-	}
-
-	.bootdata : {
-		boot.o (.data)
-	}
-
-	.bootbss : {
-		boot.o (.bss)
-		boot.o (COMMON)
-	}
-
-	. = ALIGN(0x1000);
-	_boot_end = .;
-
-	. += 0xFFFFFFFF80000000;
-	_kernel_virtual_start = .;
-	.text : AT(_boot_end) {
+	/* Multiboot header and .text section. */
+	.text BLOCK(4K) : ALIGN(4K) {
 		*(.multiboot)
 		*(.text)
 	}
 
-	. = ALIGN(0x1000);
-
-	.rodata : AT ((LOADADDR (.text) + SIZEOF (.text) + 0xFFF) & 0xFFFFFFFFFFFFF000) {
+	/* Read-only data. */
+	.rodata BLOCK(4K) : ALIGN(4K) {
 		*(.rodata)
 	}
 
-	. = ALIGN(0x1000);
-
-	.data : AT ((LOADADDR (.rodata) + SIZEOF (.rodata) + 0xFFF) & 0xFFFFFFFFFFFFF000) {
+	/* Read-write data (initialized) */
+	.data BLOCK(4K) : ALIGN(4K) {
 		*(.data)
 	}
 
-	. = ALIGN(0x1000);
-
-	.bss : AT ((LOADADDR (.data) + SIZEOF (.data) + 0xFFF) & 0xFFFFFFFFFFFFF000) {
+	/* Read-write data (uninitialized) and stack */
+	.bss BLOCK(4K) : ALIGN(4K) {
 		*(COMMON)
 		*(.bss)
 	}

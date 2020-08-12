@@ -1,24 +1,23 @@
 # Based on code by Ring Zero and Lower: http://ringzeroandlower.com/2017/08/08/x86-64-kernel-boot.html
 
 CC           = x86_64-elf-g++
-AS           = x86_64-elf-gcc
-SHARED_FLAGS = -fno-builtin -O2 -nostdinc -nostdlib -ffreestanding -g -Wall -Wextra -Werror -I. -MMD -mno-red-zone\
+AS           = x86_64-elf-g++
+SHARED_FLAGS = -fno-builtin -O2 -nostdlib -ffreestanding -g -Wall -Wextra -Werror -Iinclude -mno-red-zone\
                -mcmodel=kernel -fno-pie
 CFLAGS       = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
 ASFLAGS      = $(SHARED_FLAGS) -Wa,--divide
 GRUB        ?= grub
 
 ASSEMBLED := boot.o
-COMPILED  := kernel.o
+COMPILED  := $(shell find src/**/*.cpp src/*.cpp)
 
-DFILES = $(patsubst %.o,%.d,$(ASSEMBLED) $(COMPILED))
-OBJS   = $(ASSEMBLED) $(COMPILED)
+OBJS       = $(ASSEMBLED) $(patsubst %.cpp,%.o,$(COMPILED))
 ISO_FILE  := kernel.iso
 
 all: kernel
 
 define COMPILED_TEMPLATE
-$(1): $(patsubst %.o,%.cpp,$(1))
+$(patsubst %.cpp,%.o,$(1)): $(1)
 	$(CC) $(CFLAGS) -c $$< -o $$@
 endef
 
@@ -46,8 +45,6 @@ run: $(ISO_FILE)
 
 clean:
 	find -name "*~" -delete
-	rm -rf *.o **/*.o $(DFILES) kernel iso
+	rm -rf *.o **/*.o kernel iso kernel.iso
 
 $(OBJS): Makefile
-
--include $(DFILES)
