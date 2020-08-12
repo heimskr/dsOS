@@ -1,5 +1,5 @@
-#ifndef _ARCH_X86_64_GDT_H_
-#define _ARCH_X86_64_GDT_H_
+#ifndef ARCH_X86_64_GDT_H_
+#define ARCH_X86_64_GDT_H_
 
 #define GDT_ENTRY_SIZE 8
 
@@ -31,11 +31,9 @@
 #define GDT_KERNEL_ENTRY                                                       \
   DECLARE_GDT_ENTRY(0, 0,                                                      \
                     GDT_FLAG_64BIT_MODE,                                       \
-                    GDT_ACCESS_PRESENT |                                       \
-                    GDT_ACCESS_PRIVILEGE_RING0 |                               \
-                    GDT_ACCESS_EXECUTABLE)                                     \
+                    GDT_ACCESS_PRESENT | GDT_ACCESS_PRIVILEGE_RING0 | GDT_ACCESS_EXECUTABLE)
 
 #define GDT_TABLE_ALIGNMENT 0x1000
 #define GDT_TABLE_SIZE 0x800
 
-#endif // _ARCH_X86_64_GDT_H_
+#endif

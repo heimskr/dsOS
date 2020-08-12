@@ -8,11 +8,11 @@ CFLAGS       = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
 ASFLAGS      = $(SHARED_FLAGS) -Wa,--divide
 GRUB        ?= grub
 
-ASSEMBLED := boot.S
+ASSEMBLED := $(shell find asm/*.S)
 COMPILED  := $(shell find src/*.cpp)
 SOURCES    = $(ASSEMBLED) $(COMPILED)
 
-OBJS       = $(ASSEMBLED) $(patsubst %.cpp,%.o,$(COMPILED))
+OBJS       = $(patsubst %.S,%.o,$(ASSEMBLED)) $(patsubst %.cpp,%.o,$(COMPILED))
 ISO_FILE  := kernel.iso
 
 all: kernel
