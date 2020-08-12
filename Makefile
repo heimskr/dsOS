@@ -2,7 +2,7 @@
 
 CC           = x86_64-elf-g++
 AS           = x86_64-elf-g++
-SHARED_FLAGS = -fno-builtin -O2 -nostdlib -ffreestanding -g -Wall -Wextra -Werror -Iinclude -mno-red-zone\
+SHARED_FLAGS = -fno-builtin -O0 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone\
                -mcmodel=kernel -fno-pie
 CFLAGS       = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
 ASFLAGS      = $(SHARED_FLAGS) -Wa,--divide
