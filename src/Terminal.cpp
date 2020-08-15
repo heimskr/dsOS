@@ -64,6 +64,7 @@ namespace DsOS {
 	}
 
 	void Terminal::write(const char *data) {
-		write(data, Util::strlen(data));
+		for (size_t i = 0; data[i]; ++i)
+			putChar(data[i]);
 	}
 }
