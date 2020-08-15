@@ -34,19 +34,19 @@ namespace DsOS {
 		};
 
 		static constexpr uint8_t vgaEntryColor(VGAColor fg, VGAColor bg) {
-			// return static_cast<int>(fg) | static_cast<int>(bg) << 4;
-			return (int) fg | (int) bg << 4;
+			return static_cast<int>(fg) | static_cast<int>(bg) << 4;
 		}
 
 		static constexpr uint16_t vgaEntry(unsigned char uc, uint8_t color) {
-			// return static_cast<uint16_t>(uc) | static_cast<uint16_t>(color) << 8;
-			return (uint16_t) uc | (uint16_t) color << 8;
+			return static_cast<uint16_t>(uc) | static_cast<uint16_t>(color) << 8;
 		}
 
-		static void init();
+		static void clear();
 		static void setColor(uint8_t);
 		static void putEntryAt(char c, uint8_t color, size_t x, size_t y);
 		static void putChar(char);
+		static void nextLine();
+		static void scrollUp(unsigned char lines);
 		static void write(const char *, size_t);
 		static void write(const char *);
 	};

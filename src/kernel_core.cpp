@@ -10,7 +10,6 @@
 #endif
 
 void kernel_main(void) {
-	DsOS::Terminal::init();
 	DsOS::Kernel kernel;
 	kernel.main();
 }
