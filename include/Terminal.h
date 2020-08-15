@@ -12,6 +12,7 @@ namespace DsOS {
 		static size_t row;
 		static size_t column;
 		static uint8_t color;
+		static uint8_t tabSize;
 		static uint16_t *buffer;
 
 		enum class VGAColor: int {

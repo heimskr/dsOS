@@ -5,6 +5,7 @@ namespace DsOS {
 	size_t Terminal::row = 0;
 	size_t Terminal::column = 0;
 	uint8_t Terminal::color = vgaEntryColor(VGAColor::LightGray, VGAColor::Black);
+	uint8_t Terminal::tabSize = 4;
 	uint16_t * Terminal::buffer = reinterpret_cast<uint16_t *>(0xB8000);
 
 	void Terminal::clear() {
@@ -29,6 +30,9 @@ namespace DsOS {
 				break;
 			case '\r':
 				column = 0;
+				break;
+			case '\t':
+				column = (column + tabSize) & ~(tabSize - 1);
 				break;
 			default:
 				putEntryAt(c, color, column, row);
