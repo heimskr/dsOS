@@ -2,10 +2,11 @@
 #include "lib/printf.h"
 #include "lib/string.h"
 
-enum class Status {Scan, Decide, D, U, S};
+enum class Status {Scan, Decide, D, U, S, X};
 
-static void signed_to_str(char *out, char *&optr, const size_t max, long long int n);
-static void unsigned_to_str(char *out, char *&optr, const size_t max, long long unsigned int n);
+static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n);
+static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n);
+static void num_to_hex(char *out, char *&optr, const size_t max, long long unsigned int n);
 
 static bool mappend(char *out, char *&optr, const size_t max, const char ch) {
 	if (out == nullptr) {
@@ -84,6 +85,8 @@ extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_lis
 					status = Status::U;
 				} else if (next == 's') {
 					status = Status::S;
+				} else if (next == 'x') {
+					status = Status::X;
 				} else if (next == 'c') {
 					APPEND(va_arg(list, int));
 					status = Status::Scan;
@@ -96,15 +99,21 @@ extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_lis
 		} else if (status == Status::D) {
 			// TODO: padding and such
 			if (is_long)
-				signed_to_str(out, optr, max, va_arg(list, long long int));
+				signed_to_dec(out, optr, max, va_arg(list, long long int));
 			else
-				signed_to_str(out, optr, max, va_arg(list, int));
+				signed_to_dec(out, optr, max, va_arg(list, int));
 			status = Status::Scan;
 		} else if (status == Status::U) {
 			if (is_long)
-				unsigned_to_str(out, optr, max, va_arg(list, long long unsigned int));
+				unsigned_to_dec(out, optr, max, va_arg(list, long long unsigned int));
 			else
-				unsigned_to_str(out, optr, max, va_arg(list, unsigned int));
+				unsigned_to_dec(out, optr, max, va_arg(list, unsigned int));
+			status = Status::Scan;
+		} else if (status == Status::X) {
+			if (is_long)
+				num_to_hex(out, optr, max, va_arg(list, long long unsigned int));
+			else
+				num_to_hex(out, optr, max, va_arg(list, unsigned int));
 			status = Status::Scan;
 		} else if (status == Status::S) {
 			const char *str_arg = va_arg(list, const char *);
@@ -117,7 +126,7 @@ extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_lis
 	return printed;
 }
 
-static void signed_to_str(char *out, char *&optr, const size_t max, long long int n) {
+static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n) {
 	if (out != nullptr && max <= static_cast<size_t>(optr - out))
 		return;
 
@@ -147,7 +156,7 @@ static void signed_to_str(char *out, char *&optr, const size_t max, long long in
 	}
 }
 
-static void unsigned_to_str(char *out, char *&optr, const size_t max, long long unsigned int n) {
+static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n) {
 	if (out != nullptr && max <= static_cast<size_t>(optr - out))
 		return;
 
@@ -162,6 +171,30 @@ static void unsigned_to_str(char *out, char *&optr, const size_t max, long long 
 	while (0 < n) {
 		buffer[i++] = '0' + (n % 10);
 		n /= 10;
+	}
+
+	for (int j = i - 1; 0 <= j; --j) {
+		if (!mappend(out, optr, max, buffer[j]))
+			return;
+	}
+}
+
+static void num_to_hex(char *out, char *&optr, const size_t max, long long unsigned int n) {
+	if (out != nullptr && max <= static_cast<size_t>(optr - out))
+		return;
+
+	if (n == 0) {
+		mappend(out, optr, max, '0');
+		return;
+	}
+
+	char buffer[16] = {0};
+	int i = 0;
+
+	while (0 < n) {
+		char byte = n & 0xf;
+		buffer[i++] = byte < 10? '0' + byte : ('a' + byte - 0xa);
+		n >>= 4;
 	}
 
 	for (int j = i - 1; 0 <= j; --j) {
