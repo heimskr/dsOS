@@ -32,6 +32,8 @@ header_end:
 .comm low_page_directory_table, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
 .comm high_page_directory_table, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
 .comm tmp_stack, KERNEL_BOOT_STACK_SIZE, KERNEL_BOOT_STACK_ALIGNMENT
+.comm multiboot_magic, 4
+.comm multiboot_data, 8
 
 .data
 .align GDT_TABLE_ALIGNMENT
@@ -43,14 +45,16 @@ gdt_table_end:
         .skip (GDT_TABLE_SIZE - (gdt_table_end - gdt_table))
 
 gdt_ptr:
-         .short GDT_TABLE_SIZE - 1
-         .long gdt_table
+        .short GDT_TABLE_SIZE - 1
+        .long gdt_table
 
 
 .section .text
 .global _start
 .type _start, @function
 _start:
+        movl %eax, multiboot_magic
+        movl %ebx, multiboot_data
         movl $tmp_stack + KERNEL_BOOT_STACK_SIZE, %esp
 
         movl $low_pdpt, %eax
@@ -92,6 +96,7 @@ page_directory_table_loop:
         movl $KERNEL_CR4, %eax
         movl %eax, %cr4
 
+        # Set the long mode enable bit in the EFER.
         movl $MSR_EFER, %ecx
         rdmsr
         or $MSR_EFER_LME, %eax
@@ -120,7 +125,7 @@ _start64:
         movw %ax, %gs
         movw %ax, %ss
 
-        call _Z11kernel_mainv
+        call kernel_main
 
         # Should never reach here
         cli

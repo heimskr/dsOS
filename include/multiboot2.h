@@ -41,43 +41,43 @@
 
 /* Flags set in the 'flags' member of the multiboot header.  */
 
-#define MULTIBOOT_TAG_ALIGN                  8
-#define MULTIBOOT_TAG_TYPE_END               0
-#define MULTIBOOT_TAG_TYPE_CMDLINE           1
-#define MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME  2
-#define MULTIBOOT_TAG_TYPE_MODULE            3
-#define MULTIBOOT_TAG_TYPE_BASIC_MEMINFO     4
-#define MULTIBOOT_TAG_TYPE_BOOTDEV           5
-#define MULTIBOOT_TAG_TYPE_MMAP              6
-#define MULTIBOOT_TAG_TYPE_VBE               7
-#define MULTIBOOT_TAG_TYPE_FRAMEBUFFER       8
-#define MULTIBOOT_TAG_TYPE_ELF_SECTIONS      9
-#define MULTIBOOT_TAG_TYPE_APM               10
-#define MULTIBOOT_TAG_TYPE_EFI32             11
-#define MULTIBOOT_TAG_TYPE_EFI64             12
-#define MULTIBOOT_TAG_TYPE_SMBIOS            13
-#define MULTIBOOT_TAG_TYPE_ACPI_OLD          14
-#define MULTIBOOT_TAG_TYPE_ACPI_NEW          15
-#define MULTIBOOT_TAG_TYPE_NETWORK           16
-#define MULTIBOOT_TAG_TYPE_EFI_MMAP          17
-#define MULTIBOOT_TAG_TYPE_EFI_BS            18
-#define MULTIBOOT_TAG_TYPE_EFI32_IH          19
-#define MULTIBOOT_TAG_TYPE_EFI64_IH          20
-#define MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR    21
+#define MULTIBOOT_TAG_ALIGN 8
+#define MULTIBOOT_TAG_TYPE_END 0
+#define MULTIBOOT_TAG_TYPE_CMDLINE 1
+#define MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME 2
+#define MULTIBOOT_TAG_TYPE_MODULE 3
+#define MULTIBOOT_TAG_TYPE_BASIC_MEMINFO 4
+#define MULTIBOOT_TAG_TYPE_BOOTDEV 5
+#define MULTIBOOT_TAG_TYPE_MMAP 6
+#define MULTIBOOT_TAG_TYPE_VBE 7
+#define MULTIBOOT_TAG_TYPE_FRAMEBUFFER 8
+#define MULTIBOOT_TAG_TYPE_ELF_SECTIONS 9
+#define MULTIBOOT_TAG_TYPE_APM 10
+#define MULTIBOOT_TAG_TYPE_EFI32 11
+#define MULTIBOOT_TAG_TYPE_EFI64 12
+#define MULTIBOOT_TAG_TYPE_SMBIOS 13
+#define MULTIBOOT_TAG_TYPE_ACPI_OLD 14
+#define MULTIBOOT_TAG_TYPE_ACPI_NEW 15
+#define MULTIBOOT_TAG_TYPE_NETWORK 16
+#define MULTIBOOT_TAG_TYPE_EFI_MMAP 17
+#define MULTIBOOT_TAG_TYPE_EFI_BS 18
+#define MULTIBOOT_TAG_TYPE_EFI32_IH 19
+#define MULTIBOOT_TAG_TYPE_EFI64_IH 20
+#define MULTIBOOT_TAG_TYPE_LOAD_BASE_ADDR 21
 
-#define MULTIBOOT_HEADER_TAG_END  0
-#define MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST  1
-#define MULTIBOOT_HEADER_TAG_ADDRESS  2
-#define MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS  3
-#define MULTIBOOT_HEADER_TAG_CONSOLE_FLAGS  4
-#define MULTIBOOT_HEADER_TAG_FRAMEBUFFER  5
-#define MULTIBOOT_HEADER_TAG_MODULE_ALIGN  6
-#define MULTIBOOT_HEADER_TAG_EFI_BS  7
-#define MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI64  9
-#define MULTIBOOT_HEADER_TAG_RELOCATABLE  10
+#define MULTIBOOT_HEADER_TAG_END 0
+#define MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST 1
+#define MULTIBOOT_HEADER_TAG_ADDRESS 2
+#define MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS 3
+#define MULTIBOOT_HEADER_TAG_CONSOLE_FLAGS 4
+#define MULTIBOOT_HEADER_TAG_FRAMEBUFFER 5
+#define MULTIBOOT_HEADER_TAG_MODULE_ALIGN 6
+#define MULTIBOOT_HEADER_TAG_EFI_BS 7
+#define MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS_EFI64 9
+#define MULTIBOOT_HEADER_TAG_RELOCATABLE 10
 
-#define MULTIBOOT_ARCHITECTURE_I386  0
-#define MULTIBOOT_ARCHITECTURE_MIPS32  4
+#define MULTIBOOT_ARCHITECTURE_I386 0
+#define MULTIBOOT_ARCHITECTURE_MIPS32 4
 #define MULTIBOOT_HEADER_TAG_OPTIONAL 1
 
 #define MULTIBOOT_LOAD_PREFERENCE_NONE 0
@@ -231,15 +231,15 @@ struct multiboot_tag_mmap {
 	struct multiboot_mmap_entry entries[0];
 };
 
-struct multiboot_vbe_info_blocr {
+struct multiboot_vbe_info_block {
 	multiboot_uint8_t external_specification[512];
 };
 
-struct multiboot_vbe_mode_info_blocr {
+struct multiboot_vbe_mode_info_block {
 	multiboot_uint8_t external_specification[256];
 };
 
-struct multiboot_tag_vbr {
+struct multiboot_tag_vbe {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 
@@ -252,7 +252,7 @@ struct multiboot_tag_vbr {
 	struct multiboot_vbe_mode_info_block vbe_mode_info;
 };
 
-struct multiboot_tag_framebuffer_commor {
+struct multiboot_tag_framebuffer_common {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 
@@ -270,6 +270,7 @@ struct multiboot_tag_framebuffer_commor {
 
 struct multiboot_tag_framebuffer {
 	struct multiboot_tag_framebuffer_common common;
+
 	union {
 		struct {
 			multiboot_uint16_t framebuffer_palette_num_colors;
@@ -286,7 +287,7 @@ struct multiboot_tag_framebuffer {
 	};
 };
 
-struct multiboot_tag_elf_sectionr {
+struct multiboot_tag_elf_sections {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint32_t num;
@@ -295,7 +296,7 @@ struct multiboot_tag_elf_sectionr {
 	char sections[0];
 };
 
-struct multiboot_tag_apr {
+struct multiboot_tag_apm {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint16_t version;
@@ -309,19 +310,19 @@ struct multiboot_tag_apr {
 	multiboot_uint16_t dseg_len;
 };
 
-struct multiboot_tag_efi3r {
+struct multiboot_tag_efi32 {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint32_t pointer;
 };
 
-struct multiboot_tag_efi6r {
+struct multiboot_tag_efi64 {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint64_t pointer;
 };
 
-struct multiboot_tag_smbior {
+struct multiboot_tag_smbios {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint8_t major;
@@ -330,25 +331,25 @@ struct multiboot_tag_smbior {
 	multiboot_uint8_t tables[0];
 };
 
-struct multiboot_tag_old_acpr {
+struct multiboot_tag_old_acpi {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint8_t rsdp[0];
 };
 
-struct multiboot_tag_new_acpr {
+struct multiboot_tag_new_acpi {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint8_t rsdp[0];
 };
 
-struct multiboot_tag_networr {
+struct multiboot_tag_network {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint8_t dhcpack[0];
 };
 
-struct multiboot_tag_efi_mmar {
+struct multiboot_tag_efi_mmap {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint32_t descr_size;
@@ -356,13 +357,13 @@ struct multiboot_tag_efi_mmar {
 	multiboot_uint8_t efi_mmap[0];
 };
 
-struct multiboot_tag_efi32_ir {
+struct multiboot_tag_efi32_ih {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint32_t pointer;
 };
 
-struct multiboot_tag_efi64_ir {
+struct multiboot_tag_efi64_ih {
 	multiboot_uint32_t type;
 	multiboot_uint32_t size;
 	multiboot_uint64_t pointer;
@@ -374,6 +375,5 @@ struct multiboot_tag_load_base_addr {
 	multiboot_uint32_t load_base_addr;
 };
 
-#endif // __ASSEMBLER__
-
+#endif
 #endif

@@ -7,10 +7,10 @@ SHARED_FLAGS = -fno-builtin -O0 -nostdlib -ffreestanding -g -Wall -Wextra -Iincl
 CFLAGS       = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
 ASFLAGS      = $(SHARED_FLAGS) -Wa,--divide
 GRUB        ?= grub
-QEMU_EXTRA  ?= -usb -device usb-kbd
+# QEMU_EXTRA  ?= -usb -device usb-kbd
 
 ASSEMBLED := $(shell find asm/*.S)
-COMPILED  := $(shell find src/*.cpp src/**/*.cpp)
+COMPILED  := $(shell find . -name \*.cpp)
 SOURCES    = $(ASSEMBLED) $(COMPILED)
 
 OBJS       = $(patsubst %.S,%.o,$(ASSEMBLED)) $(patsubst %.cpp,%.o,$(COMPILED))
@@ -43,7 +43,7 @@ $(ISO_FILE): kernel
 	$(GRUB)-mkrescue -o $(ISO_FILE) iso
 
 run: $(ISO_FILE)
-	qemu-system-x86_64 -cdrom $(ISO_FILE) -serial stdio -m 1024M $(QEMU_EXTRA)
+	qemu-system-x86_64 -cdrom $(ISO_FILE) -serial stdio -m 8192M $(QEMU_EXTRA)
 
 clean:
 	rm -rf *.o **/*.o kernel iso kernel.iso
