@@ -71,7 +71,9 @@ extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_lis
 				APPEND(ch);
 			else
 				status = Status::Decide;
-		} else if (status == Status::Decide) {
+		}
+
+		if (status == Status::Decide) {
 			if (i == format_length)
 				return printed;
 			char next = format[i++];
@@ -96,7 +98,9 @@ extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_lis
 				}
 				is_long = false;
 			}
-		} else if (status == Status::D) {
+		}
+
+		if (status == Status::D) {
 			// TODO: padding and such
 			if (is_long)
 				signed_to_dec(out, optr, max, va_arg(list, long long int));
