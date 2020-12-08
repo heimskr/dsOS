@@ -4,4 +4,5 @@
 namespace x86_64 {
 	void getModel(char *);
 	int checkAPIC();
+	int coreCount();
 }

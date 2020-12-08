@@ -12,6 +12,7 @@ namespace DsOS {
 		for (size_t y = 0; y < VGA_HEIGHT; ++y)
 			for (size_t x = 0; x < VGA_WIDTH; ++x)
 				buffer[y * VGA_WIDTH + x] = vgaEntry(' ', color);
+		row = column = 0;
 	}
 
 	void Terminal::setColor(uint8_t color) {

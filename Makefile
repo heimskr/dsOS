@@ -1,12 +1,12 @@
 # Based on code by Ring Zero and Lower: http://ringzeroandlower.com/2017/08/08/x86-64-kernel-boot.html
 
-CC           = x86_64-elf-g++
-AS           = x86_64-elf-g++
-SHARED_FLAGS = -fno-builtin -O0 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone\
-               -mcmodel=kernel -fno-pie
-CFLAGS       = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
-ASFLAGS      = $(SHARED_FLAGS) -Wa,--divide
-GRUB        ?= grub
+CC            = x86_64-elf-g++
+AS            = x86_64-elf-g++
+SHARED_FLAGS  = -fno-builtin -O0 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone\
+                -mcmodel=kernel -fno-pie
+CFLAGS        = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
+ASFLAGS       = $(SHARED_FLAGS) -Wa,--divide
+GRUB         ?= grub
 # QEMU_EXTRA  ?= -usb -device usb-kbd
 
 ASSEMBLED := $(shell find asm/*.S)

@@ -19,4 +19,10 @@ namespace x86_64 {
 		__get_cpuid(1, &_, &_, &_, &edx);
 		return !!(edx & (1 << 9));
 	}
+
+	int coreCount() {
+		int eax;
+		asm volatile("mov $0x35, %%ecx \n rdmsr" : "=a"(eax) : : "ecx", "edx");
+		return eax;
+	}
 }

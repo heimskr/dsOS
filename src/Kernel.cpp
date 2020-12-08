@@ -24,6 +24,16 @@ namespace DsOS {
 		printf("Model: %s\n", model);
 		printf("APIC: %d\n", x86_64::checkAPIC());
 		printf("Memory: 0x%x through 0x%x\n", memoryLow, memoryHigh);
+		printf("Core count: %d\n", x86_64::coreCount());
+
+		int *somewhere = new int(42);
+		printf("somewhere: [%ld] = %d\n", somewhere, *somewhere);
+
+		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
+		// 	Terminal::clear();
+		// 	printf("Address: %ld -> %d", address, *((int *) address));
+		// 	for (int j = 0; j < 30000000; ++j);
+		// }
 		while (1);
 	}
 
@@ -69,6 +79,11 @@ namespace DsOS {
 				}
 #endif
 			}
+		}
+
+		if (memoryLow != 0 && memoryHigh != 0) {
+			printf("Resetting memory bounds: %ld, %llu.\n", memoryLow, memoryHigh);
+			memory.setBounds((char *) memoryLow, (char *) memoryHigh);
 		}
 	}
 }

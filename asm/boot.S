@@ -34,101 +34,112 @@ header_end:
 .comm tmp_stack, KERNEL_BOOT_STACK_SIZE, KERNEL_BOOT_STACK_ALIGNMENT
 .comm multiboot_magic, 4
 .comm multiboot_data, 8
+.comm detected_memory, 8
 
 .data
 .align GDT_TABLE_ALIGNMENT
 gdt_table:
-        .8byte GDT_FIRST_ENTRY
-        .8byte GDT_KERNEL_ENTRY
+	.8byte GDT_FIRST_ENTRY
+	.8byte GDT_KERNEL_ENTRY
 
 gdt_table_end:
-        .skip (GDT_TABLE_SIZE - (gdt_table_end - gdt_table))
+	.skip (GDT_TABLE_SIZE - (gdt_table_end - gdt_table))
 
 gdt_ptr:
-        .short GDT_TABLE_SIZE - 1
-        .long gdt_table
+	.short GDT_TABLE_SIZE - 1
+	.long gdt_table
 
+idt_real:
+	.long 0x3ff
+	.quad 0
 
 .section .text
 .global _start
 .type _start, @function
 _start:
-        movl %eax, multiboot_magic
-        movl %ebx, multiboot_data
-        movl $tmp_stack + KERNEL_BOOT_STACK_SIZE, %esp
+	movl %eax, multiboot_magic
+	movl %ebx, multiboot_data
+	movl $tmp_stack + KERNEL_BOOT_STACK_SIZE, %esp
 
-        movl $low_pdpt, %eax
-        or $(MMU_PRESENT | MMU_WRITABLE), %eax
-        movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PML4_ENTRY_SIZE)
 
-        movl $high_pdpt, %eax
-        or $(MMU_PRESENT | MMU_WRITABLE), %eax
-        movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_VIRTUAL_START) * PML4_ENTRY_SIZE)
 
-        movl $low_page_directory_table, %eax
-        or $(MMU_PRESENT | MMU_WRITABLE), %eax
-        movl %eax, low_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PDPT_ENTRY_SIZE)
+	movl $low_pdpt, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PML4_ENTRY_SIZE)
 
-        movl $high_page_directory_table, %eax
-        or $(MMU_PRESENT | MMU_WRITABLE), %eax
-        movl %eax, high_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_VIRTUAL_START) * PDPT_ENTRY_SIZE)
+	movl $high_pdpt, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_VIRTUAL_START) * PML4_ENTRY_SIZE)
 
-        mov $0, %ecx
+	movl $low_page_directory_table, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PDPT_ENTRY_SIZE)
 
-        movl $_kernel_physical_end, %esi
-        shrl $TWO_MEGABYTES_SHIFT, %esi
-        addl $1, %esi
+	movl $high_page_directory_table, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, high_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_VIRTUAL_START) * PDPT_ENTRY_SIZE)
+
+	# Disable PIC
+	mov $0xff, %al
+	outb %al, $0xa1
+	outb %al, $0x21
+
+	mov $0, %ecx
+
+	movl $_kernel_physical_end, %esi
+	shrl $TWO_MEGABYTES_SHIFT, %esi
+	addl $1, %esi
 
 page_directory_table_loop:
-        movl $TWO_MEGABYTES, %eax
-        mul %ecx
-        or $(MMU_PRESENT | MMU_WRITABLE | MMU_PDE_TWO_MB), %eax
-        movl %eax, low_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-        movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl $TWO_MEGABYTES, %eax
+	mul %ecx
+	or $(MMU_PRESENT | MMU_WRITABLE | MMU_PDE_TWO_MB), %eax
+	movl %eax, low_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 
-        inc %ecx
-        cmp %esi, %ecx
-        jne page_directory_table_loop  # If not equal, redo loop
+	inc %ecx
+	cmp %esi, %ecx
+	jne page_directory_table_loop  # If not equal, redo loop
 
-        movl $pml4, %eax
-        movl %eax, %cr3
+	movl $pml4, %eax
+	movl %eax, %cr3
 
-        movl $KERNEL_CR4, %eax
-        movl %eax, %cr4
+	movl $KERNEL_CR4, %eax
+	movl %eax, %cr4
 
-        # Set the long mode enable bit in the EFER.
-        movl $MSR_EFER, %ecx
-        rdmsr
-        or $MSR_EFER_LME, %eax
-        wrmsr
+	# Set the long mode enable bit in the EFER.
+	movl $MSR_EFER, %ecx
+	rdmsr
+	or $MSR_EFER_LME, %eax
+	wrmsr
 
-        movl $KERNEL_CR0, %eax
-        movl %eax, %cr0
+	movl $KERNEL_CR0, %eax
+	movl %eax, %cr0
 
-        lgdt gdt_ptr
+	lgdt gdt_ptr
 
-        ljmp $(KERNEL_GDT_ENTRY * GDT_ENTRY_SIZE), $_start64
+	ljmp $(KERNEL_GDT_ENTRY * GDT_ENTRY_SIZE), $_start64
 
-        cli
-        hlt
+	cli
+	hlt
 
 .code64
 
 .global _start64
 .type _start64, @function
 _start64:
-        # Setup segment selectors
-        movw $0, %ax
-        movw %ax, %ds
-        movw %ax, %es
-        movw %ax, %fs
-        movw %ax, %gs
-        movw %ax, %ss
+	# Setup segment selectors
+	movw $0, %ax
+	movw %ax, %ds
+	movw %ax, %es
+	movw %ax, %fs
+	movw %ax, %gs
+	movw %ax, %ss
 
-        call kernel_main
+	call kernel_main
 
-        # Should never reach here
-        cli
-        hlt
+	# Should never reach here
+	cli
+	hlt
 1:
-        jmp 1b
+	jmp 1b
