@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
-extern "C" size_t strlen(const char *str);
+extern "C" size_t strlen(const char *);
+extern "C" bool streq(const char *, const char *);
 
 #endif

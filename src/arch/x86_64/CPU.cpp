@@ -1,4 +1,5 @@
 #include "arch/x86_64/cpu.h"
+#include "lib/string.h"
 
 namespace x86_64 {
 	void getModel(char *out) {
@@ -20,9 +21,20 @@ namespace x86_64 {
 		return !!(edx & (1 << 9));
 	}
 
+	void cpuid(unsigned value, unsigned leaf, unsigned &eax, unsigned &ebx, unsigned &ecx, unsigned &edx) {
+		asm volatile("cpuid" : "=a" (eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a" (value), "c" (leaf));
+	}
+
 	int coreCount() {
-		int eax;
-		asm volatile("mov $0x35, %%ecx \n rdmsr" : "=a"(eax) : : "ecx", "edx");
-		return eax;
+		char model[13];
+		getModel(model);
+		unsigned eax, ebx, ecx, edx;
+		if (streq(model, "GenuineIntel")) {
+			cpuid(4, 0, eax, ebx, ecx, edx);
+			return ((eax >> 26) & 0x3f) + 1;
+		} else {
+			cpuid(0x80000008, 0, eax, ebx, ecx, edx);
+			return (ecx & 0xff) + 1;
+		}
 	}
 }
