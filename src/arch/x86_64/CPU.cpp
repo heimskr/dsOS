@@ -1,10 +1,14 @@
-#include "arch/x86_64/cpu.h"
+#include "arch/x86_64/CPU.h"
 #include "lib/string.h"
 
 namespace x86_64 {
+	void cpuid(unsigned value, unsigned leaf, unsigned &eax, unsigned &ebx, unsigned &ecx, unsigned &edx) {
+		asm volatile("cpuid" : "=a" (eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a" (value), "c" (leaf));
+	}
+
 	void getModel(char *out) {
-		size_t ebx, ecx, edx, _;
-		__cpuid(0, _, ebx, ecx, edx);
+		unsigned int eax, ebx, ecx, edx;
+		cpuid(0, 0, eax, ebx, ecx, edx);
 		unsigned char i = 0;
 		while (ebx)
 			out[i++] = ebx & 0xff, ebx >>= 8;
@@ -15,14 +19,10 @@ namespace x86_64 {
 		out[i] = '\0';
 	}
 
-	int checkAPIC() {
-		unsigned int edx, _;
-		__get_cpuid(1, &_, &_, &_, &edx);
+	bool checkAPIC() {
+		unsigned int eax, ebx, ecx, edx;
+		cpuid(1, 0, eax, ebx, ecx, edx);
 		return !!(edx & (1 << 9));
-	}
-
-	void cpuid(unsigned value, unsigned leaf, unsigned &eax, unsigned &ebx, unsigned &ecx, unsigned &edx) {
-		asm volatile("cpuid" : "=a" (eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a" (value), "c" (leaf));
 	}
 
 	int coreCount() {
@@ -36,5 +36,11 @@ namespace x86_64 {
 			cpuid(0x80000008, 0, eax, ebx, ecx, edx);
 			return (ecx & 0xff) + 1;
 		}
+	}
+
+	bool arat() {
+		unsigned int eax, ebx, ecx, edx;
+		cpuid(6, 0, eax, ebx, ecx, edx);
+		return (eax & 0b100) != 0;
 	}
 }

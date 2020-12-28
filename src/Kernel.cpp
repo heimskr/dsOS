@@ -3,10 +3,13 @@
 #include "lib/printf.h"
 #include "multiboot2.h"
 #include "arch/x86_64/control_register.h"
-#include "arch/x86_64/cpu.h"
+#include "arch/x86_64/CPU.h"
+#include "arch/x86_64/Interrupts.h"
 
 extern void *multiboot_data;
 extern unsigned int multiboot_magic;
+
+#define DEBUG_MMAP
 
 namespace DsOS {
 	void Kernel::main() {
@@ -22,9 +25,17 @@ namespace DsOS {
 		char model[13];
 		x86_64::getModel(model);
 		printf("Model: %s\n", model);
-		printf("APIC: %d\n", x86_64::checkAPIC());
+		printf("APIC: %s\n", x86_64::checkAPIC()? "yes" : "no");
 		printf("Memory: 0x%x through 0x%x\n", memoryLow, memoryHigh);
 		printf("Core count: %d\n", x86_64::coreCount());
+		printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
+
+		x86_64::IDT::init();
+		int x = 6 / 0;
+
+		for (;;);
+
+		printf(":: %d\n", sizeof(x86_64::IDT::Header));
 
 		int *somewhere = new int(42);
 		printf("somewhere: [%ld] = %d\n", somewhere, *somewhere);

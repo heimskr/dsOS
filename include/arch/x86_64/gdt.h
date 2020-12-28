@@ -16,22 +16,27 @@
 #define GDT_ACCESS_DIRECTION_DOWN (1 << 2)
 #define GDT_ACCESS_READABLE_WRITABLE (1 << 1)
 
-#define DECLARE_GDT_ENTRY(base, limit, flags, access)                          \
-  (                                                                            \
-    (((((base)) >> 24) & 0xFF) << 56) |                                        \
-    ((((flags)) & 0xF) << 52) |                                                \
-    (((((limit)) >> 16) & 0xF) << 48) |                                        \
-    (((((access) | (1 << 4))) & 0xFF) << 40) |                                 \
-    ((((base)) & 0xFFF) << 16) |                                               \
-    (((limit)) & 0xFFFF)                                                       \
+#define DECLARE_GDT_ENTRY(base, limit, flags, access) \
+  (                                                   \
+    (((((base)) >> 24) & 0xFF) << 56) |               \
+    ((((flags)) & 0xF) << 52) |                       \
+    (((((limit)) >> 16) & 0xF) << 48) |               \
+    (((((access) | (1 << 4))) & 0xFF) << 40) |        \
+    ((((base)) & 0xFFF) << 16) |                      \
+    (((limit)) & 0xFFFF)                              \
   )
 
 #define GDT_FIRST_ENTRY 0
 
-#define GDT_KERNEL_ENTRY                                                       \
-  DECLARE_GDT_ENTRY(0, 0,                                                      \
-                    GDT_FLAG_64BIT_MODE,                                       \
+#define GDT_KERNEL_CODE_ENTRY                                                                \
+  DECLARE_GDT_ENTRY(0, 0xffffffff,                                                           \
+                    GDT_FLAG_64BIT_MODE,                                                     \
                     GDT_ACCESS_PRESENT | GDT_ACCESS_PRIVILEGE_RING0 | GDT_ACCESS_EXECUTABLE)
+
+#define GDT_KERNEL_DATA_ENTRY                                        \
+  DECLARE_GDT_ENTRY(0, 0xffffffff,                                   \
+                    GDT_FLAG_64BIT_MODE,                             \
+                    GDT_ACCESS_PRESENT | GDT_ACCESS_PRIVILEGE_RING0)
 
 #define GDT_TABLE_ALIGNMENT 0x1000
 #define GDT_TABLE_SIZE 0x800

@@ -40,7 +40,8 @@ header_end:
 .align GDT_TABLE_ALIGNMENT
 gdt_table:
 	.8byte GDT_FIRST_ENTRY
-	.8byte GDT_KERNEL_ENTRY
+	.8byte GDT_KERNEL_CODE_ENTRY
+	.8byte GDT_KERNEL_DATA_ENTRY
 
 gdt_table_end:
 	.skip (GDT_TABLE_SIZE - (gdt_table_end - gdt_table))

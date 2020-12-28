@@ -43,7 +43,7 @@ $(ISO_FILE): kernel
 	$(GRUB)-mkrescue -o $(ISO_FILE) iso
 
 run: $(ISO_FILE)
-	qemu-system-x86_64 -cdrom $(ISO_FILE) -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12 -serial stdio -m 8192M $(QEMU_EXTRA)
+	qemu-system-x86_64 -cdrom $(ISO_FILE) -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12 -serial stdio -m 8G $(QEMU_EXTRA)
 
 clean:
 	rm -rf *.o **/*.o kernel iso kernel.iso
