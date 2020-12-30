@@ -2,7 +2,12 @@
 
 namespace DsOS::Util {
 	template <typename T>
-	inline T align(T number, int alignment) {
+	inline T upalign(T number, int alignment) {
 		return number + ((alignment - (number % alignment)) % alignment);
+	}
+
+	template <typename T>
+	inline T downalign(T number, int alignment) {
+		return number - (number % alignment);
 	}
 }

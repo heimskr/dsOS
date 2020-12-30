@@ -33,6 +33,7 @@ namespace DsOS {
 		asm("mov %%cr2, %0" : "=r" (pfla));
 		// printf("PFLA: %llu\n", pfla);
 		detectMemory();
+		arrangeMemory();
 
 		// pml4->print();
 
@@ -47,8 +48,8 @@ namespace DsOS {
 		// printf("Core count: %d\n", x86_64::coreCount());
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
-		// x86_64::IDT::init();
-		// x86_64::APIC::init();
+		x86_64::IDT::init();
+		x86_64::APIC::init();
 
 		// wait(1000);
 
@@ -57,6 +58,11 @@ namespace DsOS {
 
 		// int x = 6 / 0;
 		// for (;;);
+
+		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
+		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);
+		printf("pagesStart: 0x%lx\n", (uintptr_t) pagesStart);
+		printf("pagesLength: 0x%lx\n", pagesLength);
 
 		int *somewhere = new int(42);
 		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
@@ -95,10 +101,10 @@ namespace DsOS {
 
 					// If the kernel is in the memory space given by multiboot, increase memoryLow to just past it.
 					if (memoryLow <= (uintptr_t) this && (uintptr_t) this < memoryHigh)
-						memoryLow = Util::align(((uintptr_t) this) + sizeof(Kernel), 4096);
+						memoryLow = Util::upalign(((uintptr_t) this) + sizeof(Kernel), 4096);
 
 					if (memoryLow <= (uintptr_t) &high_page_directory_table && (uintptr_t) &high_page_directory_table < memoryHigh)
-						memoryLow = Util::align(((uintptr_t) &high_page_directory_table) + PAGE_DIRECTORY_SIZE * PAGE_DIRECTORY_ENTRY_SIZE, 4096);
+						memoryLow = Util::upalign(((uintptr_t) &high_page_directory_table) + PAGE_DIRECTORY_SIZE * PAGE_DIRECTORY_ENTRY_SIZE, 4096);
 
 #ifdef DEBUG_MMAP
 					printf("mem_lower = %uKB, mem_upper = %uKB\n",
@@ -129,7 +135,10 @@ namespace DsOS {
 	}
 
 	void Kernel::arrangeMemory() {
-
+		pageDescriptors = (char *) memoryLow;
+		pagesLength = Util::downalign((memoryHigh - memoryLow) * 4096 / 4097, 4096);
+		pagesStart = (void *) Util::downalign((uintptr_t) ((char *) memoryHigh - pagesLength), 4096);
+		pageDescriptorsLength = (uintptr_t) pagesStart - memoryLow;
 	}
 
 	void Kernel::wait(size_t millimoments) {

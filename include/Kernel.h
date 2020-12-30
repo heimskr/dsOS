@@ -15,13 +15,14 @@ namespace DsOS {
 			Memory memory;
 			x86_64::PageTable kernelPML4;
 
-			// The area where page descriptors are stored.
+			/** The area where page descriptors are stored. */
 			char *pageDescriptors = nullptr;
+			/** The length of the pageDescriptors area in bytes. */
 			size_t pageDescriptorsLength = 0;
 
 			// The area where actual pages are stored.
-			char *pagesStart = nullptr;
-			size_t *pagesLength = 0;
+			void *pagesStart = nullptr;
+			size_t pagesLength = 0;
 
 			/** Uses data left behind by multiboot to determine the boundaries of physical memory. */
 			void detectMemory();
