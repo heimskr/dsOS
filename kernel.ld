@@ -1,7 +1,6 @@
 ENTRY(_start)
 
-/* Tell where the various sections of the object files will be put in the final
-   kernel image. */
+/* Tell where the various sections of the object files will be put in the final kernel image. */
 SECTIONS {
 	. = 4M;
 
@@ -29,5 +28,5 @@ SECTIONS {
 
 	_kernel_virtual_end = .;
 
-	_kernel_physical_end = (LOADADDR (.bss) + SIZEOF (.bss) + 0xFFF) & 0xFFFFFFFFFFFFF000;
+	_kernel_physical_end = (LOADADDR(.bss) + SIZEOF(.bss) + 0xFFF) & 0xFFFFFFFFFFFFF000;
 }

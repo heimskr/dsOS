@@ -98,6 +98,12 @@ page_directory_table_loop:
 	movl %eax, low_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 	movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 
+	# for (int i = 0; i != kernel_physical_end >> 21; ++i) {
+	#     int entry = (1 << 21) * i | MMU_PRESENT | MMU_WRITABLE | MMU_PDE_TWO_MB;
+	#      low_page_directory_table[i * 8] = entry;
+	#     high_page_directory_table[i * 8] = entry;
+	# }
+
 	inc %ecx
 	cmp %esi, %ecx
 	jne page_directory_table_loop  # If not equal, redo loop

@@ -6,6 +6,13 @@
 
 namespace x86_64 {
 	struct PageTable {
-		uint64_t entries[PML4_SIZE];
+		enum class Type {PML4, PDP, PD, PT};
+
+		void **entries;
+		Type type;
+
+		PageTable(void **, Type);
+		void clear();
+		void print();
 	};
 }

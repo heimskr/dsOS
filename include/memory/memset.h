@@ -20,7 +20,7 @@
 
 #include "Defs.h"
 
-using   op_t = unsigned long long int;
+using op_t = unsigned long long int;
 
 extern "C" void * memset(void *, int c, size_t len);
 

@@ -1,5 +1,6 @@
 #include "Kernel.h"
 #include "Terminal.h"
+#include "Util.h"
 #include "lib/printf.h"
 #include "multiboot2.h"
 #include "arch/x86_64/APIC.h"
@@ -15,7 +16,7 @@ extern unsigned int multiboot_magic;
 namespace DsOS {
 	Kernel * Kernel::instance = nullptr;
 
-	Kernel::Kernel(x86_64::PageTable *pml4_): pml4(pml4_) {
+	Kernel::Kernel(const x86_64::PageTable &pml4_): kernelPML4(pml4_) {
 		if (Kernel::instance) {
 			printf("Kernel instantiated twice!\n");
 			for (;;);
@@ -28,37 +29,45 @@ namespace DsOS {
 		Terminal::write("Hello, kernel World!\n");
 		uint64_t rcs = 0, pfla = 0;
 		asm("mov %%cs, %0" : "=r" (rcs));
-		printf("Current ring: %d\n", rcs & 3);
+		// printf("Current ring: %d\n", rcs & 3);
 		asm("mov %%cr2, %0" : "=r" (pfla));
-		printf("PFLA: %llu\n", pfla);
+		// printf("PFLA: %llu\n", pfla);
 		detectMemory();
-		printf("CR0: %x, CR2: %x, CR3: %x, CR4: %x\n", x86_64::getCR0(), x86_64::getCR2(), x86_64::getCR3(), x86_64::getCR4());
-		char model[13];
-		x86_64::getModel(model);
-		printf("Model: %s\n", model);
-		printf("APIC: %s\n", x86_64::checkAPIC()? "yes" : "no");
+
+		// pml4->print();
+
+		printf("Kernel: 0x%lx\n", (uintptr_t) this);
+
+		// printf("CR0: %x, CR2: %x, CR3: %x, CR4: %x\n", x86_64::getCR0(), x86_64::getCR2(), x86_64::getCR3(), x86_64::getCR4());
+		// char model[13];
+		// x86_64::getModel(model);
+		// printf("Model: %s\n", model);
+		// printf("APIC: %s\n", x86_64::checkAPIC()? "yes" : "no");
 		printf("Memory: 0x%x through 0x%x\n", memoryLow, memoryHigh);
-		printf("Core count: %d\n", x86_64::coreCount());
-		printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
+		// printf("Core count: %d\n", x86_64::coreCount());
+		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
-		x86_64::IDT::init();
-		x86_64::APIC::init();
+		// x86_64::IDT::init();
+		// x86_64::APIC::init();
 
-		int x = *((int *) 0xdeadbeef);
-		printf("x = %d\n", x);
+		// wait(1000);
+
+		// int x = *((int *) 0xdeadbeef);
+		// printf("x = %d\n", x);
 
 		// int x = 6 / 0;
 		// for (;;);
 
-		// int *somewhere = new int(42);
-		// printf("somewhere: [%ld] = %d\n", somewhere, *somewhere);
+		int *somewhere = new int(42);
+		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();
 		// 	printf("Address: %ld -> %d", address, *((int *) address));
 		// 	for (int j = 0; j < 30000000; ++j);
 		// }
-		while (1);
+
+		for (;;);
 	}
 
 	void Kernel::detectMemory() {
@@ -83,6 +92,14 @@ namespace DsOS {
 				case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
 					memoryLow  = ((struct multiboot_tag_basic_meminfo *) tag)->mem_lower * 1024;
 					memoryHigh = ((struct multiboot_tag_basic_meminfo *) tag)->mem_upper * 1024;
+
+					// If the kernel is in the memory space given by multiboot, increase memoryLow to just past it.
+					if (memoryLow <= (uintptr_t) this && (uintptr_t) this < memoryHigh)
+						memoryLow = Util::align(((uintptr_t) this) + sizeof(Kernel), 4096);
+
+					if (memoryLow <= (uintptr_t) &high_page_directory_table && (uintptr_t) &high_page_directory_table < memoryHigh)
+						memoryLow = Util::align(((uintptr_t) &high_page_directory_table) + PAGE_DIRECTORY_SIZE * PAGE_DIRECTORY_ENTRY_SIZE, 4096);
+
 #ifdef DEBUG_MMAP
 					printf("mem_lower = %uKB, mem_upper = %uKB\n",
 						((struct multiboot_tag_basic_meminfo *) tag)->mem_lower,
@@ -109,5 +126,14 @@ namespace DsOS {
 			printf("Resetting memory bounds: %ld, %llu.\n", memoryLow, memoryHigh);
 			memory.setBounds((char *) memoryLow, (char *) memoryHigh);
 		}
+	}
+
+	void Kernel::arrangeMemory() {
+
+	}
+
+	void Kernel::wait(size_t millimoments) {
+		for (size_t i = 0; i < millimoments; ++i)
+			for (size_t j = 0; j < 8000000; ++j);
 	}
 }

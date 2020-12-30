@@ -14,9 +14,7 @@ namespace x86_64 {
 	struct PageTable;
 }
 
-extern "C" x86_64::PageTable *pml4;
-
 extern "C" void kernel_main() {
-	DsOS::Kernel kernel(pml4);
+	DsOS::Kernel kernel(x86_64::PageTable(&pml4, x86_64::PageTable::Type::PML4));
 	kernel.main();
 }

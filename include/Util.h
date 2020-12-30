@@ -1,8 +1,8 @@
-#ifndef UTIL_H_
-#define UTIL_H_
+#pragma once
 
 namespace DsOS::Util {
-	
+	template <typename T>
+	inline T align(T number, int alignment) {
+		return number + ((alignment - (number % alignment)) % alignment);
+	}
 }
-
-#endif
