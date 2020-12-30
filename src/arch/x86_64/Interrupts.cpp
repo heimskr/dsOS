@@ -1,3 +1,4 @@
+#include "arch/x86_64/control_register.h"
 #include "arch/x86_64/Interrupts.h"
 #include "lib/printf.h"
 
@@ -21,12 +22,19 @@ namespace x86_64::IDT {
 		idt_header.start = (uint32_t) (((uint64_t) &idt) & 0xffffffff);
 
 		add(0, &isr_0);
+		add(14, &isr_14);
 		asm volatile("lidt (%0)" : : "r" (&idt_header));
 	}
 }
 
 void div0() {
 	printf("Division by zero!\n");
+	for (;;);
+}
+
+void page_interrupt() {
+	printf("Page interrupt: 0x%lx\n", x86_64::getCR2());
+	for (;;);
 }
 
 extern "C" {

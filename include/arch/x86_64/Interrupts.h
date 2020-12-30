@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 
 namespace x86_64::IDT {
@@ -27,6 +29,8 @@ extern "C" {
 	extern x86_64::IDT::Descriptor idt[x86_64::IDT::SIZE];
 	extern x86_64::IDT::Header idt_header;
 	extern void isr_0();
+	extern void isr_14();
 
 	void div0();
+	void page_interrupt();
 }

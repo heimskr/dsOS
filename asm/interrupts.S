@@ -20,7 +20,7 @@
 	pop %rax
 .endm
 
-.macro isr_common id, fn
+.macro isr_common fn
 	pushall
 
 	mov %ds, %ax
@@ -55,7 +55,7 @@ isr_\id :
 	cli
 	pushw $0
 	pushw $\id
-	isr_common \id , \fn
+	isr_common \fn
 .endm
 
 .macro isr_noerrc id, fn
@@ -64,8 +64,9 @@ isr_\id :
 isr_\id :
 	cli
 	pushw $0
-	isr_common \id , \fn
+	isr_common \fn
 .endm
 
 .section .text
 	isr_noerrc 0, div0
+	isr_noerrc 14, page_interrupt

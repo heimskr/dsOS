@@ -10,7 +10,13 @@
 #error "The kernel needs to be compiled with an x86_64-elf compiler."
 #endif
 
+namespace x86_64 {
+	struct PageTable;
+}
+
+extern "C" x86_64::PageTable *pml4;
+
 extern "C" void kernel_main() {
-	DsOS::Kernel kernel;
+	DsOS::Kernel kernel(pml4);
 	kernel.main();
 }

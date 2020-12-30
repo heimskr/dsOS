@@ -1,9 +1,12 @@
-kernel
-iso
-kernel.iso
-.dep
+/kernel
+/iso
+/kernel.iso
+/.dep
+/.metals
+/.vscode
 .DS_Store
 ._.DS_Store
+
 
 # Prerequisites
 *.d

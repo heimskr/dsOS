@@ -2,6 +2,7 @@
 #include "Terminal.h"
 #include "lib/printf.h"
 #include "multiboot2.h"
+#include "arch/x86_64/APIC.h"
 #include "arch/x86_64/control_register.h"
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
@@ -12,6 +13,16 @@ extern unsigned int multiboot_magic;
 #define DEBUG_MMAP
 
 namespace DsOS {
+	Kernel * Kernel::instance = nullptr;
+
+	Kernel::Kernel(x86_64::PageTable *pml4_): pml4(pml4_) {
+		if (Kernel::instance) {
+			printf("Kernel instantiated twice!\n");
+			for (;;);
+		} else
+			Kernel::instance = this;
+	}
+
 	void Kernel::main() {
 		Terminal::clear();
 		Terminal::write("Hello, kernel World!\n");
@@ -31,14 +42,16 @@ namespace DsOS {
 		printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
 		x86_64::IDT::init();
-		int x = 6 / 0;
+		x86_64::APIC::init();
 
-		for (;;);
+		int x = *((int *) 0xdeadbeef);
+		printf("x = %d\n", x);
 
-		printf(":: %d\n", sizeof(x86_64::IDT::Header));
+		// int x = 6 / 0;
+		// for (;;);
 
-		int *somewhere = new int(42);
-		printf("somewhere: [%ld] = %d\n", somewhere, *somewhere);
+		// int *somewhere = new int(42);
+		// printf("somewhere: [%ld] = %d\n", somewhere, *somewhere);
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();
@@ -79,12 +92,12 @@ namespace DsOS {
 #ifdef DEBUG_MMAP
 				case MULTIBOOT_TAG_TYPE_MMAP: {
 					multiboot_memory_map_t *mmap;
-					printf("mmap\n");
+					// printf("mmap\n");
 					for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
 						(multiboot_uint8_t *) mmap < (multiboot_uint8_t *) tag + tag->size;
 						mmap = (multiboot_memory_map_t *)
 								((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
-						printf(" base_addr = 0x%lx, length = 0x%lx, type = %u\n", mmap->addr, mmap->len, mmap->type);
+						// printf(" base_addr = 0x%lx, length = 0x%lx, type = %u\n", mmap->addr, mmap->len, mmap->type);
 					}
 					break;
 				}
