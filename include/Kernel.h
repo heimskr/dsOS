@@ -17,11 +17,14 @@ namespace DsOS {
 
 			/** The area where page descriptors are stored. */
 			char *pageDescriptors = nullptr;
+
 			/** The length of the pageDescriptors area in bytes. */
 			size_t pageDescriptorsLength = 0;
 
-			// The area where actual pages are stored.
+			/** The area where actual pages are stored. */
 			void *pagesStart = nullptr;
+
+			/** The size of the area where actual pages are stored in bytes. */
 			size_t pagesLength = 0;
 
 			/** Uses data left behind by multiboot to determine the boundaries of physical memory. */
@@ -30,6 +33,9 @@ namespace DsOS {
 			/** Carves the usable region of physical memory into a section for page descriptors and a section for
 			 *  pages. */
 			void arrangeMemory();
+
+			/** Sets all page descriptors to zero. */
+			void initPageDescriptors();
 
 		public:
 			static Kernel *instance;

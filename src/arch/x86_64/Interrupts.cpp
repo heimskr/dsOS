@@ -1,5 +1,6 @@
 #include "arch/x86_64/control_register.h"
 #include "arch/x86_64/Interrupts.h"
+#include "arch/x86_64/PageTable.h"
 #include "lib/printf.h"
 
 #define IRETQ asm volatile("iretq")
@@ -33,7 +34,28 @@ void div0() {
 }
 
 void page_interrupt() {
-	printf("Page interrupt: 0x%lx\n", x86_64::getCR2());
+	uint64_t address = x86_64::getCR2();
+	printf("Page interrupt: 0x%lx\n", address);
+	uint16_t  pml4e = x86_64::PageTable::getPML4Index(address);
+	uint16_t   pdpe = x86_64::PageTable::getPDPTIndex(address);
+	uint16_t    pde = x86_64::PageTable::getPDTIndex(address);
+	uint16_t    pte = x86_64::PageTable::getPTIndex(address);
+	uint16_t offset = x86_64::PageTable::getOffset(address);
+	printf("[PML4E %d, PDPE %d, PDE %d, PTE %d, Offset %d]\n", pml4e, pdpe, pde, pte, offset);
+
+	// Check whether the PML4E is valid.
+	//   - If not, choose a space for the new PDPT and update the PML4E, then choose a space for a new PDT and update
+	//     the PDPE, then choose a space for a new PT and update the PDE. In the PT, add an entry for an unused page.
+	//   - If so, check the relevant PDPE in the PDPT the PML4E points to.
+	//       - If it's not valid, choose a space for the new PDT and update the PDPE, then choose a space for a new PT
+	//         and update the PDE. In the PT, add an entry for an unused page.
+	//       - If it's valid, check the relevant PDE in the PDT the PDPE points to.
+	//           - If it's not valid, choose a space for the new PT and update the PDE. In the PT, add an entry for an
+	//             unused page.
+	//           - If it's valid, check the relevant PTE in the PT the PDE points to.
+	//               - If it's valid, why is there a page fault?
+	//               - If it's not valid, choose an unused page for the PTE.
+
 	for (;;);
 }
 

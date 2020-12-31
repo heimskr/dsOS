@@ -7,12 +7,13 @@
 #define KERNEL_BOOT_STACK_ALIGNMENT 0x1000
 
 #ifndef __ASSEMBLER__
-extern "C" void *pml4;
-extern "C" void *detected_memory;
-extern "C" void *low_pdpt;
-extern "C" void *high_pdpt;
-extern "C" void *low_page_directory_table;
-extern "C" void *high_page_directory_table;
+#include <stdint.h>
+extern "C" uint64_t pml4;
+extern "C" uint64_t detected_memory;
+extern "C" uint64_t low_pdpt;
+extern "C" uint64_t high_pdpt;
+extern "C" uint64_t low_page_directory_table;
+extern "C" uint64_t high_page_directory_table;
 #endif
 
 #endif

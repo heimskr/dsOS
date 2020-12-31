@@ -2,6 +2,7 @@
 #include "Terminal.h"
 #include "Util.h"
 #include "lib/printf.h"
+#include "memory/memset.h"
 #include "multiboot2.h"
 #include "arch/x86_64/APIC.h"
 #include "arch/x86_64/control_register.h"
@@ -10,6 +11,8 @@
 
 extern void *multiboot_data;
 extern unsigned int multiboot_magic;
+
+extern void *tmp_stack;
 
 #define DEBUG_MMAP
 
@@ -34,6 +37,7 @@ namespace DsOS {
 		// printf("PFLA: %llu\n", pfla);
 		detectMemory();
 		arrangeMemory();
+		initPageDescriptors();
 
 		// pml4->print();
 
@@ -53,8 +57,6 @@ namespace DsOS {
 
 		// wait(1000);
 
-		// int x = *((int *) 0xdeadbeef);
-		// printf("x = %d\n", x);
 
 		// int x = 6 / 0;
 		// for (;;);
@@ -63,9 +65,16 @@ namespace DsOS {
 		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);
 		printf("pagesStart: 0x%lx\n", (uintptr_t) pagesStart);
 		printf("pagesLength: 0x%lx\n", pagesLength);
+		printf("&tmp_stack: 0x%lx\n", &tmp_stack);
 
 		int *somewhere = new int(42);
 		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
+
+		kernelPML4.print();
+
+		int x = *((int *) 0xdeadbeef);
+		printf("x = %d\n", x);
+
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();
@@ -139,6 +148,10 @@ namespace DsOS {
 		pagesLength = Util::downalign((memoryHigh - memoryLow) * 4096 / 4097, 4096);
 		pagesStart = (void *) Util::downalign((uintptr_t) ((char *) memoryHigh - pagesLength), 4096);
 		pageDescriptorsLength = (uintptr_t) pagesStart - memoryLow;
+	}
+
+	void Kernel::initPageDescriptors() {
+		memset(pageDescriptors, 0, pageDescriptorsLength);
 	}
 
 	void Kernel::wait(size_t millimoments) {
