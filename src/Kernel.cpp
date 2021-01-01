@@ -55,6 +55,7 @@ namespace DsOS {
 		x86_64::IDT::init();
 		x86_64::APIC::init();
 
+
 		// wait(1000);
 
 

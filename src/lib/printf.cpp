@@ -1,3 +1,4 @@
+#include "hardware/Serial.h"
 #include "Terminal.h"
 #include "lib/printf.h"
 #include "lib/string.h"
@@ -11,6 +12,12 @@ static void num_to_hex(char *out, char *&optr, const size_t max, long long unsig
 static bool mappend(char *out, char *&optr, const size_t max, const char ch) {
 	if (out == nullptr) {
 		DsOS::Terminal::putChar(ch);
+		if (!DsOS::Serial::init()) {
+			for (char ch: "Serial failed to initialize.\n")
+				DsOS::Terminal::putChar(ch);
+			for (;;);
+		}
+		DsOS::Serial::write(ch);
 		return true;
 	}
 
@@ -96,7 +103,6 @@ extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_lis
 					APPEND('%');
 					status = Status::Scan;
 				}
-				is_long = false;
 			}
 		}
 
@@ -107,18 +113,21 @@ extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_lis
 			else
 				signed_to_dec(out, optr, max, va_arg(list, int));
 			status = Status::Scan;
+			is_long = false;
 		} else if (status == Status::U) {
 			if (is_long)
 				unsigned_to_dec(out, optr, max, va_arg(list, long long unsigned int));
 			else
 				unsigned_to_dec(out, optr, max, va_arg(list, unsigned int));
 			status = Status::Scan;
+			is_long = false;
 		} else if (status == Status::X) {
 			if (is_long)
 				num_to_hex(out, optr, max, va_arg(list, long long unsigned int));
 			else
 				num_to_hex(out, optr, max, va_arg(list, unsigned int));
 			status = Status::Scan;
+			is_long = false;
 		} else if (status == Status::S) {
 			const char *str_arg = va_arg(list, const char *);
 			for (int i = 0; str_arg[i]; ++i)

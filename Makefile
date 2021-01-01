@@ -20,12 +20,12 @@ all: kernel
 
 define COMPILED_TEMPLATE
 $(patsubst %.cpp,%.o,$(1)): $(1)
-	$(CC) $(CFLAGS) -c $$< -o $$@
+	$(CC) $(CFLAGS) -DARCHX86_64 -c $$< -o $$@
 endef
 
 define ASSEMBLED_TEMPLATE
 $(patsubst %.S,%.o,$(1)): $(1)
-	$(AS) $(ASFLAGS) -c $$< -o $$@
+	$(AS) $(ASFLAGS) -DARCHX86_64 -c $$< -o $$@
 endef
 
 $(foreach fname,$(COMPILED),$(eval $(call COMPILED_TEMPLATE,$(fname))))

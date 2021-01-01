@@ -1,3 +1,4 @@
+#include "arch/x86_64/mmu.h"
 #include "arch/x86_64/PageTable.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
@@ -10,9 +11,21 @@ namespace x86_64 {
 	}
 
 	void PageTable::print() {
-		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i)
-			if (entries[i])
-				printf("%d: 0x%lx\n", i, entries[i]);
+		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i) {
+			const uint64_t entry = entries[i];
+			if (entry) {
+				printf("%d: 0x%lx", i, entry >> 12 << 12);
+				if (entry & MMU_PRESENT)
+					printf(" pres");
+				if (entry & MMU_WRITABLE)
+					printf(" writ");
+				if (entry & MMU_USER_MEMORY)
+					printf(" user");
+				if (entry & MMU_PDE_TWO_MB)
+					printf(" 2mb");
+				printf("\n");
+			}
+		}
 	}
 
 	uint64_t PageTable::getPML4E(uint16_t pml4_index) const {
