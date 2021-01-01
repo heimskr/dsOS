@@ -46,7 +46,7 @@ run: $(ISO_FILE)
 	qemu-system-x86_64 -cdrom $(ISO_FILE) -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12 -serial stdio -m 8G $(QEMU_EXTRA)
 
 clean:
-	rm -rf *.o **/*.o kernel iso kernel.iso
+	rm -rf *.o **/*.o `find src -iname "*.o"` kernel iso kernel.iso
 
 $(OBJS): Makefile
 
