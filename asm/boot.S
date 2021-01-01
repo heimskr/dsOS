@@ -62,19 +62,6 @@ _start:
 	movl %ebx, multiboot_data
 	movl $tmp_stack + KERNEL_BOOT_STACK_SIZE, %esp
 
-
-
-	// TODO: is clearing the PML4 like this necessary?
-	movl $0, %ecx
-	movl $(PML4_SIZE / PML4_ENTRY_SIZE), %esi
-	movl $0, %eax
-pml4_loop:
-	movl %eax, pml4(, %ecx, PML4_ENTRY_SIZE)
-	inc %ecx
-	cmp %esi, %ecx
-	jne pml4_loop
-
-
 	movl $low_pdpt, %eax
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
 	movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PML4_ENTRY_SIZE)

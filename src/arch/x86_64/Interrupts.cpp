@@ -35,7 +35,7 @@ void div0() {
 
 void page_interrupt() {
 	uint64_t address = x86_64::getCR2();
-	printf("Page interrupt: 0x%lx\n", address);
+	printf("Page fault: 0x%lx\n", address);
 	uint16_t  pml4e = x86_64::PageTable::getPML4Index(address);
 	uint16_t   pdpe = x86_64::PageTable::getPDPTIndex(address);
 	uint16_t    pde = x86_64::PageTable::getPDTIndex(address);

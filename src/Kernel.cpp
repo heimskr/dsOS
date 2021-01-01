@@ -1,6 +1,7 @@
 #include "Kernel.h"
 #include "Terminal.h"
 #include "Util.h"
+#include "hardware/Serial.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
@@ -30,6 +31,9 @@ namespace DsOS {
 	void Kernel::main() {
 		Terminal::clear();
 		Terminal::write("Hello, kernel World!\n");
+		if (Serial::init())
+			for (char ch: "\n\n\n")
+				Serial::write(ch);
 		uint64_t rcs = 0, pfla = 0;
 		asm("mov %%cs, %0" : "=r" (rcs));
 		// printf("Current ring: %d\n", rcs & 3);
@@ -73,8 +77,11 @@ namespace DsOS {
 
 		kernelPML4.print();
 
-		int x = *((int *) 0xdeadbeef);
-		printf("x = %d\n", x);
+		for (int i = 0;; ++i)
+			uint64_t x = *((uint64_t *) i);
+
+		// int x = *((int *) 0xdeadbeef);
+		// printf("x = %d\n", x);
 
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
