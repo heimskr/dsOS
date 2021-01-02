@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "mmu.h"
@@ -8,6 +9,7 @@ namespace x86_64 {
 	class PageTable {
 		public:
 			enum class Type {PML4, PDP, PD, PT};
+			enum class PTDisplay {Full, Condensed, Hidden};
 
 			uint64_t *entries;
 			Type type;
@@ -19,7 +21,7 @@ namespace x86_64 {
 			/** Returns true if an entry was assigned. */
 			bool assign(uint16_t pml4, uint16_t pdpt, uint16_t pdt, uint16_t pt);
 
-			void print();
+			void print(bool putc = true, bool show_pdpt = true, bool show_pdt = true, PTDisplay pt = PTDisplay::Condensed);
 
 			uint64_t getPML4E(uint16_t pml4_index) const;
 			uint64_t getPDPE(uint16_t pml4_index, uint16_t pdpt_index) const;
@@ -53,5 +55,6 @@ namespace x86_64 {
 
 		private:
 			void printMeta(uint64_t);
+			void printCondensed(size_t k_shift, uint64_t pde);
 	};
 }

@@ -5,13 +5,16 @@
 
 enum class Status {Scan, Decide, D, U, S, X};
 
+bool printf_putc = true;
+
 static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n);
 static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n);
 static void num_to_hex(char *out, char *&optr, const size_t max, long long unsigned int n);
 
 static bool mappend(char *out, char *&optr, const size_t max, const char ch) {
 	if (out == nullptr) {
-		DsOS::Terminal::putChar(ch);
+		if (printf_putc)
+			DsOS::Terminal::putChar(ch);
 		if (!DsOS::Serial::init()) {
 			for (char ch: "Serial failed to initialize.\n")
 				DsOS::Terminal::putChar(ch);

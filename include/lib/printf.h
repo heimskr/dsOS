@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 extern "C" {
+	extern bool printf_putc;
 	int printf(const char *format, ...);
 	int sprintf(char *out, const char *format, ...);
 	int snprintf(char *out, const size_t max, const char *format, ...);

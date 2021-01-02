@@ -75,8 +75,8 @@ namespace DsOS {
 
 		kernelPML4.print();
 
-		for (uint64_t i = 0;; ++i)
-			int x = *((uint64_t *) i);
+		// for (uint64_t i = 0;; ++i)
+		// 	int x = *((uint64_t *) i);
 
 		// int x = *((int *) 0xdeadbeef);
 		// printf("x = %d\n", x);

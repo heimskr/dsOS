@@ -92,53 +92,50 @@ _start:
 page_directory_table_loop:
 	movl $PAGE_TABLE_SIZE, %eax
 	mul %ecx
-	add $page_tables, %eax
-
-	// movl $TWO_MEGABYTES, %eax
-	// mul %ecx // %eax = %eax * %ecx
+	addl $page_tables, %eax
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
 	movl %eax, low_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 	movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 
-// i = %ecx, j = %edi
-
+	# i = %ecx, j = %edi
 	mov $0, %edi
+
 page_table_loop:
 	movl $FOUR_KILOBYTES, %eax
 	mul %edi
 	movl %eax, %ebx
 	movl $TWO_MEGABYTES, %eax
 	mul %ecx
-	add %ebx, %eax
+	addl %ebx, %eax
 
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, page_tables(, %edi, PAGE_TABLE_ENTRY_SIZE)
-	// movl %eax, page_tables(%ebx, %edi, PAGE_TABLE_ENTRY_SIZE)
+
+	# Set edx to to 0x1000 * i + 8 * j (0x1000 * %ecx + 8 * %edi)
+	movl %ecx, %ebx
+	shll $FOUR_KILOBYTES_SHIFT, %ebx
+	movl %ebx, %edx
+	movl %edi, %ebx
+	shll $3, %ebx
+	addl %ebx, %edx
+
+	# page_tables[i * 0x1000 + j * 8] = pt_entry
+	movl %eax, page_tables(%edx)
 	
 	inc %edi
 	cmp $512, %edi
 	jne page_table_loop
 
-
-
 	inc %ecx
 	cmp %esi, %ecx
-	jne page_directory_table_loop  # If not equal, redo loop
+	jne page_directory_table_loop
 
-	# for (int i = 0; i != kernel_physical_end >> 21; ++i) {
-	#     int entry = (2 << 20) * i | MMU_PRESENT | MMU_WRITABLE | MMU_PDE_TWO_MB;
-	#      low_page_directory_table[i * 8] = entry;
-	#     high_page_directory_table[i * 8] = entry;
-	# }
-
-
-	# for (int i = 0; i != kernel_physical_end >> 21; ++i) {
+	# for (int i = 0; i != (kernel_physical_end >> 21) + 1; ++i) {
 	#     int pd_entry = (page_tables + 0x1000 * i) | MMU_PRESENT | MMU_WRITABLE;
 	#      low_page_directory_table[i * 8] = pd_entry;
 	#     high_page_directory_table[i * 8] = pd_entry;
 	#     for (int j = 0; j < 512; ++j) {
 	#         int pt_entry = ((2 << 20) * i + (4 << 10) * j) | MMU_PRESENT | MMU_WRITABLE;
-    #         page_tables[i * 0x1000 + j * 8] = pt_entry;
+	#         page_tables[i * 0x1000 + j * 8] = pt_entry;
 	#     }
 	# }
 
