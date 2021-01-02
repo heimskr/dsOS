@@ -59,8 +59,8 @@ namespace DsOS {
 		x86_64::IDT::init();
 		x86_64::APIC::init();
 
-		pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 1024);
-		pageMeta->clear();
+		// pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 1024);
+		// pageMeta->clear();
 
 		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
 		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);

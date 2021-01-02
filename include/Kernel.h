@@ -14,8 +14,6 @@ namespace DsOS {
 			size_t memoryLow = 0;
 			size_t memoryHigh = 0;
 			Memory memory;
-			x86_64::PageTable kernelPML4;
-			x86_64::PageMeta2M *pageMeta = nullptr;
 
 			/** The area where page descriptors are stored. */
 			char *pageDescriptors = nullptr;
@@ -40,6 +38,9 @@ namespace DsOS {
 			void initPageDescriptors();
 
 		public:
+			x86_64::PageTable kernelPML4;
+			x86_64::PageMeta2M *pageMeta = nullptr;
+
 			static Kernel *instance;
 
 			Kernel() = delete;

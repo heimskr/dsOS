@@ -5,12 +5,23 @@
 namespace x86_64 {
 	PageMeta::PageMeta(void *physical_start, void *virtual_start):
 		physicalStart(physical_start), virtualStart(virtual_start) {}
+
+	void * PageMeta::findFreePhysicalAddress() const {
+		int free_index = findFree();
+		if (free_index == -1)
+			return nullptr;
+		return (void *) ((uintptr_t) physicalStart + free_index * pageSize());
+	}
 	
 	PageMeta2M::PageMeta2M(void *physical_start, void *virtual_start, int max_):
 		PageMeta(physical_start, virtual_start), max(max_) {}
 
 	size_t PageMeta2M::pageCount() const {
 		return sizeof(bitmap);
+	}
+
+	size_t PageMeta2M::pageSize() const {
+		return 2 << 20;
 	}
 
 	void PageMeta2M::clear() {

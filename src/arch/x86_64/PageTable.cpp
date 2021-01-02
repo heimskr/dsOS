@@ -2,6 +2,7 @@
 #include "arch/x86_64/PageTable.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
+#include "Kernel.h"
 
 namespace x86_64 {
 	PageTable::PageTable(uint64_t *entries_, Type type_): entries(entries_), type(type_) {}

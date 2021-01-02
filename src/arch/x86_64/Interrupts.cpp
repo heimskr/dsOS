@@ -37,12 +37,23 @@ void div0() {
 void page_interrupt() {
 	uint64_t address = x86_64::getCR2();
 	printf("Page fault: 0x%lx\n", address);
-	uint16_t   pml4 = x86_64::PageTable::getPML4Index(address);
-	uint16_t    pdp = x86_64::PageTable::getPDPTIndex(address);
-	uint16_t     pd = x86_64::PageTable::getPDTIndex(address);
-	uint16_t     pt = x86_64::PageTable::getPTIndex(address);
-	uint16_t offset = x86_64::PageTable::getOffset(address);
+	using PT = x86_64::PageTable;
+	uint16_t   pml4 = PT::getPML4Index(address);
+	uint16_t    pdp = PT::getPDPTIndex(address);
+	uint16_t     pd = PT::getPDTIndex(address);
+	uint16_t     pt = PT::getPTIndex(address);
+	uint16_t offset = PT::getOffset(address);
 	printf("[PML4 %d, PDP %d, PD %d, PT %d, Offset %d]\n", pml4, pdp, pd, pt, offset);
+
+	DsOS::Kernel *kernel = DsOS::Kernel::instance;
+	if (!kernel) {
+		printf("Kernel is null!\n");
+		for (;;);
+	}
+
+	PT &kpml4 = kernel->kernelPML4;
+
+
 
 	// Check whether the PML4E is valid.
 	//   - If not, choose a space for the new PDPT and update the PML4E, then choose a space for a new PDT and update

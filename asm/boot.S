@@ -34,7 +34,7 @@ header_end:
 .comm tmp_stack, KERNEL_BOOT_STACK_SIZE, KERNEL_BOOT_STACK_ALIGNMENT
 .comm multiboot_magic, 4
 .comm multiboot_data, 8
-.comm detected_memory, 8
+.comm page_tables, (PAGE_TABLE_SIZE * 1024), PAGE_TABLE_ALIGNMENT
 
 .data
 .align GDT_TABLE_ALIGNMENT
@@ -87,24 +87,60 @@ _start:
 
 	movl $_kernel_physical_end, %esi
 	shrl $TWO_MEGABYTES_SHIFT, %esi
-	addl $2, %esi
+	addl $1, %esi
 
 page_directory_table_loop:
-	movl $TWO_MEGABYTES, %eax
+	movl $PAGE_TABLE_SIZE, %eax
 	mul %ecx
-	or $(MMU_PRESENT | MMU_WRITABLE | MMU_PDE_TWO_MB), %eax
+	add $page_tables, %eax
+
+	// movl $TWO_MEGABYTES, %eax
+	// mul %ecx // %eax = %eax * %ecx
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
 	movl %eax, low_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 	movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 
-	# for (int i = 0; i != kernel_physical_end >> 21; ++i) {
-	#     int entry = (1 << 21) * i | MMU_PRESENT | MMU_WRITABLE | MMU_PDE_TWO_MB;
-	#      low_page_directory_table[i * 8] = entry;
-	#     high_page_directory_table[i * 8] = entry;
-	# }
+// i = %ecx, j = %edi
+
+	mov $0, %edi
+page_table_loop:
+	movl $FOUR_KILOBYTES, %eax
+	mul %edi
+	movl %eax, %ebx
+	movl $TWO_MEGABYTES, %eax
+	mul %ecx
+	add %ebx, %eax
+
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, page_tables(, %edi, PAGE_TABLE_ENTRY_SIZE)
+	// movl %eax, page_tables(%ebx, %edi, PAGE_TABLE_ENTRY_SIZE)
+	
+	inc %edi
+	cmp $512, %edi
+	jne page_table_loop
+
+
 
 	inc %ecx
 	cmp %esi, %ecx
 	jne page_directory_table_loop  # If not equal, redo loop
+
+	# for (int i = 0; i != kernel_physical_end >> 21; ++i) {
+	#     int entry = (2 << 20) * i | MMU_PRESENT | MMU_WRITABLE | MMU_PDE_TWO_MB;
+	#      low_page_directory_table[i * 8] = entry;
+	#     high_page_directory_table[i * 8] = entry;
+	# }
+
+
+	# for (int i = 0; i != kernel_physical_end >> 21; ++i) {
+	#     int pd_entry = (page_tables + 0x1000 * i) | MMU_PRESENT | MMU_WRITABLE;
+	#      low_page_directory_table[i * 8] = pd_entry;
+	#     high_page_directory_table[i * 8] = pd_entry;
+	#     for (int j = 0; j < 512; ++j) {
+	#         int pt_entry = ((2 << 20) * i + (4 << 10) * j) | MMU_PRESENT | MMU_WRITABLE;
+    #         page_tables[i * 0x1000 + j * 8] = pt_entry;
+	#     }
+	# }
 
 	movl $pml4, %eax
 	movl %eax, %cr3
