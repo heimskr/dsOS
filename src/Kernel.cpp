@@ -59,9 +59,10 @@ namespace DsOS {
 		x86_64::IDT::init();
 		x86_64::APIC::init();
 
+		pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 0);
+		pageMeta->clear();
 
 		// wait(1000);
-
 
 		// int x = 6 / 0;
 		// for (;;);
@@ -75,10 +76,12 @@ namespace DsOS {
 		int *somewhere = new int(42);
 		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
 
+		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta2M) = %ld -> %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta2M), (new x86_64::PageMeta2M(0, 0, 0))->pageCount());
+
 		kernelPML4.print();
 
-		for (int i = 0;; ++i)
-			uint64_t x = *((uint64_t *) i);
+		// for (uint64_t i = 0;; ++i)
+		// 	*((uint64_t *) i);
 
 		// int x = *((int *) 0xdeadbeef);
 		// printf("x = %d\n", x);

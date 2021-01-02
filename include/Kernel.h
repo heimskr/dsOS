@@ -5,6 +5,7 @@
 
 #include "kernel_core.h"
 #include "memory/Memory.h"
+#include "arch/x86_64/PageMeta.h"
 #include "arch/x86_64/PageTable.h"
 
 namespace DsOS {
@@ -14,6 +15,7 @@ namespace DsOS {
 			size_t memoryHigh = 0;
 			Memory memory;
 			x86_64::PageTable kernelPML4;
+			x86_64::PageMeta2M *pageMeta = nullptr;
 
 			/** The area where page descriptors are stored. */
 			char *pageDescriptors = nullptr;

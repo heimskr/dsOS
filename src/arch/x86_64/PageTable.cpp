@@ -10,34 +10,41 @@ namespace x86_64 {
 		memset(entries, 0, PML4_SIZE);
 	}
 
+	bool PageTable::assign(uint16_t pml4, uint16_t pdpt, uint16_t pdt, uint16_t pt) {
+		return false;
+	}
+
 	void PageTable::print() {
 		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i) {
 			const uint64_t pml4e = entries[i];
 			if (pml4e) {
 				printf("%d: 0x%lx (PML4E)", i, pml4e >> 12 << 12);
 				printMeta(pml4e);
-				printf("\n");
+				size_t i_shift = (size_t) i << 39;
+				printf(" 0x%lx\n", i_shift);
 				if (pml4e & MMU_PRESENT) {
 					for (int j = 0; j < PDPT_SIZE / PDPT_ENTRY_SIZE; ++j) {
 						const uint64_t pdpe = ((uint64_t *) (pml4e >> 12 << 12))[j];
 						if (pdpe) {
 							printf("  %d: 0x%lx (PDPE)", j, pdpe >> 12 << 12);
 							printMeta(pdpe);
-							printf("\n");
+							size_t j_shift = i_shift | ((size_t) j << 30);
+							printf(" 0x%lx\n", j_shift);
 							if (pdpe & MMU_PRESENT) {
 								for (int k = 0; k < PAGE_DIRECTORY_SIZE / PAGE_DIRECTORY_ENTRY_SIZE; ++k) {
 									const uint64_t pde = ((uint64_t *) (pdpe >> 12 << 12))[k];
 									if (pde) {
 										printf("    %d: 0x%lx (PDE)", k, pde >> 12 << 12);
 										printMeta(pde);
-										printf("\n");
+										size_t k_shift = j_shift | ((size_t) k << 21);
+										printf(" 0x%lx\n", k_shift);
 										if ((pde & MMU_PRESENT) && !(pde & MMU_PDE_TWO_MB)) {
 											for (int l = 0; l < PAGE_TABLE_SIZE / PAGE_TABLE_ENTRY_SIZE; ++l) {
 												const uint64_t pte = ((uint64_t *) (pde >> 12 << 12))[l];
 												if (pte) {
 													printf("      %d: 0x%lx", l, pte >> 12 << 12);
 													printMeta(pte);
-													printf("\n");
+													printf(" 0x%lx\n", k_shift | ((size_t) l << 12));
 												}
 											}
 										}

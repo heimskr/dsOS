@@ -13,7 +13,12 @@ namespace x86_64 {
 			Type type;
 
 			PageTable(uint64_t *, Type);
+
 			void clear();
+
+			/** Returns true if an entry was assigned. */
+			bool assign(uint16_t pml4, uint16_t pdpt, uint16_t pdt, uint16_t pt);
+
 			void print();
 
 			uint64_t getPML4E(uint16_t pml4_index) const;

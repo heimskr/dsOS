@@ -87,7 +87,7 @@ _start:
 
 	movl $_kernel_physical_end, %esi
 	shrl $TWO_MEGABYTES_SHIFT, %esi
-	addl $1, %esi
+	addl $2, %esi
 
 page_directory_table_loop:
 	movl $TWO_MEGABYTES, %eax
