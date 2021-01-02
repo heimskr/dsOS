@@ -97,7 +97,6 @@ page_directory_table_loop:
 	movl %eax, low_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 	movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 
-	# i = %ecx, j = %edi
 	mov $0, %edi
 
 page_table_loop:

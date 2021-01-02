@@ -55,6 +55,9 @@ namespace x86_64 {
 
 		private:
 			void printMeta(uint64_t);
+			void printPDPT(size_t i_shift, uint64_t pml4e, bool show_pdt, PTDisplay);
+			void printPDT(size_t j_shift, uint64_t pdpe, PTDisplay);
+			void printPT(size_t k_shift, uint64_t pde);
 			void printCondensed(size_t k_shift, uint64_t pde);
 	};
 }

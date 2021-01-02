@@ -26,43 +26,55 @@ namespace x86_64 {
 				size_t i_shift = (size_t) i << 39;
 				printf(" 0x%lx\n", i_shift);
 				if ((pml4e & MMU_PRESENT) && show_pdpt) {
-					for (int j = 0; j < PDPT_SIZE / PDPT_ENTRY_SIZE; ++j) {
-						const uint64_t pdpe = ((uint64_t *) (pml4e >> 12 << 12))[j];
-						if (pdpe) {
-							printf("  %d: 0x%lx (PDPE)", j, pdpe >> 12 << 12);
-							printMeta(pdpe);
-							size_t j_shift = i_shift | ((size_t) j << 30);
-							printf(" 0x%lx\n", j_shift);
-							if ((pdpe & MMU_PRESENT) && show_pdt) {
-								for (int k = 0; k < PAGE_DIRECTORY_SIZE / PAGE_DIRECTORY_ENTRY_SIZE; ++k) {
-									const uint64_t pde = ((uint64_t *) (pdpe >> 12 << 12))[k];
-									if (pde) {
-										printf("    %d: 0x%lx (PDE)", k, pde >> 12 << 12);
-										printMeta(pde);
-										size_t k_shift = j_shift | ((size_t) k << 21);
-										printf(" 0x%lx\n", k_shift);
-										if (pt_display == PTDisplay::Full) {
-											if ((pde & MMU_PRESENT) && !(pde & MMU_PDE_TWO_MB)) {
-												for (int l = 0; l < PAGE_TABLE_SIZE / PAGE_TABLE_ENTRY_SIZE; ++l) {
-													const uint64_t pte = ((uint64_t *) (pde >> 12 << 12))[l];
-													if (pte) {
-														printf("      %d: 0x%lx", l, pte >> 12 << 12);
-														printMeta(pte);
-														printf(" 0x%lx\n", k_shift | ((size_t) l << 12));
-													}
-												}
-											}
-										} else if (pt_display == PTDisplay::Condensed)
-											printCondensed(k_shift, pde);
-									}
-								}
-							}
-						}
-					}
+					printPDPT(i_shift, pml4e, show_pdt, pt_display);
 				}
 			}
 		}
 		printf_putc = old_putc;
+	}
+
+	void PageTable::printPDPT(size_t i_shift, uint64_t pml4e, bool show_pdt, PTDisplay pt_display) {
+		for (int j = 0; j < PDPT_SIZE / PDPT_ENTRY_SIZE; ++j) {
+			const uint64_t pdpe = ((uint64_t *) (pml4e >> 12 << 12))[j];
+			if (pdpe) {
+				printf("  %d: 0x%lx (PDPE)", j, pdpe >> 12 << 12);
+				printMeta(pdpe);
+				size_t j_shift = i_shift | ((size_t) j << 30);
+				printf(" 0x%lx\n", j_shift);
+				if ((pdpe & MMU_PRESENT) && show_pdt) {
+					printPDT(j_shift, pdpe, pt_display);
+				}
+			}
+		}
+	}
+
+	void PageTable::printPDT(size_t j_shift, uint64_t pdpe, PTDisplay pt_display) {
+		for (int k = 0; k < PAGE_DIRECTORY_SIZE / PAGE_DIRECTORY_ENTRY_SIZE; ++k) {
+			const uint64_t pde = ((uint64_t *) (pdpe >> 12 << 12))[k];
+			if (pde) {
+				printf("    %d: 0x%lx (PDE)", k, pde >> 12 << 12);
+				printMeta(pde);
+				size_t k_shift = j_shift | ((size_t) k << 21);
+				printf(" 0x%lx\n", k_shift);
+				if (pt_display == PTDisplay::Full) {
+					if ((pde & MMU_PRESENT) && !(pde & MMU_PDE_TWO_MB)) {
+						printPT(k_shift, pde);
+					}
+				} else if (pt_display == PTDisplay::Condensed)
+					printCondensed(k_shift, pde);
+			}
+		}
+	}
+
+	void PageTable::printPT(size_t k_shift, uint64_t pde) {
+		for (int l = 0; l < PAGE_TABLE_SIZE / PAGE_TABLE_ENTRY_SIZE; ++l) {
+			const uint64_t pte = ((uint64_t *) (pde >> 12 << 12))[l];
+			if (pte) {
+				printf("      %d: 0x%lx", l, pte >> 12 << 12);
+				printMeta(pte);
+				printf(" 0x%lx\n", k_shift | ((size_t) l << 12));
+			}
+		}
 	}
 
 	void PageTable::printCondensed(size_t k_shift, uint64_t pde) {
