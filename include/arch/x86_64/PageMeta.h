@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "mmu.h"
 
@@ -11,6 +12,8 @@ namespace x86_64 {
 			void *virtualStart;
 			virtual size_t pageCount() const = 0;
 			virtual void clear() = 0;
+			virtual int findFree() const = 0;
+			virtual void mark(int index, bool used) = 0;
 
 		protected:
 			PageMeta(void *physical_start, void *virtual_start);
@@ -18,11 +21,16 @@ namespace x86_64 {
 
 	// Four terabytes ought to be enough for anybody.
 	struct PageMeta2M: public PageMeta {
+		using bitmap_t = int64_t;
+		/** Maximum number of pages. */
 		int max;
-		bool allocated[(2 << 20) - sizeof(PageMeta) - sizeof(int)];
+		/** Bits are 0 if the corresponding page is free, 1 if allocated. */
+		bitmap_t bitmap[(2 << 20 >> sizeof(bitmap_t)) - sizeof(PageMeta) - sizeof(int)];
 
 		PageMeta2M(void *physical_start, void *virtual_start, int max_);
 		virtual size_t pageCount() const override;
 		virtual void clear() override;
+		virtual int findFree() const override;
+		virtual void mark(int index, bool used) override;
 	} __attribute__((packed));
 }

@@ -59,8 +59,13 @@ namespace DsOS {
 		x86_64::IDT::init();
 		x86_64::APIC::init();
 
-		pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 0);
+		pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 1024);
 		pageMeta->clear();
+		for (int i = 0; i < 100; ++i) {
+			int free_index = pageMeta->findFree();
+			printf("Free index: %d\n", free_index);
+			pageMeta->mark(free_index + 3 - (i % 4), true);
+		}
 
 		// wait(1000);
 
