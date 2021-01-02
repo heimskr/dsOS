@@ -61,16 +61,6 @@ namespace DsOS {
 
 		pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 1024);
 		pageMeta->clear();
-		for (int i = 0; i < 100; ++i) {
-			int free_index = pageMeta->findFree();
-			printf("Free index: %d\n", free_index);
-			pageMeta->mark(free_index + 3 - (i % 4), true);
-		}
-
-		// wait(1000);
-
-		// int x = 6 / 0;
-		// for (;;);
 
 		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
 		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);
@@ -85,8 +75,8 @@ namespace DsOS {
 
 		kernelPML4.print();
 
-		// for (uint64_t i = 0;; ++i)
-		// 	*((uint64_t *) i);
+		for (uint64_t i = 0;; ++i)
+			int x = *((uint64_t *) i);
 
 		// int x = *((int *) 0xdeadbeef);
 		// printf("x = %d\n", x);

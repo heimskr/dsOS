@@ -25,7 +25,7 @@ namespace x86_64 {
 		/** Maximum number of pages. */
 		int max;
 		/** Bits are 0 if the corresponding page is free, 1 if allocated. */
-		bitmap_t bitmap[(2 << 20 >> sizeof(bitmap_t)) - sizeof(PageMeta) - sizeof(int)];
+		bitmap_t bitmap[((2 << 20) - sizeof(PageMeta) - sizeof(int)) / sizeof(bitmap_t)];
 
 		PageMeta2M(void *physical_start, void *virtual_start, int max_);
 		virtual size_t pageCount() const override;
