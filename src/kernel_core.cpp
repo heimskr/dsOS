@@ -15,6 +15,6 @@ namespace x86_64 {
 }
 
 extern "C" void kernel_main() {
-	DsOS::Kernel kernel(x86_64::PageTable(&pml4, x86_64::PageTable::Type::PML4));
+	DsOS::Kernel kernel(x86_64::PageTableWrapper(&pml4, x86_64::PageTableWrapper::Type::PML4));
 	kernel.main();
 }

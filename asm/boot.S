@@ -87,7 +87,7 @@ _start:
 
 	movl $_kernel_physical_end, %esi
 	shrl $TWO_MEGABYTES_SHIFT, %esi
-	addl $1, %esi
+	addl $3, %esi
 
 page_directory_table_loop:
 	movl $PAGE_TABLE_SIZE, %eax

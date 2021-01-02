@@ -6,7 +6,7 @@
 #include "kernel_core.h"
 #include "memory/Memory.h"
 #include "arch/x86_64/PageMeta.h"
-#include "arch/x86_64/PageTable.h"
+#include "arch/x86_64/PageTableWrapper.h"
 
 namespace DsOS {
 	class Kernel {
@@ -38,13 +38,13 @@ namespace DsOS {
 			void initPageDescriptors();
 
 		public:
-			x86_64::PageTable kernelPML4;
+			x86_64::PageTableWrapper kernelPML4;
 			x86_64::PageMeta2M *pageMeta = nullptr;
 
 			static Kernel *instance;
 
 			Kernel() = delete;
-			Kernel(const x86_64::PageTable &pml4_);
+			Kernel(const x86_64::PageTableWrapper &pml4_);
 
 			void main();
 

@@ -6,7 +6,7 @@
 #include "mmu.h"
 
 namespace x86_64 {
-	class PageTable {
+	class PageTableWrapper {
 		public:
 			enum class Type {PML4, PDP, PD, PT};
 			enum class PTDisplay {Full, Condensed, Hidden};
@@ -14,12 +14,9 @@ namespace x86_64 {
 			uint64_t *entries;
 			Type type;
 
-			PageTable(uint64_t *, Type);
+			PageTableWrapper(uint64_t *, Type);
 
 			void clear();
-
-			/** Returns true if an entry was assigned. */
-			bool assign(uint16_t pml4, uint16_t pdpt, uint16_t pdt, uint16_t pt);
 
 			void print(bool putc = true, bool show_pdpt = true, bool show_pdt = true, PTDisplay pt = PTDisplay::Condensed);
 

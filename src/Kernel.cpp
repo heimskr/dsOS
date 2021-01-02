@@ -1,6 +1,6 @@
 #include "Kernel.h"
 #include "Terminal.h"
-#include "Util.h"
+#include "DsUtil.h"
 #include "hardware/Serial.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
@@ -20,7 +20,7 @@ extern void *tmp_stack;
 namespace DsOS {
 	Kernel * Kernel::instance = nullptr;
 
-	Kernel::Kernel(const x86_64::PageTable &pml4_): kernelPML4(pml4_) {
+	Kernel::Kernel(const x86_64::PageTableWrapper &pml4_): kernelPML4(pml4_) {
 		if (Kernel::instance) {
 			printf("Kernel instantiated twice!\n");
 			for (;;);
@@ -59,8 +59,8 @@ namespace DsOS {
 		x86_64::IDT::init();
 		x86_64::APIC::init();
 
-		// pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 1024);
-		// pageMeta->clear();
+		pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 1024);
+		pageMeta->clear();
 
 		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
 		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);
@@ -75,10 +75,14 @@ namespace DsOS {
 
 		kernelPML4.print();
 
+		printf(" ------------------------------------------------------------------------------\n");
+
+
+
 		// for (uint64_t i = 0;; ++i)
 		// 	int x = *((uint64_t *) i);
 
-		// int x = *((int *) 0xdeadbeef);
+		int x = *((int *) 0xdeadbeef);
 		// printf("x = %d\n", x);
 
 

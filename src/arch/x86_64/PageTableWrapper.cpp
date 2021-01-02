@@ -1,21 +1,17 @@
 #include "arch/x86_64/mmu.h"
-#include "arch/x86_64/PageTable.h"
+#include "arch/x86_64/PageTableWrapper.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
 #include "Kernel.h"
 
 namespace x86_64 {
-	PageTable::PageTable(uint64_t *entries_, Type type_): entries(entries_), type(type_) {}
+	PageTableWrapper::PageTableWrapper(uint64_t *entries_, Type type_): entries(entries_), type(type_) {}
 	
-	void PageTable::clear() {
+	void PageTableWrapper::clear() {
 		memset(entries, 0, PML4_SIZE);
 	}
 
-	bool PageTable::assign(uint16_t pml4, uint16_t pdpt, uint16_t pdt, uint16_t pt) {
-		return false;
-	}
-
-	void PageTable::print(bool putc, bool show_pdpt, bool show_pdt, PTDisplay pt_display) {
+	void PageTableWrapper::print(bool putc, bool show_pdpt, bool show_pdt, PTDisplay pt_display) {
 		bool old_putc = printf_putc;
 		printf_putc = putc;
 		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i) {
@@ -33,7 +29,7 @@ namespace x86_64 {
 		printf_putc = old_putc;
 	}
 
-	void PageTable::printPDPT(size_t i_shift, uint64_t pml4e, bool show_pdt, PTDisplay pt_display) {
+	void PageTableWrapper::printPDPT(size_t i_shift, uint64_t pml4e, bool show_pdt, PTDisplay pt_display) {
 		for (int j = 0; j < PDPT_SIZE / PDPT_ENTRY_SIZE; ++j) {
 			const uint64_t pdpe = ((uint64_t *) (pml4e >> 12 << 12))[j];
 			if (pdpe) {
@@ -48,7 +44,7 @@ namespace x86_64 {
 		}
 	}
 
-	void PageTable::printPDT(size_t j_shift, uint64_t pdpe, PTDisplay pt_display) {
+	void PageTableWrapper::printPDT(size_t j_shift, uint64_t pdpe, PTDisplay pt_display) {
 		for (int k = 0; k < PAGE_DIRECTORY_SIZE / PAGE_DIRECTORY_ENTRY_SIZE; ++k) {
 			const uint64_t pde = ((uint64_t *) (pdpe >> 12 << 12))[k];
 			if (pde) {
@@ -66,7 +62,7 @@ namespace x86_64 {
 		}
 	}
 
-	void PageTable::printPT(size_t k_shift, uint64_t pde) {
+	void PageTableWrapper::printPT(size_t k_shift, uint64_t pde) {
 		for (int l = 0; l < PAGE_TABLE_SIZE / PAGE_TABLE_ENTRY_SIZE; ++l) {
 			const uint64_t pte = ((uint64_t *) (pde >> 12 << 12))[l];
 			if (pte) {
@@ -77,7 +73,7 @@ namespace x86_64 {
 		}
 	}
 
-	void PageTable::printCondensed(size_t k_shift, uint64_t pde) {
+	void PageTableWrapper::printCondensed(size_t k_shift, uint64_t pde) {
 		int first = -1, last = -1;
 		constexpr int max = PAGE_TABLE_SIZE / PAGE_TABLE_ENTRY_SIZE;
 		for (int i = 0; i < max; ++i) {
@@ -114,7 +110,7 @@ namespace x86_64 {
 		}
 	}
 
-	void PageTable::printMeta(uint64_t entry) {
+	void PageTableWrapper::printMeta(uint64_t entry) {
 		if (entry & MMU_PRESENT)
 			printf(" pres");
 		if (entry & MMU_WRITABLE)
@@ -125,41 +121,41 @@ namespace x86_64 {
 			printf(" 2mb");
 	}
 
-	uint64_t PageTable::getPML4E(uint16_t pml4_index) const {
+	uint64_t PageTableWrapper::getPML4E(uint16_t pml4_index) const {
 		return entries[pml4_index];
 	}
 
-	uint64_t PageTable::getPDPE(uint16_t pml4_index, uint16_t pdpt_index) const {
+	uint64_t PageTableWrapper::getPDPE(uint16_t pml4_index, uint16_t pdpt_index) const {
 		const uint64_t pml4e = entries[pml4_index];
 		const uint64_t *pdpt = (uint64_t *) (pml4e >> 12);
 		return pdpt[pdpt_index];
 	}
 
-	uint64_t PageTable::getPDE(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index) const {
+	uint64_t PageTableWrapper::getPDE(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index) const {
 		const uint64_t pdpe = getPDPE(pml4_index, pdpt_index);
 		const uint64_t *pdt = (uint64_t *) (pdpe >> 12);
 		return pdt[pdt_index];
 	}
 
-	uint64_t PageTable::getPTE(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) const {
+	uint64_t PageTableWrapper::getPTE(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) const {
 		const uint64_t pde = getPDE(pml4_index, pdpt_index, pdt_index);
 		const uint64_t *pt = (uint64_t *) (pde >> 12);
 		return pt[pt_index];
 	}
 
-	uint16_t PageTable::getPML4Meta(uint16_t pml4_index) const {
+	uint16_t PageTableWrapper::getPML4Meta(uint16_t pml4_index) const {
 		return entries[pml4_index] & 0xfff;
 	}
 
-	uint16_t PageTable::getPDPTMeta(uint16_t pml4_index, uint16_t pdpt_index) const {
+	uint16_t PageTableWrapper::getPDPTMeta(uint16_t pml4_index, uint16_t pdpt_index) const {
 		return getPDPE(pml4_index, pdpt_index) & 0xfff;
 	}
 
-	uint16_t PageTable::getPDTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index) const {
+	uint16_t PageTableWrapper::getPDTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index) const {
 		return getPDE(pml4_index, pdpt_index, pdt_index) & 0xfff;
 	}
 
-	uint16_t PageTable::getPTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
+	uint16_t PageTableWrapper::getPTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
 	                              uint16_t pt_index) const {
 		return getPTE(pml4_index, pdpt_index, pdt_index, pt_index) & 0xfff;
 	}

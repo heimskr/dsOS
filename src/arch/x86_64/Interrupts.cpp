@@ -1,6 +1,7 @@
 #include "arch/x86_64/control_register.h"
 #include "arch/x86_64/Interrupts.h"
-#include "arch/x86_64/PageTable.h"
+#include "arch/x86_64/PageMeta.h"
+#include "arch/x86_64/PageTableWrapper.h"
 #include "lib/printf.h"
 #include "Kernel.h"
 
@@ -37,13 +38,13 @@ void div0() {
 void page_interrupt() {
 	uint64_t address = x86_64::getCR2();
 	printf("Page fault: 0x%lx\n", address);
-	using PT = x86_64::PageTable;
-	uint16_t   pml4 = PT::getPML4Index(address);
-	uint16_t    pdp = PT::getPDPTIndex(address);
-	uint16_t     pd = PT::getPDTIndex(address);
-	uint16_t     pt = PT::getPTIndex(address);
+	using PT = x86_64::PageTableWrapper;
+	uint16_t  pml4i = PT::getPML4Index(address);
+	uint16_t   pdpi = PT::getPDPTIndex(address);
+	uint16_t    pdi = PT::getPDTIndex(address);
+	uint16_t    pti = PT::getPTIndex(address);
 	uint16_t offset = PT::getOffset(address);
-	printf("[PML4 %d, PDP %d, PD %d, PT %d, Offset %d]\n", pml4, pdp, pd, pt, offset);
+	printf("[PML4 %d, PDP %d, PD %d, PT %d, Offset %d]\n", pml4i, pdpi, pdi, pti, offset);
 
 	DsOS::Kernel *kernel = DsOS::Kernel::instance;
 	if (!kernel) {
@@ -51,9 +52,24 @@ void page_interrupt() {
 		for (;;);
 	}
 
-	PT &kpml4 = kernel->kernelPML4;
+	x86_64::PageMeta *meta = kernel->pageMeta;
+	if (!meta) {
+		printf("Kernel pageMeta is null!\n");
+		for (;;);
+	}
 
+	printf("About to assign.\n");
 
+	if (!meta->assign(pml4i, pdpi, pdi, pti)) {
+		printf("Couldn't assign a page!\n");
+		for (;;);
+	}
+
+	printf("Assigned a page!\n");
+
+	kernel->kernelPML4.print();
+
+	printf("===========================\n\n\n");
 
 	// Check whether the PML4E is valid.
 	//   - If not, choose a space for the new PDPT and update the PML4E, then choose a space for a new PDT and update
@@ -68,7 +84,7 @@ void page_interrupt() {
 	//               - If it's valid, why is there a page fault?
 	//               - If it's not valid, choose an unused page for the PTE.
 
-	for (;;);
+	// for (;;);
 }
 
 extern "C" {
