@@ -36,8 +36,12 @@ namespace x86_64 {
 		bitmap_t *bitmap = nullptr;
 
 		PageMeta4K();
+
+		/** bitmap_address must be within a mapped page. */
 		PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_);
 
+		/** Returns the size of the bitmap array in bytes. */
+		size_t bitmapSize() const;
 		virtual size_t pageCount() const override;
 		virtual size_t pageSize() const override;
 		virtual void clear() override;
@@ -45,6 +49,8 @@ namespace x86_64 {
 		virtual void mark(int index, bool used) override;
 		/** Returns true if an entry was assigned. */
 		virtual bool assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) override;
+		/** Allocates pages for the bitmap array. */
+		void assignSelf();
 		virtual operator bool() const override;
 	} __attribute__((packed));
 }

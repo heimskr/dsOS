@@ -30,25 +30,20 @@ namespace x86_64 {
 			uint16_t getPDTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index) const;
 			uint16_t getPTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) const;
 
-			static inline uint16_t getPML4Index(uint64_t addr) {
-				return (addr >> 39) & 0x1ff;
-			}
+			static inline uint16_t getPML4Index(uint64_t addr) { return (addr >> 39) & 0x1ff;          }
+			static inline uint16_t getPML4Index(void    *addr) { return getPML4Index((uint64_t) addr); }
 
-			static inline uint16_t getPDPTIndex(uint64_t addr) {
-				return (addr >> 30) & 0x1ff;
-			}
+			static inline uint16_t getPDPTIndex(uint64_t addr) { return (addr >> 30) & 0x1ff;          }
+			static inline uint16_t getPDPTIndex(void    *addr) { return getPDPTIndex((uint64_t) addr); }
 
-			static inline uint16_t getPDTIndex(uint64_t addr) {
-				return (addr >> 21) & 0x1ff;
-			}
+			static inline uint16_t getPDTIndex(uint64_t addr) { return (addr >> 21) & 0x1ff;         }
+			static inline uint16_t getPDTIndex(void    *addr) { return getPDTIndex((uint64_t) addr); }
 
-			static inline uint16_t getPTIndex(uint64_t addr) {
-				return (addr >> 12) & 0x1ff;
-			}
+			static inline uint16_t getPTIndex(uint64_t addr) { return (addr >> 12) & 0x1ff;        }
+			static inline uint16_t getPTIndex(void    *addr) { return getPTIndex((uint64_t) addr); }
 
-			static inline uint16_t getOffset(uint16_t addr) {
-				return addr & 0xfff;
-			}
+			static inline uint16_t getOffset(uint64_t addr) { return addr & 0xfff;               }
+			static inline uint16_t getOffset(void    *addr) { return getOffset((uint64_t) addr); }
 
 		private:
 			void printMeta(uint64_t);

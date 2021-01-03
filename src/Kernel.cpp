@@ -61,6 +61,7 @@ namespace DsOS {
 
 		// pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (memoryHigh - 0x800000UL) / 4096);
 		pageMeta = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
+		pageMeta.assignSelf();
 		pageMeta.clear();
 
 		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
@@ -72,7 +73,8 @@ namespace DsOS {
 		int *somewhere = new int(42);
 		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
 
-		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta4K) = %ld, pageCount = %d\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta4K), pageMeta.pageCount());
+		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta4K) = %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta4K));
+		printf("pageCount = %d, bitmapSize = %ld\n", pageMeta.pageCount(), pageMeta.bitmapSize());
 
 
 		kernelPML4.print(false);

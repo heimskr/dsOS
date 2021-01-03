@@ -1,4 +1,5 @@
 #include "arch/x86_64/PageMeta.h"
+#include "arch/x86_64/PageTableWrapper.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
 #include "DsUtil.h"
@@ -25,6 +26,12 @@ namespace x86_64 {
 	PageMeta4K::PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_):
 	PageMeta(physical_start, virtual_start), pages(pages_) {
 		bitmap = new (bitmap_address) bitmap_t[DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t))];
+	}
+
+	size_t PageMeta4K::bitmapSize() const {
+		if (pages == -1 || !bitmap)
+			return 0;
+		return DsOS::Util::updiv((size_t) pages, 8 * sizeof(bitmap_t)) * sizeof(bitmap_t);
 	}
 
 	size_t PageMeta4K::pageCount() const {
@@ -117,6 +124,20 @@ namespace x86_64 {
 		}
 
 		return true;
+	}
+
+	void PageMeta4K::assignSelf() {
+		if (pages == -1)
+			return;
+		uint16_t pml4i, pdpti, pdti, pti;
+		for (size_t i = 0, bsize = bitmapSize(), psize = pageSize(); i < bsize; i += psize) {
+			void *address = bitmap + i;
+			pml4i = PageTableWrapper::getPML4Index(address);
+			pdpti = PageTableWrapper::getPDPTIndex(address);
+			 pdti = PageTableWrapper:: getPDTIndex(address);
+			  pti = PageTableWrapper::  getPTIndex(address);
+			assign(pml4i, pdpti, pdti, pti);
+		}
 	}
 
 	PageMeta4K::operator bool() const {
