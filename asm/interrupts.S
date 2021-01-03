@@ -104,16 +104,17 @@ isr_iretq_\id :
 
 
 
-.section bss
-.comm gpf_addr, 8
+.section .bss
+	.comm gpf_addr, 8
+
+.section .rodata
+fmt32: .asciz "Timer interrupt\n"
 
 
 .section .text
 	isr_noerrc  0, div0
 	isr_errc    8, double_fault
-	// isr_errc   13, general_protection_fault
 	isr_errc   14, page_interrupt
-	isr_noerrc 32, timer_interrupt
 	isr_noerrc 39, spurious_interrupt
 
 .global isr_13
@@ -130,4 +131,18 @@ isr_push_13:
 	isr_common general_protection_fault
 isr_iretq_13:
 	add $4, %rsp
+	iretq
+
+.global isr_32
+.type isr_32, @function
+isr_32:
+	cli
+	push %rax
+	mov $fmt32, %rdi
+	mov $0, %rax
+	call printf
+	movq (apic_base), %rax
+	add $0xb0, %rax
+	mov $0, (%rax)
+	pop %rax
 	iretq
