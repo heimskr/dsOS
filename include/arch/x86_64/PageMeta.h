@@ -17,6 +17,7 @@ namespace x86_64 {
 			virtual void * allocateFreePhysicalAddress();
 			virtual void mark(int index, bool used) = 0;
 			virtual bool assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) = 0;
+			virtual size_t pagesUsed() const = 0;
 			virtual operator bool() const = 0;
 
 		protected:
@@ -52,6 +53,6 @@ namespace x86_64 {
 		/** Allocates pages for the bitmap array. */
 		void assignSelf();
 		virtual operator bool() const override;
-		size_t pagesUsed() const;
+		virtual size_t pagesUsed() const override;
 	} __attribute__((packed));
 }
