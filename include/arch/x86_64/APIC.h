@@ -1,5 +1,7 @@
 #pragma once
 
+// Based on code from RTEMS (https://www.rtems.org/), licensed under the GPL.
+
 #include <stdint.h>
 
 namespace DsOS {
