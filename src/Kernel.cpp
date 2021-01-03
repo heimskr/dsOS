@@ -83,7 +83,7 @@ namespace DsOS {
 		// 	int x = *((uint64_t *) i);
 
 		int x = *((int *) 0xdeadbeef);
-		// printf("x = %d\n", x);
+		printf("x = %d\n", x);
 
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {

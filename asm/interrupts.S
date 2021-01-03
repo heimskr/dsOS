@@ -1,3 +1,5 @@
+
+
 .macro pushall
 	push %rax
 	push %rbx
@@ -17,6 +19,9 @@
 	push %r15
 .endm
 
+
+
+
 .macro popall
 	pop %r15
 	pop %r14
@@ -35,6 +40,9 @@
 	pop %rbx
 	pop %rax
 .endm
+
+
+
 
 .macro isr_common fn
 	pushall
@@ -62,6 +70,9 @@
 	add $8, %rsp
 .endm
 
+
+
+
 .macro isr_errc id, fn
 .global isr_\id
 .type isr_\id , @function
@@ -72,8 +83,12 @@ isr_push_\id :
 	pushw $\id
 	isr_common \fn
 isr_iretq_\id :
+	add $4, %rsp
 	iretq
 .endm
+
+
+
 
 .macro isr_noerrc id, fn
 .global isr_\id
@@ -86,6 +101,9 @@ isr_push_\id :
 isr_iretq_\id :
 	iretq
 .endm
+
+
+
 
 .section .text
 	isr_noerrc  0, div0

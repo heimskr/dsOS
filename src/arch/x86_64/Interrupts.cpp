@@ -81,7 +81,7 @@ void page_interrupt() {
 
 	kernel->kernelPML4.print();
 
-	printf("===========================\n\n\n");
+	printf("===========================\n\n");
 
 	// Check whether the PML4E is valid.
 	//   - If not, choose a space for the new PDPT and update the PML4E, then choose a space for a new PDT and update
