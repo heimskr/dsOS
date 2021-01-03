@@ -3,6 +3,7 @@
 #include "arch/x86_64/PageMeta.h"
 #include "arch/x86_64/PageTableWrapper.h"
 #include "lib/printf.h"
+#include "memory/memset.h"
 #include "Kernel.h"
 
 #define IRETQ asm volatile("iretq")
@@ -49,6 +50,7 @@ void general_protection_fault() {
 
 void page_interrupt() {
 	uint64_t address = x86_64::getCR2();
+	constexpr int page_size = 4096;
 	printf("Page fault: 0x%lx\n", address);
 	using PT = x86_64::PageTableWrapper;
 	uint16_t  pml4i = PT::getPML4Index(address);
@@ -80,6 +82,8 @@ void page_interrupt() {
 	printf("Assigned a page!\n");
 
 	kernel->kernelPML4.print();
+
+	memset((void *) (address & ~0xfff), 0, page_size);
 
 	printf("===========================\n\n");
 

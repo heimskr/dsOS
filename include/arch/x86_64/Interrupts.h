@@ -20,7 +20,6 @@ namespace x86_64::IDT {
 		uint32_t zero;
 	} __attribute__((packed));
 
-
 	void add(int index, void (*fn)());
 	void init();
 }
