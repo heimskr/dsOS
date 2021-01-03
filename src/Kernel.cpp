@@ -59,8 +59,9 @@ namespace DsOS {
 		x86_64::IDT::init();
 		x86_64::APIC::init();
 
-		pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta2M((void *) 0x800000UL, (void *) 0xffff80800000UL, 1024);
-		pageMeta->clear();
+		// pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (memoryHigh - 0x800000UL) / 4096);
+		pageMeta = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
+		pageMeta.clear();
 
 		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
 		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);
@@ -71,11 +72,10 @@ namespace DsOS {
 		int *somewhere = new int(42);
 		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
 
-		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta2M) = %ld -> %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta2M), (new x86_64::PageMeta2M(0, 0, 0))->pageCount());
+		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta4K) = %ld, pageCount = %d\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta4K), pageMeta.pageCount());
 
 
 		kernelPML4.print(false);
-
 		// printf(" ------------------------------------------------------------------------------\n");
 
 
@@ -83,9 +83,12 @@ namespace DsOS {
 		// for (uint64_t i = 0;; ++i)
 		// 	int x = *((uint64_t *) i);
 
+		printf("<%d>\n", pageMeta.findFree());
+
 		int x = *((int *) 0xdeadbeef);
 		printf("x = %d\n", x);
 
+		printf("<%d>\n", pageMeta.findFree());
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();

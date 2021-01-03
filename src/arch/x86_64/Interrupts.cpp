@@ -66,15 +66,15 @@ void page_interrupt() {
 		for (;;);
 	}
 
-	x86_64::PageMeta *meta = kernel->pageMeta;
+	x86_64::PageMeta &meta = kernel->pageMeta;
 	if (!meta) {
-		printf("Kernel pageMeta is null!\n");
+		printf("Kernel pageMeta is invalid!\n");
 		for (;;);
 	}
 
 	printf("About to assign.\n");
 
-	if (!meta->assign(pml4i, pdpi, pdi, pti)) {
+	if (!meta.assign(pml4i, pdpi, pdi, pti)) {
 		printf("Couldn't assign a page!\n");
 		for (;;);
 	}
