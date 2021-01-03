@@ -19,6 +19,10 @@ extern void *tmp_stack;
 
 extern uint64_t ticks;
 
+// void timer_test() {
+// 	printf("Timer done.\n");
+// }
+
 namespace DsOS {
 	Kernel * Kernel::instance = nullptr;
 
@@ -93,22 +97,18 @@ namespace DsOS {
 
 		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 
+		// x86_64::APIC::initTimer(1);
+		// while (ticks != 5);
+		// x86_64::APIC::initTimer(5);
+		// while (ticks != 20);
+		// x86_64::APIC::disableTimer();
+		// wait(1000);
+		// printf("Hello.\n");
+		// x86_64::APIC::initTimer(5);
 
-		x86_64::APIC::initTimer(1);
-
-		while (ticks != 5);
-
-		x86_64::APIC::initTimer(5);
-
-		while (ticks != 20);
-
-		x86_64::APIC::disableTimer();
-
-		wait(1000);
-
-		printf("Hello.\n");
-
-		x86_64::APIC::initTimer(5);
+		x86_64::APIC::initTimer(2);
+		timer_max = 10;
+		timer_addr = +[]() { printf("Timer done!\n"); };
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();

@@ -4,6 +4,9 @@
 
 #include <stdint.h>
 
+extern void (*timer_addr)();
+extern uint64_t timer_max;
+
 namespace DsOS {
 	class Kernel;
 }

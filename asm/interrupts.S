@@ -106,13 +106,17 @@ isr_iretq_\id :
 
 .section .bss
 	.comm gpf_addr, 8
+	.comm timer_addr, 8
 
 .section .rodata
 fmt32: .asciz "Timer interrupt: %ld\n"
 
 .data
 ticks: .8byte 0
+timer_max: .8byte -1
 .global ticks
+.global timer_max
+
 
 
 .section .text
@@ -141,10 +145,11 @@ isr_iretq_13:
 .type isr_32, @function
 isr_32:
 	cli
+	push %rax
 	push %rdi
 	push %rsi
-	push %rax
 	mov $fmt32, %rdi
+	incq (ticks)
 	movq (ticks), %rsi
 
 	mov $0, %rax
@@ -152,8 +157,22 @@ isr_32:
 	movq (apic_base), %rax
 	add $0xb0, %rax
 	movl $0, (%rax)
-	pop %rax
 	pop %rsi
 	pop %rdi
-	incq (ticks)
+
+	// If timer_max is -1, don't compare it to ticks.
+	cmpq $-1, (timer_max)
+	je isr_32_timer_check_done
+
+	// If timer_max != ticks, don't call timer_addr.
+	movq (ticks), %rax
+	cmpq %rax, (timer_max)
+	jne isr_32_timer_check_done
+
+	// If timer_max isn't -1 and timer_max == ticks, jump to the function whose pointer is stored in timer_addr.
+	movq (timer_addr), %rax
+	call *%rax
+
+isr_32_timer_check_done:
+	pop %rax
 	iretq
