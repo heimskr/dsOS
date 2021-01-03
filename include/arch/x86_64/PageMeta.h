@@ -52,5 +52,6 @@ namespace x86_64 {
 		/** Allocates pages for the bitmap array. */
 		void assignSelf();
 		virtual operator bool() const override;
+		size_t pagesUsed() const;
 	} __attribute__((packed));
 }

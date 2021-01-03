@@ -86,21 +86,6 @@ void page_interrupt() {
 	memset((void *) (address & ~0xfff), 0, page_size);
 
 	printf("===========================\n\n");
-
-	// Check whether the PML4E is valid.
-	//   - If not, choose a space for the new PDPT and update the PML4E, then choose a space for a new PDT and update
-	//     the PDPE, then choose a space for a new PT and update the PDE. In the PT, add an entry for an unused page.
-	//   - If so, check the relevant PDPE in the PDPT the PML4E points to.
-	//       - If it's not valid, choose a space for the new PDT and update the PDPE, then choose a space for a new PT
-	//         and update the PDE. In the PT, add an entry for an unused page.
-	//       - If it's valid, check the relevant PDE in the PDT the PDPE points to.
-	//           - If it's not valid, choose a space for the new PT and update the PDE. In the PT, add an entry for an
-	//             unused page.
-	//           - If it's valid, check the relevant PTE in the PT the PDE points to.
-	//               - If it's valid, why is there a page fault?
-	//               - If it's not valid, choose an unused page for the PTE.
-
-	// for (;;);
 }
 
 extern "C" {

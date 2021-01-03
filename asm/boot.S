@@ -50,10 +50,6 @@ gdt_ptr:
 	.short GDT_TABLE_SIZE - 1
 	.long gdt_table
 
-idt_real:
-	.long 0x3ff
-	.quad 0
-
 .section .text
 .global _start
 .type _start, @function

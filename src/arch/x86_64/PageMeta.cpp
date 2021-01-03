@@ -143,4 +143,14 @@ namespace x86_64 {
 	PageMeta4K::operator bool() const {
 		return pages != -1;
 	}
+
+	size_t PageMeta4K::pagesUsed() const {
+		size_t out = 0;
+		size_t popcnt = 0;
+		for (size_t i = 0; i < bitmapSize() / sizeof(bitmap_t); ++i) {
+			asm("popcnt %1, %0" : "=r"(popcnt) : "r"(bitmap[i]));
+			out += popcnt;
+		}
+		return out;
+	}
 }

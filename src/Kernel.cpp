@@ -75,21 +75,18 @@ namespace DsOS {
 		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta4K) = %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta4K));
 		printf("pageCount = %d, bitmapSize = %ld\n", pageMeta.pageCount(), pageMeta.bitmapSize());
 
-
 		// kernelPML4.print(false);
 		// printf(" ------------------------------------------------------------------------------\n");
-
-
 
 		// for (uint64_t i = 0;; ++i)
 		// 	int x = *((uint64_t *) i);
 
-		printf("<%d>\n", pageMeta.findFree());
+		printf("<%d> : <%d>\n", pageMeta.findFree(), pageMeta.pagesUsed());
 
 		int x = *((int *) 0xdeadbeef);
 		printf("x = %d\n", x);
 
-		printf("<%d>\n", pageMeta.findFree());
+		printf("<%d> : <%d>\n", pageMeta.findFree(), pageMeta.pagesUsed());
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();
@@ -144,7 +141,9 @@ namespace DsOS {
 						(multiboot_uint8_t *) mmap < (multiboot_uint8_t *) tag + tag->size;
 						mmap = (multiboot_memory_map_t *)
 								((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
-						printf(" base_addr = 0x%lx, length = 0x%lx, type = %u\n", mmap->addr, mmap->len, mmap->type);
+						// uint64_t addr_high = (uint64_t) mmap->addr_high << 32;
+						// uint64_t len_high = (uint64_t) mmap->len_high << 32;
+						// printf(" base_addr = 0x%lx, length = 0x%lx, type = %u\n", (uint64_t) mmap->addr_low | addr_high, (uint64_t) mmap->len_low | len_high, mmap->type);
 					}
 					break;
 				}
