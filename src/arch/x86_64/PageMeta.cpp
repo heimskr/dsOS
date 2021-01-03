@@ -17,6 +17,16 @@ namespace x86_64 {
 		return (void *) ((uintptr_t) physicalStart + free_index * pageSize());
 	}
 
+	bool PageMeta::assignAddress(void *virtual_address, void *physical_address) {
+		using PTW = PageTableWrapper;
+		return assign(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
+		              PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address), physical_address);
+	}
+
+	bool PageMeta::identityMap(void *address) {
+		return assignAddress(address, address);
+	}
+
 	uint64_t PageMeta::addressToEntry(void *address) const {
 		return (((uint64_t) address) & ~0xfff) | MMU_PRESENT | MMU_WRITABLE;
 	}
@@ -67,7 +77,8 @@ namespace x86_64 {
 			bitmap[index / (8 * sizeof(bitmap_t))] &= ~(1 << (index % (8 * sizeof(bitmap_t))));
 	}
 
-	bool PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) {
+	bool PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+	                        void *physical_address) {
 		if (pages == -1)
 			return false;
 
@@ -112,8 +123,10 @@ namespace x86_64 {
 
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
 		if (pt[pt_index] == 0) {
-			// Allocate a new page if the PTE is empty.
-			if (void *free_addr = allocateFreePhysicalAddress()) {
+			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
+			if (physical_address) {
+				pt[pt_index] = addressToEntry(physical_address);
+			} else if (void *free_addr = allocateFreePhysicalAddress()) {
 				pt[pt_index] = addressToEntry(free_addr);
 			} else {
 				printf("No free pages!\n");

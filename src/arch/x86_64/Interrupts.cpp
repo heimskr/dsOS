@@ -29,6 +29,7 @@ namespace x86_64::IDT {
 		add(8, &isr_8);
 		add(13, &isr_13);
 		add(14, &isr_14);
+		add(255, &isr_255);
 		asm volatile("lidt (%0)" :: "r" (&idt_header));
 	}
 }
@@ -82,10 +83,13 @@ void page_interrupt() {
 	printf("Assigned a page!\n");
 
 	// kernel->kernelPML4.print(false);
+	// printf("===========================\n\n");
 
 	memset((void *) (address & ~0xfff), 0, page_size);
+}
 
-	printf("===========================\n\n");
+void spurious_interrupt() {
+	printf("Spurious interrupt\n");
 }
 
 extern "C" {

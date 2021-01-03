@@ -57,11 +57,12 @@ namespace DsOS {
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
 		x86_64::IDT::init();
-		x86_64::APIC::init();
 
 		pageMeta = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
 		pageMeta.assignSelf();
 		pageMeta.clear();
+
+		x86_64::APIC::init(*this);
 
 		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
 		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);

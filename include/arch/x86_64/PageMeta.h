@@ -16,9 +16,12 @@ namespace x86_64 {
 			virtual int findFree() const = 0;
 			virtual void * allocateFreePhysicalAddress();
 			virtual void mark(int index, bool used) = 0;
-			virtual bool assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) = 0;
+			virtual bool assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+				void *physical_address = nullptr) = 0;
 			virtual size_t pagesUsed() const = 0;
 			virtual operator bool() const = 0;
+			virtual bool assignAddress(void *virtual_address, void *physical_address);
+			virtual bool identityMap(void *);
 
 		protected:
 			PageMeta(void *physical_start, void *virtual_start);
@@ -49,7 +52,8 @@ namespace x86_64 {
 		virtual int findFree() const override;
 		virtual void mark(int index, bool used) override;
 		/** Returns true if an entry was assigned. */
-		virtual bool assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) override;
+		virtual bool assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+			void *physical_address = nullptr) override;
 		/** Allocates pages for the bitmap array. */
 		void assignSelf();
 		virtual operator bool() const override;

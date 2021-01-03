@@ -31,9 +31,11 @@ extern "C" {
 	extern void isr_8();
 	extern void isr_13();
 	extern void isr_14();
+	extern void isr_255();
 
 	void div0();
 	void double_fault();
 	void general_protection_fault();
 	void page_interrupt();
+	void spurious_interrupt();
 }
