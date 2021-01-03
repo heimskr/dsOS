@@ -59,7 +59,6 @@ namespace DsOS {
 		x86_64::IDT::init();
 		x86_64::APIC::init();
 
-		// pageMeta = new ((void *) 0x600000UL) x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (memoryHigh - 0x800000UL) / 4096);
 		pageMeta = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
 		pageMeta.assignSelf();
 		pageMeta.clear();
@@ -77,7 +76,7 @@ namespace DsOS {
 		printf("pageCount = %d, bitmapSize = %ld\n", pageMeta.pageCount(), pageMeta.bitmapSize());
 
 
-		kernelPML4.print(false);
+		// kernelPML4.print(false);
 		// printf(" ------------------------------------------------------------------------------\n");
 
 
@@ -145,7 +144,7 @@ namespace DsOS {
 						(multiboot_uint8_t *) mmap < (multiboot_uint8_t *) tag + tag->size;
 						mmap = (multiboot_memory_map_t *)
 								((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
-						// printf(" base_addr = 0x%lx, length = 0x%lx, type = %u\n", mmap->addr, mmap->len, mmap->type);
+						printf(" base_addr = 0x%lx, length = 0x%lx, type = %u\n", mmap->addr, mmap->len, mmap->type);
 					}
 					break;
 				}

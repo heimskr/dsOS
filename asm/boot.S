@@ -35,6 +35,8 @@ header_end:
 .comm multiboot_magic, 4
 .comm multiboot_data, 8
 .comm page_tables, (PAGE_TABLE_SIZE * 1024), PAGE_TABLE_ALIGNMENT
+.comm mmbuffer, 24
+.comm savcr0, 8
 
 .data
 .align GDT_TABLE_ALIGNMENT
@@ -61,6 +63,48 @@ _start:
 	movl %eax, multiboot_magic
 	movl %ebx, multiboot_data
 	movl $tmp_stack + KERNEL_BOOT_STACK_SIZE, %esp
+
+
+	cli
+	mov %cr0, %eax
+	mov %eax, savcr0
+	and $0x7ffffffe, %eax
+	mov %eax, %cr0
+
+	ljmp $0, $goRmode
+
+goRmode:
+	mov $0x8000, %sp
+	mov $0, %ax
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ss
+	lidt idt_real
+
+	mov $0xe820, %eax
+	mov $0, %ebx
+	mov $24, %ecx
+	mov $0x534d4150, %edx
+	mov $mmbuffer, %edi
+	int $0x15
+
+	mov $mmbuffer, %edi
+	mov (%edi), %eax
+	mov 4(%edi), %ebx
+	mov 8(%edi), %ecx
+	mov 12(%edi), %edx
+	mov 16(%edi), %esi
+	mov 20(%edi), %edi
+
+	1: jmp 1b
+
+
+	hlt
+
+
+
 
 	movl $low_pdpt, %eax
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
@@ -144,6 +188,7 @@ page_table_loop:
 	movl $KERNEL_CR4, %eax
 	movl %eax, %cr4
 
+
 	# Set the long mode enable bit in the EFER.
 	movl $MSR_EFER, %ecx
 	rdmsr
@@ -154,6 +199,7 @@ page_table_loop:
 	movl %eax, %cr0
 
 	lgdt gdt_ptr
+
 
 	ljmp $(KERNEL_GDT_ENTRY * GDT_ENTRY_SIZE), $_start64
 

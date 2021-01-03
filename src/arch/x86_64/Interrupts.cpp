@@ -81,7 +81,7 @@ void page_interrupt() {
 
 	printf("Assigned a page!\n");
 
-	kernel->kernelPML4.print(false);
+	// kernel->kernelPML4.print(false);
 
 	memset((void *) (address & ~0xfff), 0, page_size);
 
