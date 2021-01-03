@@ -73,9 +73,10 @@ namespace DsOS {
 
 		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta2M) = %ld -> %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta2M), (new x86_64::PageMeta2M(0, 0, 0))->pageCount());
 
-		kernelPML4.print();
 
-		printf(" ------------------------------------------------------------------------------\n");
+		kernelPML4.print(false);
+
+		// printf(" ------------------------------------------------------------------------------\n");
 
 
 
