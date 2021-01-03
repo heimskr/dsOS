@@ -1,5 +1,5 @@
 #include "Terminal.h"
-#include "Util.h"
+#include "DsUtil.h"
 
 namespace DsOS {
 	size_t Terminal::row = 0;

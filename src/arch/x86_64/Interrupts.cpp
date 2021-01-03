@@ -25,13 +25,25 @@ namespace x86_64::IDT {
 		idt_header.start = (uint32_t) (((uint64_t) &idt) & 0xffffffff);
 
 		add(0, &isr_0);
+		add(8, &isr_8);
+		add(13, &isr_13);
 		add(14, &isr_14);
-		asm volatile("lidt (%0)" : : "r" (&idt_header));
+		asm volatile("lidt (%0)" :: "r" (&idt_header));
 	}
 }
 
 void div0() {
 	printf("Division by zero!\n");
+	for (;;);
+}
+
+void double_fault() {
+	printf("Double fault :(\n");
+	for (;;);
+}
+
+void general_protection_fault() {
+	printf("General protection fault :(\n");
 	for (;;);
 }
 

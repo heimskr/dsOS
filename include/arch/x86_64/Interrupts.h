@@ -29,8 +29,12 @@ extern "C" {
 	extern x86_64::IDT::Descriptor idt[x86_64::IDT::SIZE];
 	extern x86_64::IDT::Header idt_header;
 	extern void isr_0();
+	extern void isr_8();
+	extern void isr_13();
 	extern void isr_14();
 
 	void div0();
+	void double_fault();
+	void general_protection_fault();
 	void page_interrupt();
 }
