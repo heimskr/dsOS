@@ -67,9 +67,9 @@ void page_interrupt() {
 		for (;;);
 	}
 
-	x86_64::PageMeta &meta = kernel->pageMeta;
+	x86_64::PageMeta &meta = kernel->pager;
 	if (!meta) {
-		printf("Kernel pageMeta is invalid!\n");
+		printf("Kernel pager is invalid!\n");
 		for (;;);
 	}
 

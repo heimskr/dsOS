@@ -58,9 +58,9 @@ namespace DsOS {
 
 		x86_64::IDT::init();
 
-		pageMeta = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
-		pageMeta.assignSelf();
-		pageMeta.clear();
+		pager = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
+		pager.assignSelf();
+		pager.clear();
 
 		x86_64::APIC::init(*this);
 
@@ -74,7 +74,7 @@ namespace DsOS {
 		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
 
 		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta4K) = %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta4K));
-		printf("pageCount = %d, bitmapSize = %ld\n", pageMeta.pageCount(), pageMeta.bitmapSize());
+		printf("pageCount = %d, bitmapSize = %ld\n", pager.pageCount(), pager.bitmapSize());
 
 		// kernelPML4.print(false);
 		// printf(" ------------------------------------------------------------------------------\n");
@@ -82,12 +82,12 @@ namespace DsOS {
 		// for (uint64_t i = 0;; ++i)
 		// 	int x = *((uint64_t *) i);
 
-		printf("<%d> : <%d>\n", pageMeta.findFree(), pageMeta.pagesUsed());
+		printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 
 		int x = *((int *) 0xdeadbeef);
 		printf("x = %d\n", x);
 
-		printf("<%d> : <%d>\n", pageMeta.findFree(), pageMeta.pagesUsed());
+		printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();

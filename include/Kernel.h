@@ -39,7 +39,7 @@ namespace DsOS {
 
 		public:
 			x86_64::PageTableWrapper kernelPML4;
-			x86_64::PageMeta4K pageMeta;
+			x86_64::PageMeta4K pager;
 
 			static Kernel *instance;
 
