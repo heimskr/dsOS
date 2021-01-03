@@ -89,6 +89,8 @@ namespace DsOS {
 
 		printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 
+		x86_64::APIC::initTimer(1);
+
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();
 		// 	printf("Address: %ld -> %d", address, *((int *) address));

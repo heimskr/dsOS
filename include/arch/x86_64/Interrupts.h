@@ -31,11 +31,13 @@ extern "C" {
 	extern void isr_8();
 	extern void isr_13();
 	extern void isr_14();
-	extern void isr_255();
+	extern void isr_32();
+	extern void isr_39();
 
 	void div0();
 	void double_fault();
 	void general_protection_fault();
 	void page_interrupt();
+	void timer_interrupt();
 	void spurious_interrupt();
 }

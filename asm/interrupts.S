@@ -106,8 +106,9 @@ isr_iretq_\id :
 
 
 .section .text
-	isr_noerrc   0, div0
-	isr_errc     8, double_fault
-	isr_errc    13, general_protection_fault
-	isr_errc    14, page_interrupt
-	isr_noerrc 255, spurious_interrupt
+	isr_noerrc  0, div0
+	isr_errc    8, double_fault
+	isr_errc   13, general_protection_fault
+	isr_errc   14, page_interrupt
+	isr_noerrc 32, timer_interrupt
+	isr_noerrc 39, spurious_interrupt

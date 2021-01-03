@@ -1,3 +1,4 @@
+#include "arch/x86_64/APIC.h"
 #include "arch/x86_64/control_register.h"
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PageMeta.h"
@@ -29,7 +30,8 @@ namespace x86_64::IDT {
 		add(8, &isr_8);
 		add(13, &isr_13);
 		add(14, &isr_14);
-		add(255, &isr_255);
+		add(32, &isr_32);
+		add(39, &isr_39);
 		asm volatile("lidt (%0)" :: "r" (&idt_header));
 	}
 }
@@ -86,6 +88,11 @@ void page_interrupt() {
 	// printf("===========================\n\n");
 
 	memset((void *) (address & ~0xfff), 0, page_size);
+}
+
+void timer_interrupt() {
+	printf("Timer interrupt\n");
+	apic_base[x86_64::APIC::REGISTER_EOI] = x86_64::APIC::EOI_ACK;
 }
 
 void spurious_interrupt() {

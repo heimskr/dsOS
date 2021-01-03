@@ -18,4 +18,12 @@ namespace x86_64 {
 		asm volatile ("rdmsr" : "=a" (low), "=d" (high) : "c" (reg));
 		return (static_cast<uint64_t>(high) << 32) | low;
 	}
+
+	inline void enableInterrupts() {
+		asm volatile("sti");
+	}
+
+	inline void disableInterrupts() {
+		asm volatile("cli");
+	}
 }
