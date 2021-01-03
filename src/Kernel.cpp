@@ -96,10 +96,19 @@ namespace DsOS {
 
 		x86_64::APIC::initTimer(1);
 
-		while (ticks != 10);
+		while (ticks != 5);
 
 		x86_64::APIC::initTimer(5);
 
+		while (ticks != 20);
+
+		x86_64::APIC::disableTimer();
+
+		wait(1000);
+
+		printf("Hello.\n");
+
+		x86_64::APIC::initTimer(5);
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();

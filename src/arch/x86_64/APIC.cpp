@@ -9,6 +9,8 @@
 
 volatile uint32_t *apic_base;
 
+extern uint64_t ticks;
+
 namespace x86_64::APIC {
 	void init(DsOS::Kernel &kernel) {
 		printf("Initializing APIC timer.\n");
@@ -112,5 +114,10 @@ namespace x86_64::APIC {
 #endif
 
 		return ticks_per_second;
+	}
+
+	void disableTimer() {
+		apic_base[REGISTER_LVT_TIMER] = DISABLE;
+		ticks = 0;
 	}
 }

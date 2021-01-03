@@ -48,6 +48,7 @@ namespace x86_64::APIC {
 	void init(DsOS::Kernel &);
 	void initTimer(uint32_t frequency);
 	uint32_t calibrateTimer();
+	void disableTimer();
 }
 
 extern volatile uint32_t *apic_base;
