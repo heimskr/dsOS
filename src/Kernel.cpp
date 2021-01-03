@@ -82,12 +82,15 @@ namespace DsOS {
 		// for (uint64_t i = 0;; ++i)
 		// 	int x = *((uint64_t *) i);
 
-		printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
+		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
+		// printf("<%d> : ", pager.findFree());
+		// printf("<%d>\n", pager.pagesUsed());
 
 		int x = *((int *) 0xdeadbeef);
 		printf("x = %d\n", x);
 
-		printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
+		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
+
 
 		x86_64::APIC::initTimer(1);
 

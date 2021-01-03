@@ -46,8 +46,11 @@ void double_fault() {
 	for (;;);
 }
 
+
+extern uint64_t gpf_addr;
+
 void general_protection_fault() {
-	printf("General protection fault :(\n");
+	printf("General protection fault caused by 0x%lx\n", gpf_addr);
 	for (;;);
 }
 

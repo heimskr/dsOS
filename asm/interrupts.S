@@ -104,11 +104,30 @@ isr_iretq_\id :
 
 
 
+.section bss
+.comm gpf_addr, 8
+
 
 .section .text
 	isr_noerrc  0, div0
 	isr_errc    8, double_fault
-	isr_errc   13, general_protection_fault
+	// isr_errc   13, general_protection_fault
 	isr_errc   14, page_interrupt
 	isr_noerrc 32, timer_interrupt
 	isr_noerrc 39, spurious_interrupt
+
+.global isr_13
+.type isr_13, @function
+isr_13:
+	cli
+	push %rax
+	movq 16(%rsp), %rax
+	mov %rax, gpf_addr
+	pop %rax
+isr_push_13:
+	pushw $0
+	pushw $13
+	isr_common general_protection_fault
+isr_iretq_13:
+	add $4, %rsp
+	iretq
