@@ -17,6 +17,8 @@ extern void *tmp_stack;
 
 #define DEBUG_MMAP
 
+extern uint64_t ticks;
+
 namespace DsOS {
 	Kernel * Kernel::instance = nullptr;
 
@@ -92,7 +94,12 @@ namespace DsOS {
 		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 
 
-		x86_64::APIC::initTimer(2);
+		x86_64::APIC::initTimer(1);
+
+		while (ticks != 10);
+
+		x86_64::APIC::initTimer(5);
+
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();

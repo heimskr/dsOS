@@ -93,11 +93,6 @@ void page_interrupt() {
 	memset((void *) (address & ~0xfff), 0, page_size);
 }
 
-void timer_interrupt() {
-	printf("Timer interrupt\n");
-	apic_base[x86_64::APIC::REGISTER_EOI] = x86_64::APIC::EOI_ACK;
-}
-
 void spurious_interrupt() {
 	printf("Spurious interrupt\n");
 }

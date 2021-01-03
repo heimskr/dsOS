@@ -108,7 +108,11 @@ isr_iretq_\id :
 	.comm gpf_addr, 8
 
 .section .rodata
-fmt32: .asciz "Timer interrupt\n"
+fmt32: .asciz "Timer interrupt: %ld\n"
+
+.data
+ticks: .8byte 0
+.global ticks
 
 
 .section .text
@@ -137,12 +141,19 @@ isr_iretq_13:
 .type isr_32, @function
 isr_32:
 	cli
+	push %rdi
+	push %rsi
 	push %rax
 	mov $fmt32, %rdi
+	movq (ticks), %rsi
+
 	mov $0, %rax
 	call printf
 	movq (apic_base), %rax
 	add $0xb0, %rax
-	mov $0, (%rax)
+	movl $0, (%rax)
 	pop %rax
+	pop %rsi
+	pop %rdi
+	incq (ticks)
 	iretq

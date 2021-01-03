@@ -81,7 +81,9 @@ namespace x86_64::APIC {
 
 		uint32_t apic_currcnt = apic_base[REGISTER_TIMER_CURRCNT];
 
+#ifdef DEBUG_APIC_TIMER
 		printf("PIT stopped at 0x%lx\n", pit_ticks);
+#endif
 
 		// Stop APIC timer to calculate ticks to time ratio.
 		apic_base[REGISTER_LVT_TIMER] = DISABLE;
@@ -89,7 +91,9 @@ namespace x86_64::APIC {
 		// Get counts passed since we started counting.
 		uint32_t ticks_per_second = apic_calibrate_init_count - apic_currcnt;
 
+#ifdef DEBUG_APIC_TIMER
 		printf("APIC ticks passed in 1/%d of a second: 0x%lx\n", PIT_CALIBRATE_DIVIDER, ticks_per_second);
+#endif
 
 		// We ran the PIT for a fraction of a second.
 		ticks_per_second = ticks_per_second * PIT_CALIBRATE_DIVIDER;
@@ -101,9 +105,11 @@ namespace x86_64::APIC {
 		// assert(clock_driver_ticks == 0);
 		// assert(ticks_per_second != 0 && ticks_per_second != apic_calibrate_init_count);
 
+#ifdef DEBUG_APIC_TIMER
 		printf("CPU frequency: 0x%llu\nAPIC ticks/sec: 0x%lx\n",
 			// Multiply to undo effects of divider.
 			(uint64_t) ticks_per_second * TIMER_DIVIDE_VALUE, ticks_per_second);
+#endif
 
 		return ticks_per_second;
 	}

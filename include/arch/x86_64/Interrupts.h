@@ -38,6 +38,5 @@ extern "C" {
 	void double_fault();
 	void general_protection_fault();
 	void page_interrupt();
-	void timer_interrupt();
 	void spurious_interrupt();
 }
