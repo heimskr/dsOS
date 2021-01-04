@@ -24,6 +24,14 @@ namespace x86_64::IDT {
 	void init();
 }
 
+struct interrupt_frame {
+  uint64_t rax, rbx, rcx, rdx;
+  uint64_t rdi, rsi, rsp, rbp;
+  uint64_t r8,  r9,  r10, r11;
+  uint64_t r12, r13, r14, r15;
+  uint64_t flags;
+} __attribute__((packed));
+
 extern "C" {
 	extern x86_64::IDT::Descriptor idt[x86_64::IDT::SIZE];
 	extern x86_64::IDT::Header idt_header;
@@ -32,11 +40,13 @@ extern "C" {
 	extern void isr_13();
 	extern void isr_14();
 	extern void isr_32();
+	extern void isr_33();
 	extern void isr_39();
 
-	void div0();
-	void double_fault();
-	void general_protection_fault();
-	void page_interrupt();
-	void spurious_interrupt();
+	void div0(interrupt_frame *);
+	void double_fault(interrupt_frame *);
+	void general_protection_fault(interrupt_frame *);
+	void page_interrupt(interrupt_frame *);
+	void irq1(interrupt_frame *);
+	void spurious_interrupt(interrupt_frame *);
 }

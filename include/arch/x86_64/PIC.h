@@ -7,6 +7,11 @@
 namespace x86_64::PIC {
 	void remap(uint8_t offset1, uint8_t offset2);
 	void disable();
+	void setIRQ(uint8_t);
+	void clearIRQ(uint8_t);
+	void sendNonspecificEOI(uint8_t irq);
+	void sendSpecificEOI(uint8_t irq);
+	void sendEOI(uint8_t irq);
 
 	constexpr uint8_t PIC1 = 0x20;
 	constexpr uint8_t PIC2 = 0xa0;
@@ -19,4 +24,7 @@ namespace x86_64::PIC {
 	constexpr uint8_t PIC_ICW4_8086 = 0x01;
 	constexpr uint8_t PIC1_REMAP_DEST = 0x20;
 	constexpr uint8_t PIC2_REMAP_DEST = 0x28;
+	constexpr uint8_t PIC_CUTOFF = 8;
+	constexpr uint8_t EOI_NONSPECIFIC = 0x20;
+	constexpr uint8_t EOI_SPECIFIC = 0x60;
 }

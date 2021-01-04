@@ -23,4 +23,44 @@ namespace x86_64::PIC {
 		DsOS::Ports::outb(PIC1_DATA, 0xff);
 		DsOS::Ports::outb(PIC2_DATA, 0xff);
 	}
+
+	void setIRQ(uint8_t irq_line) {
+		uint16_t port;
+		uint8_t value;
+		if (irq_line < 8) {
+			port = PIC1_DATA;
+		} else {
+			port = PIC2_DATA;
+			irq_line -= 8;
+		}
+		value = DsOS::Ports::inb(port) | (1 << irq_line);
+		DsOS::Ports::outb(port, value);
+	}
+
+	void clearIRQ(uint8_t irq_line) {
+		uint16_t port;
+		uint8_t value;
+		if (irq_line < 8) {
+			port = PIC1_DATA;
+		} else {
+			port = PIC2_DATA;
+			irq_line -= 8;
+		}
+		value = DsOS::Ports::inb(port) & ~(1 << irq_line);
+		DsOS::Ports::outb(port, value);
+	}
+
+	void sendNonspecificEOI(uint8_t irq) {
+		DsOS::Ports::outb(PIC_CUTOFF <= irq? PIC1 : PIC2, EOI_NONSPECIFIC);
+	}
+
+	void sendSpecificEOI(uint8_t irq) {
+		if (PIC_CUTOFF <= irq)
+			DsOS::Ports::outb(PIC1, EOI_SPECIFIC | 2);
+		DsOS::Ports::outb(PIC_CUTOFF <= irq? PIC1 : PIC2, EOI_SPECIFIC | (irq % PIC_CUTOFF));
+	}
+
+	void sendEOI(uint8_t irq) {
+		sendSpecificEOI(irq);
+	}
 }

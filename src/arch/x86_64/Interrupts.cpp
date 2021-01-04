@@ -3,11 +3,14 @@
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PageMeta.h"
 #include "arch/x86_64/PageTableWrapper.h"
+#include "arch/x86_64/PIC.h"
+#include "hardware/Ports.h"
+#include "hardware/PS2Keyboard.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
 #include "Kernel.h"
 
-#define IRETQ asm volatile("iretq")
+#define INTERRUPT 
 
 namespace x86_64::IDT {
 	void add(int index, void (*fn)()) {
@@ -31,17 +34,18 @@ namespace x86_64::IDT {
 		add(13, &isr_13);
 		add(14, &isr_14);
 		add(32, &isr_32);
+		add(33, &isr_33);
 		add(39, &isr_39);
 		asm volatile("lidt (%0)" :: "r" (&idt_header));
 	}
 }
 
-void div0() {
+INTERRUPT void div0(interrupt_frame *) {
 	printf("Division by zero!\n");
 	for (;;);
 }
 
-void double_fault() {
+INTERRUPT void double_fault(interrupt_frame *) {
 	printf("Double fault :(\n");
 	for (;;);
 }
@@ -49,12 +53,12 @@ void double_fault() {
 
 extern uint64_t gpf_addr;
 
-void general_protection_fault() {
+INTERRUPT void general_protection_fault(interrupt_frame *) {
 	printf("General protection fault caused by 0x%lx\n", gpf_addr);
 	for (;;);
 }
 
-void page_interrupt() {
+INTERRUPT void page_interrupt(interrupt_frame *) {
 	uint64_t address = x86_64::getCR2();
 	constexpr int page_size = 4096;
 	printf("Page fault: 0x%lx\n", address);
@@ -93,8 +97,12 @@ void page_interrupt() {
 	memset((void *) (address & ~0xfff), 0, page_size);
 }
 
-void spurious_interrupt() {
+INTERRUPT void spurious_interrupt(interrupt_frame *) {
 	printf("Spurious interrupt\n");
+}
+
+INTERRUPT void irq1(interrupt_frame *) {
+	DsOS::PS2Keyboard::onIRQ1();
 }
 
 extern "C" {

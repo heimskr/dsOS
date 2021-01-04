@@ -45,8 +45,9 @@
 
 
 .macro isr_common fn
-	pushall
+	// pushall
 
+	push %rax
 	mov %ds, %ax
 	push %rax
 
@@ -65,7 +66,9 @@
 	mov %ax, %fs
 	mov %ax, %gs
 
-	popall
+	pop %rax
+
+	// popall
 
 	add $8, %rsp
 .endm
@@ -123,6 +126,7 @@ timer_max: .8byte -1
 	isr_noerrc  0, div0
 	isr_errc    8, double_fault
 	isr_errc   14, page_interrupt
+	// isr_noerrc 33, irq1
 	isr_noerrc 39, spurious_interrupt
 
 .global isr_13
@@ -175,4 +179,13 @@ isr_32:
 
 isr_32_timer_check_done:
 	pop %rax
+	iretq
+
+.global isr_33
+.type isr_33, @function
+isr_33:
+	cli
+	// pushw $0
+	call irq1
+isr_iretq_33:
 	iretq

@@ -9,6 +9,7 @@
 #include "arch/x86_64/control_register.h"
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
+#include "arch/x86_64/PIC.h"
 
 extern void *multiboot_data;
 extern unsigned int multiboot_magic;
@@ -106,9 +107,12 @@ namespace DsOS {
 		// printf("Hello.\n");
 		// x86_64::APIC::initTimer(5);
 
+		x86_64::PIC::clearIRQ(1);
+
 		x86_64::APIC::initTimer(2);
-		timer_max = 10;
-		timer_addr = +[]() { printf("Timer done!\n"); };
+		x86_64::APIC::disableTimer();
+		// timer_max = 10;
+		// timer_addr = +[]() { printf("Timer done!\n"); };
 
 		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
 		// 	Terminal::clear();
