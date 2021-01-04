@@ -79,12 +79,12 @@ namespace std {
 						return &(*parent)[pos];
 					}
 
-					constexpr iterator operator+(iterator other) const {
-						return iterator(*parent, pos + other.pos);
-					}
-
 					constexpr iterator operator+(difference_type offset) const {
 						return iterator(*parent, pos + offset);
+					}
+
+					constexpr difference_type operator-(iterator other) const {
+						return pos - other.pos;
 					}
 
 					constexpr value_type & operator[](difference_type offset) {
@@ -149,12 +149,12 @@ namespace std {
 						return &(*parent)[pos];
 					}
 
-					constexpr const_iterator operator+(const_iterator other) const {
-						return const_iterator(*parent, pos + other.pos);
-					}
-
 					constexpr const_iterator operator+(difference_type offset) const {
 						return const_iterator(*parent, pos + offset);
+					}
+
+					constexpr difference_type operator-(const_iterator other) const {
+						return pos - other.pos;
 					}
 
 					constexpr const value_type & operator[](difference_type offset) const {
@@ -208,27 +208,28 @@ namespace std {
 					}
 
 					constexpr value_type & operator*() {
-						return (*parent)[parent->_size - pos];
+						return (*parent)[parent->_size - 1 - pos];
 					}
 
 					constexpr const value_type & operator*() const {
-						return (*parent)[parent->_size - pos];
+						return (*parent)[parent->_size - 1 - pos];
 					}
 
 					constexpr value_type * operator->() {
-						return &(*parent)[parent->_size - pos];
+						return &(*parent)[parent->_size - 1 - pos];
 					}
 
 					constexpr const value_type * operator->() const {
-						return &(*parent)[parent->_size - pos];
-					}
-
-					constexpr reverse_iterator operator+(reverse_iterator other) const {
-						return reverse_iterator(*parent, pos + other.pos);
+						return &(*parent)[parent->_size - 1 - pos];
 					}
 
 					constexpr reverse_iterator operator+(difference_type offset) const {
 						return reverse_iterator(*parent, pos + offset);
+					}
+
+					constexpr difference_type operator-(reverse_iterator other) const {
+						// TODO: verify
+						return pos - other.pos;
 					}
 
 					constexpr value_type & operator[](difference_type offset) {
@@ -287,19 +288,20 @@ namespace std {
 					}
 
 					constexpr const value_type & operator*() const {
-						return (*parent)[parent->_size - pos];
+						return (*parent)[parent->_size - 1 - pos];
 					}
 
 					constexpr const value_type * operator->() const {
-						return &(*parent)[parent->_size - pos];
-					}
-
-					constexpr const_reverse_iterator operator+(const_reverse_iterator other) const {
-						return const_reverse_iterator(*parent, pos + other.pos);
+						return &(*parent)[parent->_size - 1 - pos];
 					}
 
 					constexpr const_reverse_iterator operator+(difference_type offset) const {
 						return const_reverse_iterator(*parent, pos + offset);
+					}
+
+					constexpr difference_type operator-(const_reverse_iterator other) const {
+						// TODO: verify
+						return pos - other.pos;
 					}
 
 					constexpr const value_type & operator[](difference_type offset) const {
@@ -324,13 +326,19 @@ namespace std {
 			}
 
 			basic_string(const value_type *src) {
-				_str = new value_type[strlen(src) + 1];
+				_size = _capacity = strlen(src);
+				_str = new value_type[_size + 1];
 				strcpy(_str, src);
 			}
 
-			iterator begin() {
-				return {*this};
-			}
+			iterator begin() { return {*this}; }
+			iterator   end() { return {*this, _size}; }
+			reverse_iterator rbegin() { return {*this}; }
+			reverse_iterator   rend() { return {*this, _size}; }
+			const_iterator   cbegin() { return {*this}; }
+			const_iterator     cend() { return {*this, _size}; }
+			const_reverse_iterator crbegin() { return {*this}; }
+			const_reverse_iterator   crend() { return {*this, _size}; }
 
 			const value_type * c_str() const {
 				return _str;
@@ -546,34 +554,46 @@ namespace std {
 			}
 
 			void insert(iterator p, size_t n, value_type ch) {
-				reserve(_size + n);
-				// for (iterator iter = p;
-				// TODO
+				insert(p.pos, n, ch);
 			}
 
-			iterator insert(iterator p, value_type c) {
-				// TODO
+			iterator insert(iterator p, value_type ch) {
+				insert(p, 1, ch);
 				return p;
 			}
 
 			template <class InputIterator>
 			void insert(iterator p, InputIterator first, InputIterator last) {
-				// TODO
+				size_t to_add = 0;
+				for (InputIterator iter = first; iter != last; ++iter)
+					++to_add;
+				reserve(_size + to_add);
+				for (size_t i = 0; i < to_add; ++i)
+					_str[p.pos + to_add + i] = _str[p.pos + i];
+				for (InputIterator iter = first; iter != last; ++iter)
+					_str[(p++).pos] = *iter;
+				_size += to_add;
 			}
 
 			basic_string<value_type> & erase(size_t pos = 0, size_t len = npos) {
-				// TODO
+				if (len == npos) {
+					_size = pos;
+				} else {
+					for (size_t i = 0; i < len; ++i)
+						_str[pos + i] = _str[pos + len + i];
+					_size -= len;
+				}
 				return *this;
 			}
 
 			iterator erase(iterator p) {
-				// TODO
+				erase(p.pos, 1);
 				return p;
 			}
 
 			iterator erase(iterator first, iterator last) {
-				// TODO
-				return last;
+				erase(first.pos, last - first);
+				return first;
 			}
 	};
 

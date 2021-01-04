@@ -115,7 +115,11 @@ namespace DsOS {
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
 
-		std::string foo = "hello\n";
+		std::string foo = "hello";
+		for (auto iter = foo.begin(), end = foo.end(); iter != end; ++iter)
+			printf("[%c]\n", *iter);
+		for (auto riter = foo.rbegin(), rend = foo.rend(); riter != rend; ++riter)
+			printf("[%c]\n", *riter);
 
 		// timer_max = 10;
 		// timer_addr = +[]() { printf("Timer done!\n"); };
