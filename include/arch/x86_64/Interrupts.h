@@ -43,10 +43,10 @@ extern "C" {
 	extern void isr_33();
 	extern void isr_39();
 
-	void div0(interrupt_frame *);
-	void double_fault(interrupt_frame *);
-	void general_protection_fault(interrupt_frame *);
-	void page_interrupt(interrupt_frame *);
-	void irq1(interrupt_frame *);
-	void spurious_interrupt(interrupt_frame *);
+	void div0();
+	void double_fault();
+	void general_protection_fault();
+	void page_interrupt();
+	void irq1();
+	void spurious_interrupt();
 }

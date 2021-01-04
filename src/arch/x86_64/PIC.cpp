@@ -51,13 +51,13 @@ namespace x86_64::PIC {
 	}
 
 	void sendNonspecificEOI(uint8_t irq) {
-		DsOS::Ports::outb(PIC_CUTOFF <= irq? PIC1 : PIC2, EOI_NONSPECIFIC);
+		DsOS::Ports::outb(irq < PIC_CUTOFF? PIC1 : PIC2, EOI_NONSPECIFIC);
 	}
 
 	void sendSpecificEOI(uint8_t irq) {
 		if (PIC_CUTOFF <= irq)
 			DsOS::Ports::outb(PIC1, EOI_SPECIFIC | 2);
-		DsOS::Ports::outb(PIC_CUTOFF <= irq? PIC1 : PIC2, EOI_SPECIFIC | (irq % PIC_CUTOFF));
+		DsOS::Ports::outb(irq < PIC_CUTOFF? PIC1 : PIC2, EOI_SPECIFIC | (irq % PIC_CUTOFF));
 	}
 
 	void sendEOI(uint8_t irq) {

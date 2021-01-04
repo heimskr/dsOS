@@ -40,12 +40,12 @@ namespace x86_64::IDT {
 	}
 }
 
-INTERRUPT void div0(interrupt_frame *) {
+void div0() {
 	printf("Division by zero!\n");
 	for (;;);
 }
 
-INTERRUPT void double_fault(interrupt_frame *) {
+void double_fault() {
 	printf("Double fault :(\n");
 	for (;;);
 }
@@ -53,12 +53,12 @@ INTERRUPT void double_fault(interrupt_frame *) {
 
 extern uint64_t gpf_addr;
 
-INTERRUPT void general_protection_fault(interrupt_frame *) {
+void general_protection_fault() {
 	printf("General protection fault caused by 0x%lx\n", gpf_addr);
 	for (;;);
 }
 
-INTERRUPT void page_interrupt(interrupt_frame *) {
+void page_interrupt() {
 	uint64_t address = x86_64::getCR2();
 	constexpr int page_size = 4096;
 	printf("Page fault: 0x%lx\n", address);
@@ -97,11 +97,11 @@ INTERRUPT void page_interrupt(interrupt_frame *) {
 	memset((void *) (address & ~0xfff), 0, page_size);
 }
 
-INTERRUPT void spurious_interrupt(interrupt_frame *) {
+void spurious_interrupt() {
 	printf("Spurious interrupt\n");
 }
 
-INTERRUPT void irq1(interrupt_frame *) {
+void irq1() {
 	DsOS::PS2Keyboard::onIRQ1();
 }
 
