@@ -10,6 +10,7 @@
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
+#include "lib/string"
 
 extern void *multiboot_data;
 extern unsigned int multiboot_magic;
@@ -69,6 +70,8 @@ namespace DsOS {
 		pager.assignSelf();
 		pager.clear();
 
+		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
+
 		x86_64::APIC::init(*this);
 
 		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
@@ -83,7 +86,7 @@ namespace DsOS {
 		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta4K) = %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta4K));
 		printf("pageCount = %d, bitmapSize = %ld\n", pager.pageCount(), pager.bitmapSize());
 
-		// kernelPML4.print(false);
+		kernelPML4.print(false);
 		// printf(" ------------------------------------------------------------------------------\n");
 
 		// for (uint64_t i = 0;; ++i)
@@ -111,6 +114,9 @@ namespace DsOS {
 
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
+
+		std::string foo = "hello\n";
+
 		// timer_max = 10;
 		// timer_addr = +[]() { printf("Timer done!\n"); };
 
@@ -175,11 +181,6 @@ namespace DsOS {
 				}
 #endif
 			}
-		}
-
-		if (memoryLow != 0 && memoryHigh != 0) {
-			printf("Resetting memory bounds: %ld, %llu.\n", memoryLow, memoryHigh);
-			memory.setBounds((char *) memoryLow, (char *) memoryHigh);
 		}
 	}
 

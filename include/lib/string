@@ -1,0 +1,90 @@
+#pragma once
+
+#include "lib/string.h"
+#include "memory/memset.h"
+
+namespace std {
+	template <typename value_type>
+	class basic_string {
+		private:
+			static constexpr size_t min_size = 8;
+			value_type *_str;
+			/** Doesn't include a terminating null character. */
+			size_t _size; 
+			/** Doesn't include a terminating null character. */
+			size_t _capacity;
+
+		public:
+			basic_string() {
+				_size = 0;
+				_capacity = min_size;
+				_str = new value_type[_capacity + 1];
+			}
+
+			basic_string(const char *src) {
+				_str = new value_type[strlen(src) + 1];
+				strcpy(_str, src);
+			}
+
+			const value_type * c_str() const {
+				return _str;
+			}
+
+			size_t size() const {
+				return _size;
+			}
+
+			size_t length() const {
+				return _size;
+			}
+
+			size_t max_size() const {
+				return -1; // Not quite true...
+			}
+
+			size_t capacity() const {
+				return _capacity;
+			}
+
+			void resize(size_t n, char c = '\0') {
+				value_type *new_str = new value_type[n + 1];
+				strncpy(new_str, _str, n + 1);
+				delete[] _str;
+				_str = new_str;
+				if (_capacity < n)
+					memset(new_str + _capacity, c, n - _capacity);
+				_capacity = n;
+			}
+
+			void reserve(size_t n = 0) {
+				if (_capacity < n)
+					resize(n, '\0');
+			}
+
+			void clear() {
+				delete[] _str;
+				_capacity = min_size;
+				_str = new value_type[_capacity + 1];
+				_size = 0;
+			}
+
+			bool empty() const {
+				return _size == 0;
+			}
+
+			void shrink_to_fit() {
+				if (_size < _capacity + 1)
+					resize(_size, '\0');
+			}
+
+			value_type & operator[](size_t pos) {
+				return _str[pos];
+			}
+
+			const value_type & operator[](size_t pos) const {
+				return _str[pos];
+			}
+	};
+
+	using string = basic_string<char>;
+}
