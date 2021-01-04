@@ -82,8 +82,6 @@ void page_interrupt() {
 		for (;;);
 	}
 
-	printf("About to assign.\n");
-
 	if (!meta.assign(pml4i, pdpi, pdi, pti)) {
 		printf("Couldn't assign a page!\n");
 		for (;;);
@@ -92,7 +90,6 @@ void page_interrupt() {
 	printf("Assigned a page!\n");
 
 	// kernel->kernelPML4.print(false);
-	// printf("===========================\n\n");
 
 	memset((void *) (address & ~0xfff), 0, page_size);
 }

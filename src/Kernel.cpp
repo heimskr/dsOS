@@ -118,8 +118,15 @@ namespace DsOS {
 		std::string foo = "hello";
 		foo.append(" friend");
 		foo.insert(5, " there");
+		foo.replace(1, 4, "i");
 		for (auto iter = foo.begin(), end = foo.end(); iter != end; ++iter)
 			printf("[%c] %d\n", *iter, *iter);
+		printf("[%s]\n", foo.c_str());
+		foo.replace(1, 1, "ello");
+		printf("[%s]\n", foo.c_str());
+		foo.replace(1, 1, "a");
+		printf("[%s]\n", foo.c_str());
+		foo.replace(6, 6, "");
 		printf("[%s]\n", foo.c_str());
 
 		// timer_max = 10;

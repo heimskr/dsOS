@@ -13,7 +13,7 @@ namespace std {
 	template <typename value_type>
 	class basic_string {
 		private:
-			static constexpr size_t min_size = 8;
+			static constexpr size_t min_size = 24;
 			value_type *_str;
 			/** Doesn't include a terminating null character. */
 			size_t _size; 
@@ -26,6 +26,72 @@ namespace std {
 			using pointer = value_type *;
 			using const_pointer = const value_type *;
 			using difference_type = ptrdiff_t;
+
+			class const_iterator {
+				friend class basic_string<value_type>;
+
+				protected:
+					basic_string *parent;
+					size_t pos;
+					constexpr const_iterator(basic_string<value_type> &parent_): const_iterator(parent_, 0) {}
+					constexpr const_iterator(basic_string<value_type> &parent_, size_t pos_): parent(&parent_), pos(pos_) {}
+
+				public:
+					constexpr const_iterator operator++(int) const {
+						return iterator(*parent, pos + 1);
+					}
+
+					constexpr const_iterator & operator++() {
+						++pos;
+						return *this;
+					}
+
+					constexpr const_iterator operator--(int) const {
+						return const_iterator(*parent, pos - 1);
+					}
+
+					constexpr const_iterator & operator--() {
+						--pos;
+						return *this;
+					}
+
+					constexpr const_iterator & operator+=(difference_type offset) {
+						pos += offset;
+						return *this;
+					}
+
+					constexpr const_iterator & operator-=(difference_type offset) {
+						pos -= offset;
+						return *this;
+					}
+
+					constexpr const value_type & operator*() const {
+						return (*parent)[pos];
+					}
+
+					constexpr const value_type * operator->() const {
+						return &(*parent)[pos];
+					}
+
+					constexpr const_iterator operator+(difference_type offset) const {
+						return const_iterator(*parent, pos + offset);
+					}
+
+					constexpr difference_type operator-(const_iterator other) const {
+						return pos - other.pos;
+					}
+
+					constexpr const value_type & operator[](difference_type offset) const {
+						return (*parent)[pos + offset];
+					}
+
+					constexpr bool operator==(const_iterator other) const { return parent == other.parent && pos == other.pos; }
+					constexpr bool operator!=(const_iterator other) const { return parent != other.parent || pos != other.pos; }
+					constexpr bool operator< (const_iterator other) const { return parent == other.parent && pos <  other.pos; }
+					constexpr bool operator> (const_iterator other) const { return parent == other.parent && pos >  other.pos; }
+					constexpr bool operator<=(const_iterator other) const { return parent == other.parent && pos <= other.pos; }
+					constexpr bool operator>=(const_iterator other) const { return parent == other.parent && pos >= other.pos; }
+			};
 
 			class iterator {
 				friend class basic_string<value_type>;
@@ -103,59 +169,64 @@ namespace std {
 					constexpr bool operator> (iterator other) const { return parent == other.parent && pos >  other.pos; }
 					constexpr bool operator<=(iterator other) const { return parent == other.parent && pos <= other.pos; }
 					constexpr bool operator>=(iterator other) const { return parent == other.parent && pos >= other.pos; }
+
+					constexpr operator const_iterator() const {
+						return const_iterator(*parent, pos);
+					}
 			};
 
-			class const_iterator {
+			class const_reverse_iterator {
 				friend class basic_string<value_type>;
 
 				protected:
 					basic_string *parent;
 					size_t pos;
-					constexpr const_iterator(basic_string<value_type> &parent_): const_iterator(parent_, 0) {}
-					constexpr const_iterator(basic_string<value_type> &parent_, size_t pos_): parent(&parent_), pos(pos_) {}
+					constexpr const_reverse_iterator(basic_string<value_type> &parent_): const_reverse_iterator(parent_, 0) {}
+					constexpr const_reverse_iterator(basic_string<value_type> &parent_, size_t pos_): parent(&parent_), pos(pos_) {}
 
 				public:
-					constexpr const_iterator operator++(int) const {
-						return iterator(*parent, pos + 1);
+					constexpr const_reverse_iterator operator++(int) const {
+						return const_reverse_iterator(*parent, pos + 1);
 					}
 
-					constexpr const_iterator & operator++() {
+					constexpr const_reverse_iterator & operator++() {
 						++pos;
 						return *this;
 					}
 
-					constexpr const_iterator operator--(int) const {
-						return const_iterator(*parent, pos - 1);
+					constexpr const_reverse_iterator operator--(int) const {
+						return const_reverse_iterator(*parent, pos - 1);
 					}
 
-					constexpr const_iterator & operator--() {
+					constexpr const_reverse_iterator & operator--() {
 						--pos;
 						return *this;
 					}
 
-					constexpr const_iterator & operator+=(difference_type offset) {
+					constexpr const_reverse_iterator & operator+=(difference_type offset) {
 						pos += offset;
 						return *this;
 					}
 
-					constexpr const_iterator & operator-=(difference_type offset) {
+					constexpr const_reverse_iterator & operator-=(difference_type offset) {
 						pos -= offset;
 						return *this;
 					}
 
 					constexpr const value_type & operator*() const {
-						return (*parent)[pos];
+						return (*parent)[parent->_size - 1 - pos];
 					}
 
 					constexpr const value_type * operator->() const {
-						return &(*parent)[pos];
+						return &(*parent)[parent->_size - 1 - pos];
 					}
 
-					constexpr const_iterator operator+(difference_type offset) const {
-						return const_iterator(*parent, pos + offset);
+					constexpr const_reverse_iterator operator+(difference_type offset) const {
+						return const_reverse_iterator(*parent, pos + offset);
 					}
 
-					constexpr difference_type operator-(const_iterator other) const {
+					constexpr difference_type operator-(const_reverse_iterator other) const {
+						// TODO: verify
 						return pos - other.pos;
 					}
 
@@ -163,12 +234,13 @@ namespace std {
 						return (*parent)[pos + offset];
 					}
 
-					constexpr bool operator==(const_iterator other) const { return parent == other.parent && pos == other.pos; }
-					constexpr bool operator!=(const_iterator other) const { return parent != other.parent || pos != other.pos; }
-					constexpr bool operator< (const_iterator other) const { return parent == other.parent && pos <  other.pos; }
-					constexpr bool operator> (const_iterator other) const { return parent == other.parent && pos >  other.pos; }
-					constexpr bool operator<=(const_iterator other) const { return parent == other.parent && pos <= other.pos; }
-					constexpr bool operator>=(const_iterator other) const { return parent == other.parent && pos >= other.pos; }
+					// TODO: verify these
+					constexpr bool operator==(const_reverse_iterator other) const { return parent == other.parent && pos == other.pos; }
+					constexpr bool operator!=(const_reverse_iterator other) const { return parent != other.parent || pos != other.pos; }
+					constexpr bool operator< (const_reverse_iterator other) const { return parent == other.parent && pos <  other.pos; }
+					constexpr bool operator> (const_reverse_iterator other) const { return parent == other.parent && pos >  other.pos; }
+					constexpr bool operator<=(const_reverse_iterator other) const { return parent == other.parent && pos <= other.pos; }
+					constexpr bool operator>=(const_reverse_iterator other) const { return parent == other.parent && pos >= other.pos; }
 			};
 
 			class reverse_iterator {
@@ -242,6 +314,10 @@ namespace std {
 						return (*parent)[pos + offset];
 					}
 
+					constexpr operator const_reverse_iterator() const {
+						return const_reverse_iterator(*parent, pos);
+					}
+
 					// TODO: verify these
 					constexpr bool operator==(reverse_iterator other) const { return parent == other.parent && pos == other.pos; }
 					constexpr bool operator!=(reverse_iterator other) const { return parent != other.parent || pos != other.pos; }
@@ -249,74 +325,6 @@ namespace std {
 					constexpr bool operator> (reverse_iterator other) const { return parent == other.parent && pos >  other.pos; }
 					constexpr bool operator<=(reverse_iterator other) const { return parent == other.parent && pos <= other.pos; }
 					constexpr bool operator>=(reverse_iterator other) const { return parent == other.parent && pos >= other.pos; }
-			};
-
-			class const_reverse_iterator {
-				friend class basic_string<value_type>;
-
-				protected:
-					basic_string *parent;
-					size_t pos;
-					constexpr const_reverse_iterator(basic_string<value_type> &parent_): const_reverse_iterator(parent_, 0) {}
-					constexpr const_reverse_iterator(basic_string<value_type> &parent_, size_t pos_): parent(&parent_), pos(pos_) {}
-
-				public:
-					constexpr const_reverse_iterator operator++(int) const {
-						return const_reverse_iterator(*parent, pos + 1);
-					}
-
-					constexpr const_reverse_iterator & operator++() {
-						++pos;
-						return *this;
-					}
-
-					constexpr const_reverse_iterator operator--(int) const {
-						return const_reverse_iterator(*parent, pos - 1);
-					}
-
-					constexpr const_reverse_iterator & operator--() {
-						--pos;
-						return *this;
-					}
-
-					constexpr const_reverse_iterator & operator+=(difference_type offset) {
-						pos += offset;
-						return *this;
-					}
-
-					constexpr const_reverse_iterator & operator-=(difference_type offset) {
-						pos -= offset;
-						return *this;
-					}
-
-					constexpr const value_type & operator*() const {
-						return (*parent)[parent->_size - 1 - pos];
-					}
-
-					constexpr const value_type * operator->() const {
-						return &(*parent)[parent->_size - 1 - pos];
-					}
-
-					constexpr const_reverse_iterator operator+(difference_type offset) const {
-						return const_reverse_iterator(*parent, pos + offset);
-					}
-
-					constexpr difference_type operator-(const_reverse_iterator other) const {
-						// TODO: verify
-						return pos - other.pos;
-					}
-
-					constexpr const value_type & operator[](difference_type offset) const {
-						return (*parent)[pos + offset];
-					}
-
-					// TODO: verify these
-					constexpr bool operator==(const_reverse_iterator other) const { return parent == other.parent && pos == other.pos; }
-					constexpr bool operator!=(const_reverse_iterator other) const { return parent != other.parent || pos != other.pos; }
-					constexpr bool operator< (const_reverse_iterator other) const { return parent == other.parent && pos <  other.pos; }
-					constexpr bool operator> (const_reverse_iterator other) const { return parent == other.parent && pos >  other.pos; }
-					constexpr bool operator<=(const_reverse_iterator other) const { return parent == other.parent && pos <= other.pos; }
-					constexpr bool operator>=(const_reverse_iterator other) const { return parent == other.parent && pos >= other.pos; }
 			};
 
 			static constexpr size_t npos = -1;
@@ -615,6 +623,26 @@ namespace std {
 			iterator erase(iterator first, iterator last) {
 				erase(first.pos, last - first);
 				return first;
+			}
+
+			basic_string<value_type> & replace(size_t pos, size_t len, const basic_string<value_type> &other) {
+				reserve(_size + other._size - len);
+				if (other._size < len) {
+					for (size_t i = pos; i <= _size - len; ++i)
+						_str[i] = _str[i + len - other._size];
+				} else {
+					for (size_t i = _size - len - 1;; --i) {
+						_str[pos + other._size + i - 1] = _str[pos + i];
+						if (i == 0)
+							break;
+					}
+				}
+				for (size_t i = 0; i < other._size; ++i)
+					_str[pos + i] = other._str[i];
+				_size += other._size;
+				_size -= len;
+				_str[_size] = '\0';
+				return *this;
 			}
 	};
 
