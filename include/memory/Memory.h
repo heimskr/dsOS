@@ -45,9 +45,9 @@ namespace DsOS {
 	};
 }
 
-void * malloc(size_t);
-void * calloc(size_t, size_t);
-void free(void *);
+extern "C" void * malloc(size_t);
+extern "C" void * calloc(size_t, size_t);
+extern "C" void free(void *);
 
 extern DsOS::Memory *global_memory;
 

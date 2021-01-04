@@ -142,14 +142,19 @@ namespace DsOS {
 	}
 }
 
-void * malloc(size_t size) {
+extern "C" void * malloc(size_t size) {
 	if (global_memory == nullptr)
 		return nullptr;
 	return global_memory->allocate(size);
 }
 
-void * calloc(size_t count, size_t size) {
+extern "C" void * calloc(size_t count, size_t size) {
 	void *chunk = malloc(count * size);
 	memset(chunk, 0, count * size);
 	return chunk;
+}
+
+extern "C" void free(void *ptr) {
+	if (global_memory)
+		global_memory->free(ptr);
 }

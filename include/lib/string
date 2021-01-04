@@ -1,6 +1,8 @@
 #pragma once
 
+#include "lib/printf.h"
 #include "lib/string.h"
+#include "memory/Memory.h"
 #include "memory/memset.h"
 #include "iterator"
 
@@ -505,8 +507,12 @@ namespace std {
 
 			basic_string<value_type> & insert(size_t pos, const basic_string<value_type> &other) {
 				reserve(_size + other._size);
-				for (size_t i = 0; i < _size - pos; ++i)
+				// for (size_t i = 0; i < _size - pos; ++i)
+				for (size_t i = _size - pos - 1;; --i) {
 					_str[pos + other._size + i] = _str[pos + i];
+					if (i == 0)
+						break;
+				}
 				for (size_t i = 0; i < other._size; ++i)
 					_str[pos + i] = other._str[i];
 				_size += other._size;
@@ -515,8 +521,11 @@ namespace std {
 
 			basic_string<value_type> & insert(size_t pos, const basic_string<value_type> &other, size_t subpos, size_t sublen) {
 				reserve(_size + sublen);
-				for (size_t i = 0; i < _size - pos; ++i)
+				for (size_t i = _size - pos - 1;; --i) {
 					_str[pos + sublen + i] = _str[pos + i];
+					if (i == 0)
+						break;
+				}
 				for (size_t i = 0; i < sublen; ++i)
 					_str[pos + i] = other._str[subpos + i];
 				_size += sublen;
@@ -526,8 +535,11 @@ namespace std {
 			basic_string<value_type> & insert(size_t pos, const value_type *other) {
 				const size_t other_size = strlen(other);
 				reserve(_size + other_size);
-				for (size_t i = 0; i < _size - pos; ++i)
+				for (size_t i = _size - pos - 1;; --i) {
 					_str[pos + other_size + i] = _str[pos + i];
+					if (i == 0)
+						break;
+				}
 				for (size_t i = 0; i < other_size; ++i)
 					_str[pos + i] = other[i];
 				_size += other_size;
@@ -536,8 +548,11 @@ namespace std {
 
 			basic_string<value_type> & insert(size_t pos, const value_type *other, size_t n) {
 				reserve(_size + n);
-				for (size_t i = 0; i < _size - pos; ++i)
+				for (size_t i = _size - pos - 1;; --i) {
 					_str[pos + n + i] = _str[pos + i];
+					if (i == 0)
+						break;
+				}
 				for (size_t i = 0; i < n; ++i)
 					_str[pos + i] = other[i];
 				_size += n;
@@ -546,8 +561,11 @@ namespace std {
 
 			basic_string<value_type> & insert(size_t pos, size_t n, value_type ch) {
 				reserve(_size + n);
-				for (size_t i = 0; i < _size - pos; ++i)
+				for (size_t i = _size - pos - 1;; --i) {
 					_str[pos + n + i] = _str[pos + i];
+					if (i == 0)
+						break;
+				}
 				for (size_t i = 0; i < n; ++i)
 					_str[pos + i] = ch;
 				return *this;
@@ -568,8 +586,11 @@ namespace std {
 				for (InputIterator iter = first; iter != last; ++iter)
 					++to_add;
 				reserve(_size + to_add);
-				for (size_t i = 0; i < to_add; ++i)
+				for (size_t i = to_add - 1;; --i) {
 					_str[p.pos + to_add + i] = _str[p.pos + i];
+					if (i == 0)
+						break;
+				}
 				for (InputIterator iter = first; iter != last; ++iter)
 					_str[(p++).pos] = *iter;
 				_size += to_add;
