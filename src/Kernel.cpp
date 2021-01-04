@@ -128,6 +128,13 @@ namespace DsOS {
 		printf("[%s]\n", foo.c_str());
 		foo.replace(6, 6, "");
 		printf("[%s]\n", foo.c_str());
+		foo.insert(5, " there");
+		printf("[%s]\n", foo.c_str());
+		foo.replace(1, 4, "abcdefghijkl", 8, 2);
+		printf("[%s]\n", foo.c_str());
+		foo.replace(1, 2, "hello there", 1, 4);
+		printf("[%s]\n", foo.c_str());
+
 
 		// timer_max = 10;
 		// timer_addr = +[]() { printf("Timer done!\n"); };
