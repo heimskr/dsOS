@@ -2,6 +2,7 @@
 
 #include "lib/printf.h"
 #include "lib/string.h"
+#include "lib/swap.h"
 #include "memory/Memory.h"
 #include "memory/memset.h"
 #include "iterator"
@@ -777,6 +778,12 @@ namespace std {
 				_size -= len;
 				_str[_size] = '\0';
 				return *this;
+			}
+
+			void swap(basic_string<value_type> &other) {
+				swap(_str, other._str);
+				swap(_size, other._size);
+				swap(_capacity, other._capacity);
 			}
 	};
 
