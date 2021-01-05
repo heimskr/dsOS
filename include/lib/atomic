@@ -1,0 +1,16 @@
+#pragma once
+
+// All fake for now.
+
+namespace std {
+	enum class atomic_order {relaxed = 0, consume = 1, acquire = 2, release = 3, acq_rel = 4, seq = 5};
+
+	template <typename T>
+	bool __atomic_compare_exchange_n(T *ptr, T *expected, const T &desired, bool /* weak */, atomic_order /* success_memorder */, atomic_order /* failure_memorder */) {
+		if (*ptr == *expected) {
+			*ptr = desired;
+			return true;
+		}
+		return false;
+	}
+}

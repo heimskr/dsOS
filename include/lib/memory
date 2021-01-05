@@ -1,7 +1,14 @@
 #pragma once
 
+// Based on code from the LLVM project (https://llvm.org).
+
 #include "cstddef"
+#include "type_traits"
+#include "utility"
 #include "memory/Memory.h"
+
+
+#define _INLINE inline __attribute__((__always_inline__))
 
 namespace std {
 	template <typename T>
@@ -49,4 +56,198 @@ namespace std {
 			return global_memory->getUnallocated() / (sizeof(T) + sizeof(DsOS::Memory::BlockMeta));
 		}
 	};
+
+	struct default_init_tag {};
+	struct value_init_tag {};
+
+	template <typename T, int I, bool CanBeEmptyBase = is_empty_v<T> && !is_final_v<T>>
+	struct compressed_pair_elem {
+		typedef T & reference;
+		typedef const T & const_reference;
+
+		constexpr compressed_pair_elem(default_init_tag) {}
+		constexpr compressed_pair_elem(value_init_tag): value() {}
+
+		template <typename U, typename = typename enable_if<!is_same<compressed_pair_elem, typename decay<U>::type>::value>::type>
+		constexpr explicit compressed_pair_elem(U &u): value(forward<U>(u)) {}
+
+		reference get() noexcept {
+			return value;
+		}
+
+		const_reference get() const noexcept {
+			return value;
+		}
+
+		private:
+			T value;
+	};
+
+	template <typename T, int I>
+	struct compressed_pair_elem<T, I, true>: private T {
+		typedef T _ParamT;
+		typedef T & reference;
+		typedef const T & const_reference;
+		typedef T value_type;
+
+		_INLINE constexpr compressed_pair_elem() = default;
+		_INLINE constexpr compressed_pair_elem(default_init_tag) {}
+		_INLINE constexpr compressed_pair_elem(value_init_tag): value_type() {}
+
+		template <typename U, typename = typename enable_if<!is_same<compressed_pair_elem, typename decay<U>::type>::value>::type>
+		_INLINE constexpr explicit compressed_pair_elem(U &&u): value_type(forward<U>(u)) {}
+
+		template <typename... Args, size_t... Indices>
+		_INLINE constexpr compressed_pair_elem(piecewise_construct_t, tuple<Args...> args, __tuple_indices<Indices...>):
+			value_type(forward<Args>(get<Indices>(args))...) {}
+	};
+
+	// template <typename T, typename U>
+	// class compressed_pair
+
+	template <typename T>
+	class weak_ptr;
+
+	class shared_count {
+		protected:
+			long shared_owners;
+			virtual ~shared_count();
+
+		private:
+			virtual void on_zero_shared() noexcept = 0;
+			shared_count(const shared_count &);
+			shared_count & operator=(const shared_count &);
+
+		public:
+			explicit shared_count(long shared_owners_ = 0) noexcept: shared_owners(shared_owners_) {}
+
+			void add_shared() noexcept {
+				++shared_owners; // TODO: atomic
+			}
+
+			bool release_shared() noexcept {
+				if (--shared_owners == -1) { // TODO: atomic
+					on_zero_shared();
+					return true;
+				}
+				return false;
+			}
+
+			long use_count() const noexcept {
+				return shared_owners + 1; // TODO: relaxed load
+			}
+	};
+
+	class shared_weak_count: private shared_count {
+		private:
+			long weak_owners;
+
+		protected:
+			virtual ~shared_weak_count();
+
+		public:
+			explicit shared_weak_count(long owners_ = 0) noexcept:
+				shared_count(owners_), weak_owners(owners_) {}
+
+			void add_shared() noexcept {
+				shared_count::add_shared();
+			}
+
+			void add_weak() noexcept {
+				++weak_owners; // TODO: atomic
+			}
+
+			void release_shared() noexcept {
+				if (shared_count::release_shared())
+					release_weak();
+			}
+
+			void release_weak() noexcept;
+
+			long use_count() const noexcept {
+				return shared_count::use_count();
+			}
+
+			shared_weak_count * lock() noexcept;
+
+		private:
+			virtual void on_zero_shared_weak() noexcept = 0;
+	};
+
+	template <typename T, typename D, typename Alloc>
+	class shared_ptr_pointer: public shared_weak_count {
+
+	};
+
+	template <typename T>
+	class shared_ptr {
+		public:
+			using element_type = T *;
+
+		private:
+			element_type ptr = nullptr;
+			size_t *refs;
+
+		public:
+			constexpr shared_ptr() noexcept {
+				refs = new size_t(1);
+			}
+			constexpr shared_ptr(nullptr_t) noexcept {
+				refs = new size_t(1);
+			}
+			template <typename U>
+			explicit shared_ptr(U *p) {
+				ptr = static_cast<element_type>(p);
+				refs = new size_t(1);
+			}
+			shared_ptr(const shared_ptr &x) noexcept {
+				ptr = x.ptr;
+				refs = x.refs;
+				++*refs;
+			}
+
+			template <typename U>
+			shared_ptr(const shared_ptr<U> &other) noexcept {
+				ptr = static_cast<element_type>(other.ptr);
+				refs = other.refs;
+				++*refs;
+			}
+
+			template <typename U>
+			explicit shared_ptr(const weak_ptr<U> &other) {
+				ptr = static_cast<element_type>(other.ptr);
+				refs = other.refs;
+				++*refs;
+			}
+
+			shared_ptr(shared_ptr &&other) noexcept {
+				ptr = other.ptr;
+				other.ptr = nullptr;
+				refs = other.refs;
+				other.refs = new size_t(1);
+			}
+
+			template <typename U>
+			shared_ptr(shared_ptr<U> &&other) noexcept {
+				ptr = static_cast<element_type>(other.ptr);
+				other.ptr = nullptr;
+				refs = other.refs;
+				other.refs = new size_t(1);
+			}
+
+			template <class U>
+			shared_ptr(const shared_ptr<U> &other, element_type *p) noexcept {
+
+			}
+
+			~shared_ptr() {
+				if (--*refs == 0) {
+					if (ptr)
+						delete ptr;
+					delete refs;
+				}
+			}
+	};
 }
+
+#undef _INLINE

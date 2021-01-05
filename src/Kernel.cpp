@@ -142,6 +142,8 @@ namespace DsOS {
 		foo.replace(0, 10, 3, 'h');
 		printf("[%s]\n", foo.c_str());
 
+		std::shared_ptr<int> p;
+
 
 		// timer_max = 10;
 		// timer_addr = +[]() { printf("Timer done!\n"); };

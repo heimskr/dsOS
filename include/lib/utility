@@ -1,0 +1,526 @@
+#pragma once
+
+// Based on code from the LLVM project (https://llvm.org).
+
+#include "type_traits"
+
+#define _INLINE inline __attribute__((__always_inline__))
+
+namespace std {
+	struct piecewise_construct_t {
+		explicit piecewise_construct_t() = default;
+	};
+
+	constexpr piecewise_construct_t piecewise_construct = piecewise_construct_t();
+
+	template <typename, typename>
+	struct __non_trivially_copyable_base {
+		constexpr __non_trivially_copyable_base() noexcept {}
+		constexpr __non_trivially_copyable_base(__non_trivially_copyable_base const &) noexcept {}
+	};
+
+	struct __check_tuple_constructor_fail {
+		static constexpr bool __enable_explicit_default() { return false; }
+		static constexpr bool __enable_implicit_default() { return false; }
+		template <typename...>
+		static constexpr bool __enable_explicit() { return false; }
+		template <typename...>
+		static constexpr bool __enable_implicit() { return false; }
+		template <typename...>
+		static constexpr bool __enable_assign() { return false; }
+	};
+
+	template <typename T>
+	struct tuple_size;
+
+	template <typename T, typename...>
+	using __enable_if_tuple_size_imp = T;
+	
+	template <typename T>
+	struct tuple_size<__enable_if_tuple_size_imp<const T, typename enable_if<!is_volatile_v<T>>::type, integral_constant<size_t, sizeof(tuple_size<T>)>>>:
+		public integral_constant<size_t, tuple_size<T>::value> {};
+
+	template <typename T>
+	struct tuple_size<__enable_if_tuple_size_imp<volatile T, typename enable_if<!is_const<T>::value>::type, integral_constant<size_t, sizeof(tuple_size<T>)>>>:
+		public integral_constant<size_t, tuple_size<T>::value> {};
+
+	template <typename T>
+	struct tuple_size<__enable_if_tuple_size_imp<const volatile T, integral_constant<size_t, sizeof(tuple_size<T>)>>>:
+		public integral_constant<size_t, tuple_size<T>::value> {};
+
+	template <size_t I, typename T>
+	struct tuple_element;
+
+	template <size_t I, typename T>
+	struct tuple_element<I, const T> {
+		typedef typename add_const<typename tuple_element<I, T>::type>::type type;
+	};
+
+	template <size_t I, typename T>
+	struct tuple_element<I, volatile T> {
+		typedef typename add_volatile<typename tuple_element<I, T>::type>::type type;
+	};
+
+	template <size_t I, typename T>
+	struct tuple_element<I, const volatile T> {
+		typedef typename add_cv<typename tuple_element<I, T>::type>::type type;
+	};
+
+	template <typename T>
+	struct __tuple_like: false_type {};
+	template <typename T>
+	struct __tuple_like<const T>: public __tuple_like<T> {};
+	template <typename T>
+	struct __tuple_like<volatile T>: public __tuple_like<T> {};
+	template <typename T>
+	struct __tuple_like<const volatile T>: public __tuple_like<T> {};
+
+	template <size_t...>
+	struct __tuple_indices {};
+
+	template <typename IndexType, IndexType... Values>
+	struct __integer_sequence {
+		template <template <typename OIndexType, OIndexType...> typename ToIndexSeq, typename ToIndexType>
+		using __convert = ToIndexSeq<ToIndexType, Values...>;
+
+		template <size_t Sp>
+		using __to_tuple_indices = __tuple_indices<(Values + Sp)...>;
+	};
+
+#if !__has_builtin(__make_integer_seq)
+	namespace __detail {
+		template <typename T, size_t... Extra>
+		struct __repeat;
+		template <typename T, T... N, size_t... Extra>
+		struct __repeat<__integer_sequence<T, N...>, Extra...> {
+			typedef __integer_sequence<T, N...,
+				sizeof...(N) + N...,
+				2 * sizeof...(N) + N...,
+				3 * sizeof...(N) + N...,
+				4 * sizeof...(N) + N...,
+				5 * sizeof...(N) + N...,
+				6 * sizeof...(N) + N...,
+				7 * sizeof...(N) + N...,
+				Extra...> type;
+		};
+
+		template <size_t N>
+		struct __parity;
+
+		template <size_t N>
+		struct __make: __parity<N % 8>::template __pmake<N> {};
+
+		template <> struct __make<0> { typedef __integer_sequence<size_t> type; };
+		template <> struct __make<1> { typedef __integer_sequence<size_t, 0> type; };
+		template <> struct __make<2> { typedef __integer_sequence<size_t, 0, 1> type; };
+		template <> struct __make<3> { typedef __integer_sequence<size_t, 0, 1, 2> type; };
+		template <> struct __make<4> { typedef __integer_sequence<size_t, 0, 1, 2, 3> type; };
+		template <> struct __make<5> { typedef __integer_sequence<size_t, 0, 1, 2, 3, 4> type; };
+		template <> struct __make<6> { typedef __integer_sequence<size_t, 0, 1, 2, 3, 4, 5> type; };
+		template <> struct __make<7> { typedef __integer_sequence<size_t, 0, 1, 2, 3, 4, 5, 6> type; };
+
+		template <> struct __parity<0> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type> {}; };
+		template <> struct __parity<1> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type, N - 1> {}; };
+		template <> struct __parity<2> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type, N - 2, N - 1> {}; };
+		template <> struct __parity<3> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type, N - 3, N - 2, N - 1> {}; };
+		template <> struct __parity<4> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type, N - 4, N - 3, N - 2, N - 1> {}; };
+		template <> struct __parity<5> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type, N - 5, N - 4, N - 3, N - 2, N - 1> {}; };
+		template <> struct __parity<6> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type, N - 6, N - 5, N - 4, N - 3, N - 2, N - 1> {}; };
+		template <> struct __parity<7> { template<size_t N> struct __pmake: __repeat<typename __make<N / 8>::type, N - 7, N - 6, N - 5, N - 4, N - 3, N - 2, N - 1> {}; };
+	}
+#endif
+
+#if __has_builtin(__make_integer_seq)
+	template <size_t E, size_t S>
+	using __make_indices_imp = typename __make_integer_seq<__integer_sequence, size_t, E - S>::template __to_tuple_indices<S>;
+#else
+	template <size_t E, size_t S>
+	using __make_indices_imp = typename __detail::__make<E - S>::type::template __to_tuple_indices<S>;
+#endif
+
+	template <size_t E, size_t S = 0>
+	struct __make_tuple_indices {
+		static_assert(S <= E, "__make_tuple_indices input error");
+		typedef __make_indices_imp<E, S> type;
+	};
+
+	template <typename... T>
+	class tuple;
+
+	template <typename... T>
+	struct __tuple_like<tuple<T...>>: true_type {};
+
+	template <typename... T>
+	struct tuple_size<tuple<T...>>: public integral_constant<size_t, sizeof...(T)> {};
+
+	template <size_t I, typename... T>
+	_INLINE constexpr typename tuple_element<I, tuple<T...>>::type & get(tuple<T...> &) noexcept;
+	
+	template <size_t I, typename... T>
+	_INLINE constexpr const typename tuple_element<I, tuple<T...>>::type & get(const tuple<T...> &) noexcept;
+
+	template <typename T, typename U>
+	struct __tuple_like<pair<T, U>>: true_type {};
+
+	template <size_t I, typename T, typename U>
+	_INLINE constexpr typename tuple_element<I, pair<T, U>>::type & get(pair<T, U> &) noexcept;
+
+	template <size_t I, typename T, typename U>
+	_INLINE constexpr const typename tuple_element<I, pair<T, U>>::type & get(const pair<T, U> &) noexcept;
+
+	template <size_t I, typename T, typename U>
+	_INLINE constexpr typename tuple_element<I, pair<T, U>>::type && get(pair<T, U> &&) noexcept;
+
+	template <size_t I, typename T, typename U>
+	_INLINE constexpr const typename tuple_element<I, pair<T, U>>::type && get(const pair<T, U> &&) noexcept;
+
+	template <typename T, size_t Size>
+	struct array;
+
+	template <typename T, size_t Size>
+	struct __tuple_like<array<T, Size>>: true_type {};
+
+	template <size_t I, typename T, size_t Size>
+	_INLINE constexpr T & get(array<T, Size> &) noexcept;
+
+	template <size_t I, typename T, size_t Size>
+	_INLINE constexpr const T & get(const array<T, Size> &) noexcept;
+
+	template <size_t I, typename T, size_t Size>
+	_INLINE constexpr T && get(array<T, Size> &&) noexcept;
+
+	template <size_t I, typename T, size_t Size>
+	_INLINE constexpr const T && get(const array<T, Size> &&) noexcept;
+
+	template <typename... T>
+	struct __tuple_types {};
+
+#if !__has_builtin(__type_pack_element)
+	namespace __indexer_detail {
+		template <size_t I, typename T>
+		struct __indexed { using type = T; };
+
+		template <typename Types, typename Indices>
+		struct __indexer;
+
+		template <typename... Types, size_t... I>
+		struct __indexer<__tuple_types<Types...>, __tuple_indices<I...>>: __indexed<I, Types>... {};
+
+		template <size_t I, typename T>
+		__indexed<I, T> __at_index(__indexed<I, T> const &);
+	}
+
+	template <size_t I, typename... Types>
+	using __type_pack_element = typename decltype(
+		__indexer_detail::__at_index<I>(
+			__indexer_detail::__indexer<
+				__tuple_types<Types...>,
+				typename __make_tuple_indices<sizeof...(Types)>::type
+			>{})
+	)::type;
+#endif
+
+	template <size_t I, typename... Types>
+	struct tuple_element<I, __tuple_types<Types...>> {
+		static_assert(I < sizeof...(Types), "tuple_element index out of range");
+		typedef __type_pack_element<I, Types...> type;
+	};
+
+	template <typename... T>
+	struct tuple_size<__tuple_types<T...>>: public integral_constant<size_t, sizeof...(T)> {};
+
+	template <typename... T>
+	struct __tuple_like<__tuple_types<T...>>: true_type {};
+
+	template <bool ApplyLV, bool ApplyConst, bool ApplyVolatile>
+	struct __apply_cv_mf;
+
+	template <>
+	struct __apply_cv_mf<false, false, false> {
+		template <typename T>
+		using __apply = T;
+	};
+
+	template <>
+	struct __apply_cv_mf<false, true, false> {
+		template <typename T>
+		using __apply = const T;
+	};
+
+	template <>
+	struct __apply_cv_mf<false, false, true> {
+		template <typename T>
+		using __apply = volatile T;
+	};
+
+	template <>
+	struct __apply_cv_mf<false, true, true> {
+		template <typename T>
+		using __apply = const volatile T;
+	};
+
+	template <>
+	struct __apply_cv_mf<true, false, false> {
+		template <typename T>
+		using __apply = T &;
+	};
+
+	template <>
+	struct __apply_cv_mf<true, true, false> {
+		template <typename T>
+		using __apply = const T &;
+	};
+
+	template <>
+	struct __apply_cv_mf<true, false, true> {
+		template <typename T>
+		using __apply = volatile T &;
+	};
+
+	template <>
+	struct __apply_cv_mf<true, true, true> {
+		template <typename T>
+		using __apply = const volatile T &;
+	};
+
+	template <typename T, typename RawT = typename remove_reference<T>::type>
+	using __apply_cv_t = __apply_cv_mf<is_lvalue_reference<T>::value, is_const<RawT>::value, is_volatile<RawT>::value>;
+
+	template <typename TupleTypes, typename TupleIndices>
+	struct __make_tuple_types_flat;
+
+	template <template <typename...> typename Tuple, typename... Types, size_t... I>
+	struct __make_tuple_types_flat<Tuple<Types...>, __tuple_indices<I...>> {
+		template <typename T, typename ApplyFn = __apply_cv_t<T>>
+		using __apply_quals = __tuple_types<typename ApplyFn::template __apply<__type_pack_element<I, Types...>>...>;
+	};
+
+	template <typename V, size_t N, size_t... I>
+	struct __make_tuple_types_flat<array<V, N>, __tuple_indices<I...>> {
+		template <size_t>
+		using __value_type = V;
+		template <typename T, typename ApplyFn = __apply_cv_t<T>>
+		using __apply_quals = __tuple_types<typename ApplyFn::template __apply<__value_type<I>...>>;
+	};
+
+	template <typename T, size_t E = tuple_size<typename remove_reference<T>::type>::value, size_t S = 0, bool SameSize = (E == tuple_size<typename remove_reference<T>::type>::value)>
+	struct __make_tuple_types {
+		static_assert(S <= E, "__make_tuple_types input error");
+		using RawT = typename remove_cv<typename remove_reference<T>::type>::type;
+		using Maker = __make_tuple_types_flat<RawT, typename __make_tuple_indices<E, S>::type>;
+		using type = typename Maker::template __apply_quals<T>;
+	};
+
+	template <typename... Types, size_t E>
+	struct __make_tuple_types<tuple<Types...>, E, 0, true> {
+		typedef __tuple_types<Types...> type;
+	};
+
+	template <typename... Types, size_t E>
+	struct __make_tuple_types<__tuple_types<Types...>, E, 0, true> {
+		typedef __tuple_types<Types...> type;
+	};
+
+	template <bool... Preds>
+	struct __all_dummy;
+
+	template <bool... Pred>
+	using __all = _IsSame<__all_dummy<Pred...>, __all_dummy<((void) Pred, true)...>>;
+
+	struct __tuple_sfinae_base {
+		template <template <typename, typename...> typename Trait, typename... LArgs, typename... RArgs>
+		static auto __do_test(__tuple_types<LArgs...>, __tuple_types<RArgs...>)
+		  -> __all<typename enable_if<Trait<LArgs, RArgs>::value, bool>::type{true}...>;
+		template <template <typename...> typename>
+		static auto __do_test(...) -> false_type;
+
+		template <typename FromArgs, typename ToArgs>
+		using __constructible = decltype(__do_test<is_constructible>(ToArgs {}, FromArgs {}));
+		template <typename FromArgs, typename ToArgs>
+		using __convertible = decltype(__do_test<is_convertible>(FromArgs {}, ToArgs {}));
+		template <typename FromArgs, typename ToArgs>
+		using __assignable = decltype(__do_test<is_assignable>(ToArgs {}, FromArgs {}));
+	};
+
+	template <typename T, typename U, bool = __tuple_like<typename remove_reference<T>::type>::value, bool = __tuple_like<U>::value>
+	struct __tuple_convertible: public false_type {};
+
+	template <typename T, typename U>
+	struct __tuple_convertible<T, U, true, true>: public __tuple_sfinae_base::__convertible<typename __make_tuple_types<T>::type, typename __make_tuple_types<U>::type> {};
+
+	template <typename T, typename U, bool = __tuple_like<typename remove_reference<T>::type>::value, bool = __tuple_like<U>::value>
+	struct __tuple_constructible: public false_type {};
+
+	template <typename T, typename U>
+	struct __tuple_constructible<T, U, true, true>: public __tuple_sfinae_base::__constructible<typename __make_tuple_types<T>::type, typename __make_tuple_types<U>::type> {};
+
+
+	template <class T, class U, bool = __tuple_like<typename remove_reference<T>::type>::value, bool = __tuple_like<U>::value>
+	struct __tuple_assignable: public false_type {};
+
+	template <class T, class U>
+	struct __tuple_assignable<T, U, true, true>: public __tuple_sfinae_base::__assignable< typename __make_tuple_types<T>::type , typename __make_tuple_types<U &>::type> {};
+
+	template <typename T1, typename T2>
+	struct pair: private __non_trivially_copyable_base<T1, T2> {
+		typedef T1 first_type;
+		typedef T2 second_type;
+
+		T1 first;
+		T2 second;
+
+		pair(pair const &) = default;
+		pair(pair &&)	   = default;
+
+		template <bool Val>
+		using _EnableB = typename enable_if<Val, bool>::type;
+
+		struct _CheckArgs {
+			template <int &...>
+			static constexpr bool __enable_explicit_default() {
+				return is_default_constructible<T1>::value && is_default_constructible<T2>::value && !__enable_implicit_default<>();
+			}
+
+			template <int &...>
+			static constexpr bool __enable_implicit_default() {
+				return __is_implicitly_default_constructible<T1>::value && __is_implicitly_default_constructible<T2>::value;
+			}
+
+			template <typename U1, typename U2>
+			static constexpr bool __enable_explicit() {
+				return is_constructible<first_type, U1>::value && is_constructible<second_type, U2>::value
+					&& (!is_convertible<U1, first_type>::value || !is_convertible<U2, second_type>::value);
+			}
+
+			template <typename U1, typename U2>
+			static constexpr bool __enable_implicit() {
+				return is_constructible<first_type, U1>::value && is_constructible<second_type, U2>::value
+					&& is_convertible<U1, first_type>::value && is_convertible<U2, second_type>::value;
+			}
+		};
+
+		template <bool MaybeEnable>
+		using _CheckArgsDep = typename conditional<MaybeEnable, _CheckArgs, __check_tuple_constructor_fail>::type;
+
+		struct _CheckTupleLikeConstructor {
+			template <typename Tuple>
+			static constexpr bool __enable_implicit() {
+				return __tuple_convertible<Tuple, pair>::value;
+			}
+
+			template <typename Tuple>
+			static constexpr bool __enable_explicit() {
+				return __tuple_constructible<Tuple, pair>::value && !__tuple_convertible<Tuple, pair>::value;
+			}
+
+			template <typename Tuple>
+			static constexpr bool __enable_assign() {
+				return __tuple_assignable<Tuple, pair>::value;
+			}
+		};
+
+		template <bool _IsTuple, typename _SizeTrait, size_t _Expected>
+		struct __tuple_like_with_size_imp: false_type {};
+
+		template <typename _SizeTrait, size_t _Expected>
+		struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected>: integral_constant<bool, _SizeTrait::value == _Expected> {};
+
+		template <typename _Tuple, size_t _ExpectedSize, typename _RawTuple = typename __uncvref<_Tuple>::type>
+		using __tuple_like_with_size = __tuple_like_with_size_imp<__tuple_like<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
+
+		template <typename Tuple>
+		using _CheckTLC =
+			typename conditional<__tuple_like_with_size<Tuple, 2>::value
+									&& !is_same<typename decay<Tuple>::type, pair>::value,
+				_CheckTupleLikeConstructor, __check_tuple_constructor_fail>::type;
+
+		template <bool Dummy = true, _EnableB<_CheckArgsDep<Dummy>::__enable_explicit_default()> = false>
+		explicit constexpr pair() noexcept(is_nothrow_default_constructible<first_type>::value &&is_nothrow_default_constructible<second_type>::value):
+			first(), second() {}
+
+		template <bool Dummy = true, _EnableB<_CheckArgsDep<Dummy>::__enable_implicit_default()> = false>
+		constexpr pair() noexcept(is_nothrow_default_constructible<first_type>::value &&is_nothrow_default_constructible<second_type>::value):
+			first(), second() {}
+
+		template <bool Dummy = true, _EnableB<_CheckArgsDep<Dummy>::template __enable_explicit<T1 const &, T2 const &>()> = false>
+		constexpr explicit pair(T1 const &__t1, T2 const &__t2) noexcept(is_nothrow_copy_constructible<first_type>::value &&is_nothrow_copy_constructible<second_type>::value):
+			first(__t1), second(__t2) {}
+
+		template <bool Dummy = true, _EnableB<_CheckArgsDep<Dummy>::template __enable_implicit<T1 const &, T2 const &>()> = false>
+		constexpr pair(T1 const &__t1, T2 const &__t2) noexcept(is_nothrow_copy_constructible<first_type>::value &&is_nothrow_copy_constructible<second_type>::value):
+			first(__t1), second(__t2) {}
+
+		template <typename _U1, typename _U2, _EnableB<_CheckArgs::template __enable_explicit<_U1, _U2>()> = false>
+		constexpr explicit pair(_U1 &&__u1, _U2 &&__u2) noexcept((is_nothrow_constructible<first_type, _U1>::value && is_nothrow_constructible<second_type, _U2>::value)):
+			first(std::forward<_U1>(__u1)), second(std::forward<_U2>(__u2)) {}
+
+		template <typename _U1, typename _U2, _EnableB<_CheckArgs::template __enable_implicit<_U1, _U2>()> = false>
+		constexpr pair(_U1 &&__u1, _U2 &&__u2) noexcept((is_nothrow_constructible<first_type, _U1>::value && is_nothrow_constructible<second_type, _U2>::value)):
+			first(std::forward<_U1>(__u1)), second(std::forward<_U2>(__u2)) {}
+
+		template <typename _U1, typename _U2, _EnableB<_CheckArgs::template __enable_explicit<_U1 const &, _U2 const &>()> = false>
+		constexpr explicit pair(pair<_U1, _U2> const &__p) noexcept((is_nothrow_constructible<first_type, _U1 const &>::value && is_nothrow_constructible<second_type, _U2 const &>::value)):
+			first(__p.first), second(__p.second) {}
+
+		template <typename _U1, typename _U2, _EnableB<_CheckArgs::template __enable_implicit<_U1 const &, _U2 const &>()> = false>
+		constexpr pair(pair<_U1, _U2> const &__p) noexcept((is_nothrow_constructible<first_type, _U1 const &>::value && is_nothrow_constructible<second_type, _U2 const &>::value)):
+			first(__p.first), second(__p.second) {}
+
+		template <typename _U1, typename _U2, _EnableB<_CheckArgs::template __enable_explicit<_U1, _U2>()> = false>
+		constexpr explicit pair(pair<_U1, _U2> &&__p) noexcept((is_nothrow_constructible<first_type, _U1 &&>::value && is_nothrow_constructible<second_type, _U2 &&>::value)):
+			first(std::forward<_U1>(__p.first)), second(std::forward<_U2>(__p.second)) {}
+
+		template <typename _U1, typename _U2, _EnableB<_CheckArgs::template __enable_implicit<_U1, _U2>()> = false>
+		constexpr pair(pair<_U1, _U2> &&__p) noexcept((is_nothrow_constructible<first_type, _U1 &&>::value && is_nothrow_constructible<second_type, _U2 &&>::value)):
+			first(std::forward<_U1>(__p.first)), second(std::forward<_U2>(__p.second)) {}
+
+		template <typename _Tuple, _EnableB<_CheckTLC<_Tuple>::template __enable_explicit<_Tuple>()> = false>
+		constexpr explicit pair(_Tuple &&__p):
+			first(std::get<0>(std::forward<_Tuple>(__p))), second(std::get<1>(std::forward<_Tuple>(__p))) {}
+
+		template <typename _Tuple, _EnableB<_CheckTLC<_Tuple>::template __enable_implicit<_Tuple>()> = false>
+		constexpr pair(_Tuple &&__p):
+			first(std::get<0>(std::forward<_Tuple>(__p))), second(std::get<1>(std::forward<_Tuple>(__p))) {}
+
+		template <typename... Args1, typename... Args2>
+		pair(piecewise_construct_t __pc, tuple<Args1...> __first_args, tuple<Args2...> __second_args)
+			noexcept((is_nothrow_constructible<first_type, Args1...>::value && is_nothrow_constructible<second_type, Args2...>::value)):
+			pair(__pc, __first_args, __second_args, typename __make_tuple_indices<sizeof...(Args1)>::type(), typename __make_tuple_indices<sizeof...(Args2)>::type()) {}
+
+		pair &operator=(typename conditional<is_copy_assignable<first_type>::value && is_copy_assignable<second_type>::value, pair, std::__nat>::type const &__p)
+			noexcept(is_nothrow_copy_assignable<first_type>::value &&is_nothrow_copy_assignable<second_type>::value) {
+			first  = __p.first;
+			second = __p.second;
+			return *this;
+		}
+
+		pair &operator=(typename conditional<is_move_assignable<first_type>::value && is_move_assignable<second_type>::value, pair, std::__nat>::type &&__p)
+			noexcept(is_nothrow_move_assignable<first_type>::value &&is_nothrow_move_assignable<second_type>::value) {
+			first  = std::forward<first_type>(__p.first);
+			second = std::forward<second_type>(__p.second);
+			return *this;
+		}
+
+		template <typename _Tuple, _EnableB<_CheckTLC<_Tuple>::template __enable_assign<_Tuple>()> = false>
+		pair &operator=(_Tuple &&__p) {
+			first  = std::get<0>(std::forward<_Tuple>(__p));
+			second = std::get<1>(std::forward<_Tuple>(__p));
+			return *this;
+		}
+
+		void swap(pair &__p) noexcept(__is_nothrow_swappable<first_type>::value &&__is_nothrow_swappable<second_type>::value) {
+			using std::swap;
+			swap(first, __p.first);
+			swap(second, __p.second);
+		}
+
+		private:
+			template <typename... Args1, typename... Args2, size_t... _I1, size_t... _I2>
+			pair(piecewise_construct_t, tuple<Args1...> &__first_args,
+				tuple<Args2...> &__second_args, __tuple_indices<_I1...>, __tuple_indices<_I2...>);
+	};
+
+
+}
+
+#undef _INLINE
