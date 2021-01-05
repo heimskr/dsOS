@@ -69,6 +69,7 @@ namespace DsOS {
 			}
 		}
 
+		allocated += block->size + sizeof(BlockMeta);
 		return block + 1;
 	}
 
@@ -116,6 +117,7 @@ namespace DsOS {
 
 		BlockMeta *block_ptr = getBlock(ptr);
 		block_ptr->free = 1;
+		allocated -= block_ptr->size + sizeof(BlockMeta);
 		merge();
 	}
 
@@ -139,6 +141,14 @@ namespace DsOS {
 		high = new_high;
 		end = new_start;
 		realign(start);
+	}
+
+	size_t Memory::getAllocated() const {
+		return allocated;
+	}
+
+	size_t Memory::getUnallocated() const {
+		return high - start - allocated;
 	}
 }
 

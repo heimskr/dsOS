@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lib/memory"
 #include "lib/printf.h"
 #include "lib/string.h"
 #include "lib/swap.h"
@@ -11,7 +12,7 @@
 #define _STRING_CHECK_LENGTH(n)
 
 namespace std {
-	template <typename value_type>
+	template <typename value_type, typename Alloc=allocator<value_type>>
 	class basic_string {
 		private:
 			static constexpr size_t min_size = 24;
@@ -20,6 +21,7 @@ namespace std {
 			size_t _size; 
 			/** Doesn't include a terminating null character. */
 			size_t _capacity;
+			Alloc alloc;
 
 		public:
 			using reference = value_type &;
@@ -349,13 +351,17 @@ namespace std {
 			basic_string() {
 				_size = 0;
 				_capacity = min_size;
-				_str = new value_type[_capacity + 1];
+				_str = alloc.allocate(_capacity + 1);
 			}
 
 			basic_string(const value_type *src) {
 				_size = _capacity = strlen(src);
-				_str = new value_type[_size + 1];
+				_str = alloc.allocate(_capacity + 1);
 				strcpy(_str, src);
+			}
+
+			~basic_string() {
+				alloc.deallocate(_str, _capacity + 1);
 			}
 
 			iterator begin() { return {*this}; }
@@ -368,6 +374,10 @@ namespace std {
 			const_reverse_iterator   crend() { return {*this, _size}; }
 
 			const value_type * c_str() const {
+				return _str;
+			}
+
+			const value_type * data() const {
 				return _str;
 			}
 
@@ -388,9 +398,9 @@ namespace std {
 			}
 
 			void resize(size_t n, value_type c = '\0') {
-				value_type *new_str = new value_type[n + 1];
+				value_type *new_str = alloc.allocate(n + 1);
 				strncpy(new_str, _str, n + 1);
-				delete[] _str;
+				alloc.deallocate(_str, _capacity + 1);
 				_str = new_str;
 				if (_capacity < n)
 					memset(new_str + _capacity, c, n - _capacity);
@@ -403,9 +413,9 @@ namespace std {
 			}
 
 			void clear() {
-				delete[] _str;
+				alloc.deallocate(_str, _capacity + 1);
 				_capacity = min_size;
-				_str = new value_type[_capacity + 1];
+				_str = alloc.allocate(_capacity + 1);
 				_size = 0;
 			}
 
@@ -785,6 +795,13 @@ namespace std {
 				swap(_size, other._size);
 				swap(_capacity, other._capacity);
 			}
+
+			void pop_back() {
+				if (size != 0)
+					_str[--_size] = '\0';
+			}
+
+
 	};
 
 	using string = basic_string<char>;

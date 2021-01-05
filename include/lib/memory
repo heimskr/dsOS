@@ -1,0 +1,52 @@
+#pragma once
+
+#include "cstddef"
+#include "memory/Memory.h"
+
+namespace std {
+	template <typename T>
+	struct allocator {
+		using value_type = T;
+		using pointer = T *;
+		using reference = T &;
+		using const_pointer = const T *;
+		using const_reference = const T &;
+		using size_type	= size_t;
+		using difference_type = ptrdiff_t;
+
+		allocator() {}
+		allocator(const allocator &) {}
+		template <typename U>
+		allocator(const allocator<U> &) {}
+
+		pointer address(reference ref) const {
+			return &ref;
+		}
+
+		const_pointer address(const_reference ref) const {
+			return &ref;
+		}
+
+		pointer allocate(size_type n, const void * = 0) {
+			return static_cast<pointer>(malloc(sizeof(T) * n));
+		}
+
+		void deallocate(pointer p, size_type) {
+			return free(p);
+		}
+
+		template <typename U, typename... Args>
+		void construct(U* p, Args && ...args) {
+			new (p) U(args...);
+		}
+
+		template <class U>
+		void destroy (U *p) {
+			p->~U();
+		}
+
+		size_type max_size() const {
+			return global_memory->getUnallocated() / (sizeof(T) + sizeof(DsOS::Memory::BlockMeta));
+		}
+	};
+}

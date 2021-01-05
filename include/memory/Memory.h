@@ -19,6 +19,7 @@ namespace DsOS {
 
 		private:
 			size_t align;
+			size_t allocated = 0;
 			char *start, *high, *end;
 			BlockMeta *base = nullptr;
 
@@ -42,6 +43,8 @@ namespace DsOS {
 			void * allocate(size_t);
 			void free(void *);
 			void setBounds(char *new_start, char *new_high);
+			size_t getAllocated() const;
+			size_t getUnallocated() const;
 	};
 }
 
