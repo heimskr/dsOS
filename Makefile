@@ -4,7 +4,7 @@ CC            = x86_64-elf-g++
 AS            = x86_64-elf-g++
 SHARED_FLAGS  = -fno-builtin -O0 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone \
                 -mcmodel=kernel -fno-pie
-CFLAGS        = $(SHARED_FLAGS) -fno-exceptions -fno-rtti
+CFLAGS        = $(SHARED_FLAGS) -fno-exceptions -fno-rtti -std=c++20
 ASFLAGS       = $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
 # QEMU_EXTRA  ?= -usb -device usb-kbd
