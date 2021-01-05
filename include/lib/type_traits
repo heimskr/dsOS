@@ -11,7 +11,7 @@
 #endif
 
 namespace std {
-	template <class T1, class T2>
+	template <typename T1, typename T2>
 	struct pair;
 
 	struct __two {
@@ -151,25 +151,235 @@ namespace std {
 	template <typename T>
 	inline constexpr bool is_volatile_v = is_volatile<T>::value;
 
+	// is_union
+
+	template <class _Tp>
+	struct is_union: public integral_constant<bool, __is_union(_Tp)> {};
+
+	template <class _Tp>
+	constexpr bool is_union_v = is_union<_Tp>::value;
+
+	// is_class
+
+	template <class _Tp>
+	struct is_class: public integral_constant<bool, __is_class(_Tp)> {};
+
+	template <class _Tp>
+	constexpr bool is_class_v = is_class<_Tp>::value;
+
+	// is_function
+
 	template <typename T>
 	struct is_function: public bool_constant<!(is_reference_v<T> || is_const_v<const T>)> {};
+
+	template <class T>
+	constexpr bool is_function_v = is_function<T>::value;
+
+	// is_integral
+
+	template <typename T>
+	struct __libcpp_is_integral                    : public false_type {};
+	template <>           struct __libcpp_is_integral<bool>              : public true_type {};
+	template <>           struct __libcpp_is_integral<char>              : public true_type {};
+	template <>           struct __libcpp_is_integral<signed char>       : public true_type {};
+	template <>           struct __libcpp_is_integral<unsigned char>     : public true_type {};
+	template <>           struct __libcpp_is_integral<wchar_t>           : public true_type {};
+	template <>           struct __libcpp_is_integral<char16_t>          : public true_type {};
+	template <>           struct __libcpp_is_integral<char32_t>          : public true_type {};
+	template <>           struct __libcpp_is_integral<short>             : public true_type {};
+	template <>           struct __libcpp_is_integral<unsigned short>    : public true_type {};
+	template <>           struct __libcpp_is_integral<int>               : public true_type {};
+	template <>           struct __libcpp_is_integral<unsigned int>      : public true_type {};
+	template <>           struct __libcpp_is_integral<long>              : public true_type {};
+	template <>           struct __libcpp_is_integral<unsigned long>     : public true_type {};
+	template <>           struct __libcpp_is_integral<long long>         : public true_type {};
+	template <>           struct __libcpp_is_integral<unsigned long long>: public true_type {};
+	template <>           struct __libcpp_is_integral<__int128_t>        : public true_type {};
+	template <>           struct __libcpp_is_integral<__uint128_t>       : public true_type {};
+
+	template <typename T>
+	struct is_integral: public __libcpp_is_integral<typename remove_cv<T>::type> {};
+
+	template <typename T>
+	constexpr bool is_integral_v = is_integral<T>::value;
+
+	template <class T>
+	struct __libcpp_is_member_pointer {
+		enum {
+			__is_member = false,
+			__is_func = false,
+			__is_obj = false
+		};
+	};
+
+	template <class T, class U>
+	struct __libcpp_is_member_pointer<T U::*> {
+		enum {
+			__is_member = true,
+			__is_func = is_function<T>::value,
+			__is_obj = !__is_func,
+		};
+	};
+
+
+	template <class T>
+	struct is_member_function_pointer: public bool_constant<__libcpp_is_member_pointer<typename remove_cv<T>::type>::__is_func> {};
+
+	template <class T>
+	constexpr bool is_member_function_pointer_v = is_member_function_pointer<T>::value;
+
+	// is_member_pointer
+
+	template <class T>
+	struct is_member_pointer: public bool_constant<__libcpp_is_member_pointer<typename remove_cv<T>::type>::__is_member > {};
+
+	template <class T>
+	constexpr bool is_member_pointer_v = is_member_pointer<T>::value;
+
+	// is_member_object_pointer
+
+	template <class T>
+	struct is_member_object_pointer: public bool_constant<__libcpp_is_member_pointer<typename remove_cv<T>::type>::__is_obj>  {};
+
+	template <class T>
+	constexpr bool is_member_object_pointer_v = is_member_object_pointer<T>::value;
+
+	// is_enum
+
+	template <class T>
+	struct is_enum: public integral_constant<bool, __is_enum(T)> {};
+
+	template <class T>
+	constexpr bool is_enum_v = is_enum<T>::value;
+
+	// is_floating_point
+
+	template <typename T>
+	struct __libcpp_is_floating_point             : public false_type {};
+	template <>           struct __libcpp_is_floating_point<float>      : public true_type {};
+	template <>           struct __libcpp_is_floating_point<double>     : public true_type {};
+	template <>           struct __libcpp_is_floating_point<long double>: public true_type {};
+
+	template <typename T>
+	struct is_floating_point: public __libcpp_is_floating_point<typename remove_cv<T>::type> {};
+
+	template <typename T>
+	constexpr bool is_floating_point_v = is_floating_point<T>::value;
+
+	// is_arithmetic
+
+	template <class T>
+	struct is_arithmetic: public integral_constant<bool, is_integral<T>::value || is_floating_point<T>::value> {};
+
+	template <class T>
+	constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
+
+	// is_void
+
+	template <typename T>
+	struct __libcpp_is_void: public false_type {};
+
+	template <>
+	struct __libcpp_is_void<void>: public true_type {};
+
+	template <typename T>
+	struct is_void: public __libcpp_is_void<typename remove_cv<T>::type> {};
+
+	template <typename T>
+	constexpr bool is_void_v = is_void<T>::value;
+
+	// __is_nullptr_t
+
+	template <typename T>
+	struct __is_nullptr_t_impl: public false_type {};
+	template <>
+	struct __is_nullptr_t_impl<nullptr_t>: public true_type {};
+
+	template <typename T>
+	struct __is_nullptr_t: public __is_nullptr_t_impl<typename remove_cv<T>::type> {};
+
+	template <typename T>
+	struct is_null_pointer: public __is_nullptr_t_impl<typename remove_cv<T>::type> {};
+
+	template <typename T>
+	constexpr bool is_null_pointer_v = is_null_pointer<T>::value;
+
+	// is_fundamental
+
+	template <class T>
+	struct is_fundamental: public integral_constant<bool, is_void<T>::value || __is_nullptr_t<T>::value || is_arithmetic<T>::value> {};
+
+	template <class T>
+	constexpr bool is_fundamental_v = is_fundamental<T>::value;
+
+	// is_pointer
+
+	template <typename T>
+	struct __libcpp_is_pointer: public false_type {};
+
+	template <typename T>
+	struct __libcpp_is_pointer<T *>: public true_type {};
+
+	template <typename T>
+	struct __libcpp_remove_objc_qualifiers {
+		typedef T type;
+	};
+
+	template <typename T>
+	struct is_pointer: public __libcpp_is_pointer<typename __libcpp_remove_objc_qualifiers<typename remove_cv<T>::type>::type> {};
+
+	template <typename T>
+	constexpr bool is_pointer_v = is_pointer<T>::value;
+
+	// is_scalar
+
+	template <class T>
+	struct is_scalar: public integral_constant<bool, is_arithmetic<T>::value || is_member_pointer<T>::value || is_pointer<T>::value || __is_nullptr_t<T>::value || is_enum<T>::value> {};
+
+	template <>
+	struct is_scalar<nullptr_t>: public true_type {};
+
+	template <class T>
+	constexpr bool is_scalar_v = is_scalar<T>::value;
+
+	// is_object
+
+	template <class T>
+	struct is_object: public integral_constant<bool, is_scalar<T>::value || is_array<T>::value || is_union<T>::value || is_class<T>::value> {};
+
+	template <class T>
+	constexpr bool is_object_v = is_object<T>::value;
+
+	// is_compound
+
+	template <class T>
+	struct is_compound: public integral_constant<bool, !is_fundamental<T>::value> {};
+
+	template <class T>
+	constexpr bool is_compound_v = is_compound<T>::value;
+
+	//
+
+	template <typename T, typename U>
+	using _IsSame = bool_constant<is_same<T, U>::value>;
+
+	template <typename T, typename U>
+	using _IsNotSame = bool_constant<!is_same<T, U>::value>;
+
+	// __is_referenceable  [defns.referenceable]
+
+	struct __is_referenceable_impl {
+		template <class T> static T & __test(int);
+		template <class T> static __two __test(...);
+	};
+
+	template <class T>
+	struct __is_referenceable: integral_constant<bool, _IsNotSame<decltype(__is_referenceable_impl::__test<T>(0)), __two>::value> {};
 
 	template <typename B, typename D>
 	struct is_base_of: public integral_constant<bool, __is_base_of(B, D)> {};
 
-	struct __is_referenceable_impl {
-		template <typename T> static T & __test(int);
-		template <typename T> static __two __test(...);
-	};
-
-	template <bool B>
-	using _BoolConstant = integral_constant<bool, B>;
-
-	template <typename T, typename U>
-	using _IsSame = _BoolConstant<is_same<T, U>::value>;
-
-	template <typename T, typename U>
-	using _IsNotSame = _BoolConstant<!is_same<T, U>::value>;
+	// remove_all_extents
 
 	template <typename T>
 	struct remove_all_extents {
@@ -186,9 +396,6 @@ namespace std {
 
 	template <typename T>
 	using remove_all_extents_t = typename remove_all_extents<T>::type;
-
-	template <typename T>
-	struct __is_referenceable: integral_constant<bool, _IsNotSame<decltype(__is_referenceable_impl::__test<T>(0)), __two>::value> {};
 
 	template <typename>
 	struct __is_destructible_apply {
@@ -234,17 +441,19 @@ namespace std {
 	template <>
 	struct is_destructible<void>: public std::false_type {};
 
-	template <typename T>
-	struct __libcpp_is_void: public false_type {};
 
-	template <>
-	struct __libcpp_is_void<void>: public true_type {};
 
-	template <typename T>
-	struct is_void: public __libcpp_is_void<typename remove_cv<T>::type> {};
 
-	template <typename T>
-	constexpr bool is_void_v = is_void<T>::value;
+
+
+
+
+
+
+
+
+
+
 
 	template <typename T>
 	constexpr bool is_destructible_v = is_destructible<T>::value;
@@ -264,6 +473,9 @@ namespace std {
 		typedef T type;
 	};
 
+
+	// remove_extent
+
 	template <typename T>
 	struct remove_extent {
 		typedef T type;
@@ -279,6 +491,8 @@ namespace std {
 		typedef T type;
 	};
 
+	template <typename T> using remove_extent_t = typename remove_extent<T>::type;
+
 	template <typename T>
 	struct __uncvref {
 		typedef typename remove_cv<typename remove_reference<T>::type>::type type;
@@ -291,6 +505,8 @@ namespace std {
 	struct __unconstref {
 		typedef typename remove_const<typename remove_reference<T>::type>::type type;
 	};
+
+	// add_pointer
 
 	template <typename T, bool = __is_referenceable<T>::value || _IsSame<typename remove_cv<T>::type, void>::value>
 	struct __add_pointer_impl {
@@ -306,6 +522,106 @@ namespace std {
 	struct add_pointer {
 		typedef typename __add_pointer_impl<T>::type type;
 	};
+
+	// type_identity
+
+	template<typename T>
+	struct type_identity {
+		typedef T type;
+	};
+
+	template<typename T>
+	using type_identity_t = typename type_identity<T>::type;
+
+	// is_signed
+
+	template <typename T, bool = is_integral<T>::value>
+	struct __libcpp_is_signed_impl : public integral_constant<bool, T(-1) < T(0)> {};
+
+	template <typename T>
+	struct __libcpp_is_signed_impl<T, false> : public true_type {};  // floating point
+
+	template <typename T, bool = is_arithmetic<T>::value>
+	struct __libcpp_is_signed : public __libcpp_is_signed_impl<T> {};
+
+	template <typename T>
+	struct __libcpp_is_signed<T, false> : public false_type {};
+
+	template <typename T>
+	struct is_signed : public __libcpp_is_signed<T> {};
+
+	#if _LIBCPP_STD_VER > 14 && !defined(_LIBCPP_HAS_NO_VARIABLE_TEMPLATES)
+	template <typename T>
+	constexpr bool is_signed_v = is_signed<T>::value;
+	#endif
+
+	// is_unsigned
+
+	template <typename T, bool = is_integral<T>::value>
+	struct __libcpp_is_unsigned_impl : public bool_constant<T(0) < T(-1)> {};
+
+	template <typename T>
+	struct __libcpp_is_unsigned_impl<T, false> : public false_type {};  // floating point
+
+	template <typename T, bool = is_arithmetic<T>::value>
+	struct __libcpp_is_unsigned : public __libcpp_is_unsigned_impl<T> {};
+
+	template <typename T>
+	struct __libcpp_is_unsigned<T, false> : public false_type {};
+
+	template <typename T>
+	struct is_unsigned : public __libcpp_is_unsigned<T> {};
+
+	#if _LIBCPP_STD_VER > 14 && !defined(_LIBCPP_HAS_NO_VARIABLE_TEMPLATES)
+	template <typename T>
+	constexpr bool is_unsigned_v = is_unsigned<T>::value;
+	#endif
+
+	// rank
+
+	template <typename T>
+	struct rank
+		: public integral_constant<size_t, 0> {};
+	template <typename T>
+	struct rank<T[]>
+		: public integral_constant<size_t, rank<T>::value + 1> {};
+	template <typename T, size_t _Np>
+	struct rank<T[_Np]>
+		: public integral_constant<size_t, rank<T>::value + 1> {};
+
+	#if _LIBCPP_STD_VER > 14 && !defined(_LIBCPP_HAS_NO_VARIABLE_TEMPLATES)
+	template <typename T>
+	constexpr size_t rank_v = rank<T>::value;
+	#endif
+
+	// extent
+
+	template <typename T, unsigned _Ip = 0>
+	struct extent
+		: public integral_constant<size_t, 0> {};
+	template <typename T>
+	struct extent<T[], 0>
+		: public integral_constant<size_t, 0> {};
+	template <typename T, unsigned _Ip>
+	struct extent<T[], _Ip>
+		: public integral_constant<size_t, extent<T, _Ip-1>::value> {};
+	template <typename T, size_t _Np>
+	struct extent<T[_Np], 0>
+		: public integral_constant<size_t, _Np> {};
+	template <typename T, size_t _Np, unsigned _Ip>
+	struct extent<T[_Np], _Ip>
+		: public integral_constant<size_t, extent<T, _Ip-1>::value> {};
+
+	#if _LIBCPP_STD_VER > 14 && !defined(_LIBCPP_HAS_NO_VARIABLE_TEMPLATES)
+	template <typename T, unsigned _Ip = 0>
+	constexpr size_t extent_v = extent<T, _Ip>::value;
+	#endif
+
+
+
+
+
+	// add_const
 
 	template <typename T>
 	struct add_const {
@@ -439,7 +755,7 @@ namespace std {
 	template <typename... Rest>
 	using _And = typename _MetaBase<sizeof...(Rest) != 0>::template _AndImpl<true_type, Rest...>;
 	template <typename Pred>
-	struct _Not: _BoolConstant<!Pred::value> {};
+	struct _Not: bool_constant<!Pred::value> {};
 
 	template <typename T, typename... Args>
 	struct __libcpp_is_constructible;
@@ -672,6 +988,34 @@ namespace std {
 	template <typename T>
 	constexpr bool is_trivially_destructible_v = is_trivially_destructible<T>::value;
 
+
+
+
+
+
+
+
+	template <template <typename...> typename Templ, typename... Args, typename = Templ<Args...>>
+	true_type __sfinae_test_impl(int);
+	template <template <typename...> typename, typename ...>
+	false_type __sfinae_test_impl(...);
+
+	template <template <typename ...> typename Templ, typename... Args>
+	using _IsValidExpansion = decltype(std::__sfinae_test_impl<Templ, Args...>(0));
+
+	template <typename>
+	struct __void_t {
+		typedef void type;
+	};
+
+	template <typename T>
+	struct __identity {
+		typedef T type;
+	};
+
+	template <typename T, bool>
+	struct __dependent_type: public T {};
+
 	template <bool B, typename If, typename Then>
 	struct conditional {
 		typedef If type;
@@ -710,7 +1054,7 @@ namespace std {
 
 
 
-	template <class T>
+	template <typename T>
 	inline constexpr typename remove_reference<T>::type && move(T &&t) noexcept {
 		typedef typename remove_reference<T>::type U;
 		return static_cast<U &&>(t);
@@ -873,12 +1217,12 @@ namespace std {
 	template <typename T>
 	constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<T>::value;
 
-	template <class ForwardIterator1, class ForwardIterator2>
+	template <typename ForwardIterator1, typename ForwardIterator2>
 	inline constexpr
 	ForwardIterator2
 	swap_ranges(ForwardIterator1 __first1, ForwardIterator1 __last1, ForwardIterator2 __first2);
 
-	template <class T>
+	template <typename T>
 	inline typename enable_if<is_move_constructible<T>::value && is_move_assignable<T>::value>::type constexpr
 	swap(T &__x, T &__y) noexcept(is_nothrow_move_constructible<T>::value && is_nothrow_move_assignable<T>::value) {
 		T __t(std::move(__x));
@@ -886,13 +1230,13 @@ namespace std {
 		__y = std::move(__t);
 	}
 
-	template<class T, size_t N>
+	template<typename T, size_t N>
 	inline constexpr typename enable_if<__is_swappable<T>::value>::type
 	swap(T (&__a)[N], T (&__b)[N]) noexcept(__is_nothrow_swappable<T>::value) {
 		std::swap_ranges(__a, __a + N, __b);
 	}
 
-	template <class ForwardIterator1, class ForwardIterator2>
+	template <typename ForwardIterator1, typename ForwardIterator2>
 	inline constexpr ForwardIterator2
 	swap_ranges(ForwardIterator1 __first1, ForwardIterator1 __last1, ForwardIterator2 __first2) {
 		for(; __first1 != __last1; ++__first1, (void) ++__first2)
@@ -900,7 +1244,7 @@ namespace std {
 		return __first2;
 	}
 
-	template <class ForwardIterator1, class ForwardIterator2>
+	template <typename ForwardIterator1, typename ForwardIterator2>
 	inline constexpr void
 	iter_swap(ForwardIterator1 __a, ForwardIterator2 __b) noexcept(noexcept(swap(*std::declval<ForwardIterator1>(), *std::declval<ForwardIterator2>()))) {
 		swap(*__a, *__b);
@@ -908,7 +1252,7 @@ namespace std {
 
 #if __has_feature(is_convertible_to) && !defined(_LIBCPP_USE_IS_CONVERTIBLE_FALLBACK)
 	template <typename T, typename U>
-	struct _LIBCPP_TEMPLATE_VIS is_convertible: public integral_constant<bool, __is_convertible_to(T, U)> {};
+	struct is_convertible: public integral_constant<bool, __is_convertible_to(T, U)> {};
 #else
 	namespace __is_convertible_imp {
 		template <typename T>

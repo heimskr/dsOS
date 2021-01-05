@@ -100,10 +100,69 @@ namespace std {
 		template <typename... Args, size_t... Indices>
 		_INLINE constexpr compressed_pair_elem(piecewise_construct_t, tuple<Args...> args, __tuple_indices<Indices...>):
 			value_type(forward<Args>(get<Indices>(args))...) {}
+
+		_INLINE reference get() noexcept {
+			return *this;
+		}
+
+		_INLINE const_reference get() const noexcept {
+			return *this;
+		}
 	};
 
-	// template <typename T, typename U>
-	// class compressed_pair
+	template <typename T, typename U>
+	class compressed_pair: private compressed_pair_elem<T, 0>, private compressed_pair_elem<U, 1> {
+		typedef compressed_pair_elem<T, 0> Base1;
+		typedef compressed_pair_elem<U, 1> Base2;
+
+		static_assert((!is_same<T, U>::value),
+			"compressed_pair cannot be instantated when T and U are the same type; "
+			"The current implementation is NOT ABI-compatible with the previous "
+			"implementation for this configuration");
+
+		public:
+			template <bool Dummy = true, typename = typename enable_if<__dependent_type<is_default_constructible<T>, Dummy>::value && __dependent_type<is_default_constructible<U>, Dummy>::value>::type>
+			constexpr compressed_pair():
+				Base1(value_init_tag()),
+				Base2(value_init_tag()) {}
+
+			template <typename U1, typename U2>
+			constexpr compressed_pair(U1 &&t1, U2 &&t2):
+				Base1(std::forward<U1>(t1)),
+				Base2(std::forward<U2>(t2)) {}
+
+			template <typename... Args1, typename... Args2>
+			constexpr compressed_pair(piecewise_construct_t pc, tuple<Args1...> first_args, tuple<Args2...> second_args):
+				Base1(pc, std::move(first_args), typename __make_tuple_indices<sizeof...(Args1)>::type()),
+				Base2(pc, std::move(second_args), typename __make_tuple_indices<sizeof...(Args2)>::type()) {}
+
+			typename Base1::reference first() noexcept {
+				return static_cast<Base1 &>(*this).get();
+			}
+
+			typename Base1::const_reference first() const noexcept {
+				return static_cast<Base1 const &>(*this).get();
+			}
+
+			typename Base2::reference second() noexcept {
+				return static_cast<Base2 &>(*this).get();
+			}
+
+			typename Base2::const_reference second() const noexcept {
+				return static_cast<Base2 const &>(*this).get();
+			}
+
+			void swap(compressed_pair &other) noexcept(__is_nothrow_swappable<T>::value && __is_nothrow_swappable<U>::value) {
+				using std::swap;
+				swap(first(), other.first());
+				swap(second(), other.second());
+			}
+	};
+
+	template <typename T, typename U>
+	inline void swap(compressed_pair<T, U> &a, compressed_pair<T, U> &b) noexcept(__is_nothrow_swappable<T>::value && __is_nothrow_swappable<U>::value) {
+		a.swap(b);
+	}
 
 	template <typename T>
 	class weak_ptr;
