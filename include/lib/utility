@@ -487,14 +487,14 @@ namespace std {
 			noexcept((is_nothrow_constructible<first_type, Args1...>::value && is_nothrow_constructible<second_type, Args2...>::value)):
 			pair(__pc, __first_args, __second_args, typename __make_tuple_indices<sizeof...(Args1)>::type(), typename __make_tuple_indices<sizeof...(Args2)>::type()) {}
 
-		pair &operator=(typename conditional<is_copy_assignable<first_type>::value && is_copy_assignable<second_type>::value, pair, std::__nat>::type const &__p)
+		pair & operator=(typename conditional<is_copy_assignable<first_type>::value && is_copy_assignable<second_type>::value, pair, std::__nat>::type const &__p)
 			noexcept(is_nothrow_copy_assignable<first_type>::value &&is_nothrow_copy_assignable<second_type>::value) {
 			first  = __p.first;
 			second = __p.second;
 			return *this;
 		}
 
-		pair &operator=(typename conditional<is_move_assignable<first_type>::value && is_move_assignable<second_type>::value, pair, std::__nat>::type &&__p)
+		pair & operator=(typename conditional<is_move_assignable<first_type>::value && is_move_assignable<second_type>::value, pair, std::__nat>::type &&__p)
 			noexcept(is_nothrow_move_assignable<first_type>::value &&is_nothrow_move_assignable<second_type>::value) {
 			first  = std::forward<first_type>(__p.first);
 			second = std::forward<second_type>(__p.second);
@@ -502,7 +502,7 @@ namespace std {
 		}
 
 		template <typename _Tuple, _EnableB<_CheckTLC<_Tuple>::template __enable_assign<_Tuple>()> = false>
-		pair &operator=(_Tuple &&__p) {
+		pair & operator=(_Tuple &&__p) {
 			first  = std::get<0>(std::forward<_Tuple>(__p));
 			second = std::get<1>(std::forward<_Tuple>(__p));
 			return *this;

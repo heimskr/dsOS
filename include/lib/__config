@@ -1122,6 +1122,7 @@ extern "C" _LIBCPP_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  elif defined(_LIBCPP_WIN32API)
 #    define _LIBCPP_HAS_THREAD_API_WIN32
 #  else
+// TODO: threads!
 // #    error "No thread API"
 #  endif // _LIBCPP_HAS_THREAD_API
 #endif // _LIBCPP_HAS_NO_THREADS

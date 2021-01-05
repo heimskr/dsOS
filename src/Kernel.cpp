@@ -74,12 +74,6 @@ namespace DsOS {
 
 		x86_64::APIC::init(*this);
 
-		printf("pageDescriptors: 0x%lx\n", (uintptr_t) pageDescriptors);
-		printf("pageDescriptorsLength: 0x%lx\n", pageDescriptorsLength);
-		printf("pagesStart: 0x%lx\n", (uintptr_t) pagesStart);
-		printf("pagesLength: 0x%lx\n", pagesLength);
-		printf("&tmp_stack: 0x%lx\n", &tmp_stack);
-
 		int *somewhere = new int(42);
 		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
 
@@ -87,10 +81,6 @@ namespace DsOS {
 		printf("pageCount = %d, bitmapSize = %ld\n", pager.pageCount(), pager.bitmapSize());
 
 		kernelPML4.print(false);
-		// printf(" ------------------------------------------------------------------------------\n");
-
-		// for (uint64_t i = 0;; ++i)
-		// 	int x = *((uint64_t *) i);
 
 		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 		// printf("<%d> : ", pager.findFree());
@@ -101,58 +91,10 @@ namespace DsOS {
 
 		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 
-		// x86_64::APIC::initTimer(1);
-		// while (ticks != 5);
-		// x86_64::APIC::initTimer(5);
-		// while (ticks != 20);
-		// x86_64::APIC::disableTimer();
-		// wait(1000);
-		// printf("Hello.\n");
-		// x86_64::APIC::initTimer(5);
-
 		x86_64::PIC::clearIRQ(1);
 
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
-
-		std::string foo = "hello";
-		foo.append(" friend");
-		foo.insert(5, " there");
-		foo.replace(1, 4, "i");
-		for (auto iter = foo.begin(), end = foo.end(); iter != end; ++iter)
-			printf("[%c] %d\n", *iter, *iter);
-		printf("[%s]\n", foo.c_str());
-		foo.replace(1, 1, "ello");
-		printf("[%s]\n", foo.c_str());
-		foo.replace(1, 1, "a");
-		printf("[%s]\n", foo.c_str());
-		foo.replace(6, 6, "");
-		printf("[%s]\n", foo.c_str());
-		foo.insert(5, " there");
-		printf("[%s]\n", foo.c_str());
-		foo.replace(1, 4, "abcdefghijkl", 8, 2);
-		printf("[%s]\n", foo.c_str());
-		foo.replace(1, 2, "hello there", 1, 4);
-		printf("[%s]\n", foo.c_str());
-		std::string bar = "hi greetings hello";
-		foo.replace(foo.begin() + 6, foo.begin() + 11, bar.begin() + 3, bar.end() - 6);
-		printf("[%s]\n", foo.c_str());
-		foo.replace(0, 2, 10, '?');
-		printf("[%s]\n", foo.c_str());
-		foo.replace(0, 10, 3, 'h');
-		printf("[%s]\n", foo.c_str());
-
-		std::shared_ptr<int> p;
-
-
-		// timer_max = 10;
-		// timer_addr = +[]() { printf("Timer done!\n"); };
-
-		// for (size_t address = (size_t) multiboot_data;; address *= 1.1) {
-		// 	Terminal::clear();
-		// 	printf("Address: %ld -> %d", address, *((int *) address));
-		// 	for (int j = 0; j < 30000000; ++j);
-		// }
 
 		for (;;);
 	}
