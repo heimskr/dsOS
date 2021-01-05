@@ -6,6 +6,7 @@
 #include "type_traits"
 #include "utility"
 #include "memory/Memory.h"
+#include "lib/__memory/allocator_traits.h"
 
 
 #define _INLINE inline __attribute__((__always_inline__))
@@ -235,7 +236,26 @@ namespace std {
 
 	template <typename T, typename D, typename Alloc>
 	class shared_ptr_pointer: public shared_weak_count {
+		private:
+			compressed_pair<compressed_pair<T, D>, Alloc> data;
+			virtual void on_zero_shared() noexcept {
+				data.first().second()(data.first().first());
+				data.first().second().~D();
+			}
 
+			virtual void on_zero_shared_weak() noexcept {
+				typedef typename __allocator_traits_rebind<Alloc, shared_ptr_pointer>::type Al;
+				typedef allocator_traits<Al> ATraits;
+				typedef pointer_traits<typename ATraits::pointer> PTraits;
+
+				Al a(data.second());
+				data.second().~Alloc();
+				a.deallocate(PTraits::pointer_to(*this), 1);
+			}
+
+		public:
+			shared_ptr_pointer(T p, D d, Alloc a):
+				data(compressed_pair<T, D>(p, std::move(d)), std::move(a)) {}
 	};
 
 	template <typename T>
