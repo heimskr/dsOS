@@ -134,6 +134,9 @@ namespace DsOS {
 		printf("[%s]\n", foo.c_str());
 		foo.replace(1, 2, "hello there", 1, 4);
 		printf("[%s]\n", foo.c_str());
+		std::string bar = "hi greetings hello";
+		foo.replace(foo.begin() + 6, foo.begin() + 11, bar.begin() + 3, bar.end() - 6);
+		printf("[%s]\n", foo.c_str());
 
 
 		// timer_max = 10;

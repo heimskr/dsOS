@@ -77,6 +77,10 @@ namespace std {
 						return const_iterator(*parent, pos + offset);
 					}
 
+					constexpr const_iterator operator-(difference_type offset) const {
+						return const_iterator(*parent, pos - offset);
+					}
+
 					constexpr difference_type operator-(const_iterator other) const {
 						return pos - other.pos;
 					}
@@ -149,6 +153,10 @@ namespace std {
 
 					constexpr iterator operator+(difference_type offset) const {
 						return iterator(*parent, pos + offset);
+					}
+
+					constexpr iterator operator-(difference_type offset) const {
+						return iterator(*parent, pos - offset);
 					}
 
 					constexpr difference_type operator-(iterator other) const {
@@ -225,6 +233,10 @@ namespace std {
 						return const_reverse_iterator(*parent, pos + offset);
 					}
 
+					constexpr const_reverse_iterator operator-(difference_type offset) const {
+						return const_reverse_iterator(*parent, pos - offset);
+					}
+
 					constexpr difference_type operator-(const_reverse_iterator other) const {
 						// TODO: verify
 						return pos - other.pos;
@@ -299,6 +311,10 @@ namespace std {
 
 					constexpr reverse_iterator operator+(difference_type offset) const {
 						return reverse_iterator(*parent, pos + offset);
+					}
+
+					constexpr reverse_iterator operator-(difference_type offset) const {
+						return reverse_iterator(*parent, pos - offset);
 					}
 
 					constexpr difference_type operator-(reverse_iterator other) const {
@@ -645,7 +661,7 @@ namespace std {
 			}
 
 			basic_string<value_type> & replace(const_iterator i1, const_iterator i2, const basic_string<value_type> &other) {
-				return replace(i1.pos, i2.pos - i1.pos);
+				return replace(i1.pos, i2 - i1);
 			}
 
 			basic_string<value_type> & replace(size_t pos, size_t len, const basic_string<value_type> &other, size_t subpos, size_t sublen = npos) {
@@ -664,6 +680,100 @@ namespace std {
 				for (size_t i = 0; i < sublen; ++i)
 					_str[pos + i] = other._str[i + subpos];
 				_size += sublen;
+				_size -= len;
+				_str[_size] = '\0';
+				return *this;
+			}
+
+			basic_string<value_type> & replace(size_t pos, size_t len, const value_type *other) {
+				const size_t other_size = strlen(other);
+				reserve(_size + other_size - len);
+				if (other_size < len)
+					for (size_t i = pos; i < _size + other_size - len; ++i)
+						_str[i] = _str[i + len - other_size];
+				else
+					for (size_t i = _size - len - 1;; --i) {
+						_str[pos + other_size + i - 1] = _str[pos + i];
+						if (i == 0)
+							break;
+					}
+				for (size_t i = 0; i < other_size; ++i)
+					_str[pos + i] = other[i];
+				_size += other_size;
+				_size -= len;
+				_str[_size] = '\0';
+				return *this;
+			}
+
+			basic_string<value_type> & replace(const_iterator i1, const_iterator i2, const value_type *other) {
+				return replace(i1.pos, i2 - i1, other);
+			}
+
+			basic_string<value_type> & replace(size_t pos, size_t len, const value_type *other, size_t n) {
+				reserve(_size + n - len);
+				if (n < len)
+					for (size_t i = pos; i < _size + n - len; ++i)
+						_str[i] = _str[i + len - n];
+				else
+					for (size_t i = _size - len - 1;; --i) {
+						_str[pos + n + i - 1] = _str[pos + i];
+						if (i == 0)
+							break;
+					}
+				for (size_t i = 0; i < n; ++i)
+					_str[pos + i] = other[i];
+				_size += n;
+				_size -= len;
+				_str[_size] = '\0';
+				return *this;
+			}
+
+			basic_string<value_type> & replace(const_iterator i1, const_iterator i2, const value_type *other, size_t n) {
+				return replace(i1.pos, i2 - i1, other, n);
+			}
+
+			basic_string<value_type> & replace(size_t pos, size_t len, size_t n, char ch) {
+				reserve(_size + n - len);
+				if (n < len)
+					for (size_t i = pos; i < _size + n - len; ++i)
+						_str[i] = _str[i + len - n];
+				else
+					for (size_t i = _size - len - 1;; --i) {
+						_str[pos + n + i - 1] = _str[pos + i];
+						if (i == 0)
+							break;
+					}
+				for (size_t i = 0; i < n; ++i)
+					_str[pos + i] = ch;
+				_size += n;
+				_size -= len;
+				_str[_size] = '\0';
+				return *this;
+			}
+
+			basic_string<value_type> & replace(const_iterator i1, const_iterator i2, size_t n, char ch) {
+				return replace(i1.pos, i2 - i1, n, ch);
+			}
+
+			template <class InputIterator>
+			basic_string<value_type> & replace(const_iterator i1, const_iterator i2, InputIterator first, InputIterator last) {
+				size_t to_add = 0;
+				for (InputIterator iter = first; iter != last; ++iter)
+					++to_add;
+				const size_t len = i2 - i1;
+				reserve(_size + to_add - len);
+				if (to_add < len)
+					for (size_t i = i1.pos; i < _size + to_add - len; ++i)
+						_str[i] = _str[i + len - to_add];
+				else
+					for (size_t i = _size - len - 1;; --i) {
+						_str[i1.pos + to_add + i - 1] = _str[i1.pos + i];
+						if (i == 0)
+							break;
+					}
+				for (size_t i = i1.pos; first != last; ++first)
+					_str[i++] = *first;
+				_size += to_add;
 				_size -= len;
 				_str[_size] = '\0';
 				return *this;
