@@ -735,12 +735,12 @@ namespace std {
 			basic_string<value_type> & replace(size_t pos, size_t len, size_t n, char ch) {
 				reserve(_size + n - len);
 				if (n < len)
-					for (size_t i = pos; i < _size + n - len; ++i)
+					for (size_t i = pos + n; i < _size + n - len; ++i)
 						_str[i] = _str[i + len - n];
 				else
-					for (size_t i = _size - len - 1;; --i) {
-						_str[pos + n + i - 1] = _str[pos + i];
-						if (i == 0)
+					for (size_t i = _size + n - len - 1;; --i) {
+						_str[i] = _str[i - n + len];
+						if (i == pos + n)
 							break;
 					}
 				for (size_t i = 0; i < n; ++i)
@@ -767,7 +767,7 @@ namespace std {
 						_str[i] = _str[i + len - to_add];
 				else
 					for (size_t i = _size - len - 1;; --i) {
-						_str[i1.pos + to_add + i - 1] = _str[i1.pos + i];
+						_str[i1.pos + len + i - 1] = _str[i1.pos + i];
 						if (i == 0)
 							break;
 					}
