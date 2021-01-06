@@ -12,9 +12,13 @@ namespace DsOS {
 	class Memory {
 		public:
 			struct BlockMeta {
+				void *extra1;
+				void *extra2;
 				size_t size;
 				BlockMeta *next;
 				bool free;
+				void *extra3;
+				void *extra4;
 			};
 
 		private:

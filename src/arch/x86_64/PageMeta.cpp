@@ -77,10 +77,10 @@ namespace x86_64 {
 			bitmap[index / (8 * sizeof(bitmap_t))] &= ~(1 << (index % (8 * sizeof(bitmap_t))));
 	}
 
-	bool PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+	uintptr_t PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
 	                        void *physical_address) {
 		if (pages == -1)
-			return false;
+			return 0;
 
 		DsOS::Kernel *kernel = DsOS::Kernel::instance;
 		if (!kernel) {
@@ -122,6 +122,7 @@ namespace x86_64 {
 		}
 
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
+		uintptr_t assigned = 0;
 		if (pt[pt_index] == 0) {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {
@@ -132,11 +133,12 @@ namespace x86_64 {
 				printf("No free pages!\n");
 				for (;;);
 			}
+			assigned = pt[pt_index];
 		} else {
 			// Nothing really needed to be done anyway...
 		}
 
-		return true;
+		return assigned;
 	}
 
 	void PageMeta4K::assignSelf() {

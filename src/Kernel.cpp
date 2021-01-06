@@ -97,13 +97,27 @@ namespace DsOS {
 		printf("%lu\n", map.size());
 
 		// map[42] = std::string(0x1000 - 0x00, 'X');
-		map[42] = std::string(0x1700, 'X');
+		constexpr char special = 'Z';
+		map[42] = std::string(0x1700, special);
 
-		for (const std::pair<const int, std::string> &pair: map)
-			printf("%d, 0x%lx, \"%s\"\n", pair.first, pair.second.c_str(), pair.second.c_str());
+		for (const std::pair<const int, std::string> &pair: map) {
+			// printf("%d, 0x%lx, \"%s\"\n", pair.first, pair.second.c_str(), pair.second.c_str());
+			const char *str = pair.second.c_str();
+			printf("%d, 0x%lx, \"", pair.first, str);
+			for (size_t i = 0; i < 0x1000; ++i) {
+				printf("%c", str[i]);
+				if (str[i] != special) {
+					printf_putc = false;
+					int x = str[i];
+					printf("[%d: 0x%lx]\n", x & 0xff, &str[i]);
+					printf_putc = true;
+				}
+			}
+			printf("\"\n");
+		}
 
-		x86_64::APIC::initTimer(1);
-		x86_64::APIC::disableTimer();
+		// x86_64::APIC::initTimer(1);
+		// x86_64::APIC::disableTimer();
 
 		uint64_t *rbp, rip;
 		asm volatile("mov %%rbp, %0; lea (%%rip), %1" : "=r"(rbp), "=r"(rip));
@@ -111,6 +125,8 @@ namespace DsOS {
 		printf("rip:    0x%lx\n", rip);
 
 		// schedule();
+		kernelPML4.print(false);
+
 		for (;;);
 	}
 

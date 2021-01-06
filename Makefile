@@ -9,7 +9,7 @@ CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++20 -Drestrict=__restrict__
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
-QEMU_EXTRA   ?= -usb -device usb-kbd disk.img
+# QEMU_EXTRA   ?= -usb -device usb-kbd disk.img
 
 ASSEMBLED := $(shell find asm/*.S)
 CSRC      := $(shell find src -name \*.c)

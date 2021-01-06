@@ -14,6 +14,7 @@ namespace DsOS {
 	Memory::Memory(): Memory((char *) 0, (char *) 0) {}
 
 	uintptr_t Memory::realign(uintptr_t val) {
+		printf("realign(0x%lx)\n", val);
 		size_t offset = (val + sizeof(BlockMeta)) % MEMORY_ALIGN;
 		if (offset)
 			val += MEMORY_ALIGN - offset;
@@ -21,6 +22,7 @@ namespace DsOS {
 	}
 
 	Memory::BlockMeta * Memory::findFreeBlock(BlockMeta * &last, size_t size) {
+		printf("findFreeBlock(0x%lx, %lu)\n", last, size);
 		BlockMeta *current = base;
 		while (current && !(current->free && current->size >= size)) {
 			last = current;
@@ -30,6 +32,7 @@ namespace DsOS {
 	}
 
 	Memory::BlockMeta * Memory::requestSpace(BlockMeta *last, size_t size) {
+		printf("requestSpace(0x%lx, %lu)\n", last, size);
 		BlockMeta *block = (BlockMeta *) realign((uintptr_t) end);
 
 		if (last)
@@ -45,6 +48,7 @@ namespace DsOS {
 	}
 
 	void * Memory::allocate(size_t size, size_t /* alignment */) {
+		printf("allocate(%lu)\n", size);
 		BlockMeta *block = nullptr;
 
 		if (size <= 0)
@@ -73,6 +77,7 @@ namespace DsOS {
 	}
 
 	void Memory::split(BlockMeta &block, size_t size) {
+		printf("split(0x%lx, %lu)\n", &block, size);
 		if (block.size > size + sizeof(BlockMeta)) {
 			// We have enough space to split the block, unless alignment takes up too much.
 			BlockMeta *new_block = (BlockMeta *) realign((uintptr_t) &block + size + sizeof(BlockMeta) + 1);
@@ -105,10 +110,12 @@ namespace DsOS {
 	}
 
 	Memory::BlockMeta * Memory::getBlock(void *ptr) {
+		printf("getBlock(0x%lx)\n", ptr);
 		return (BlockMeta *) ptr - 1;
 	}
 
 	void Memory::free(void *ptr) {
+		printf("free(0x%lx)\n", ptr);
 		if (!ptr)
 			return;
 
@@ -119,6 +126,7 @@ namespace DsOS {
 	}
 
 	int Memory::merge() {
+		printf("merge()\n");
 		int count = 0;
 		BlockMeta *current = base;
 		while (current && current->next) {
@@ -134,6 +142,7 @@ namespace DsOS {
 	}
 
 	void Memory::setBounds(char *new_start, char *new_high) {
+		printf("setBounds(0x%lx, 0x%lx)\n", new_start, new_high);
 		start = new_start;
 		high = new_high;
 		end = new_start;

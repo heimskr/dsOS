@@ -82,12 +82,14 @@ void page_interrupt() {
 		for (;;);
 	}
 
-	if (!meta.assign(pml4i, pdpi, pdi, pti)) {
+	uintptr_t assigned = meta.assign(pml4i, pdpi, pdi, pti) & ~0xfff;
+
+	if (assigned == 0) {
 		printf("Couldn't assign a page!\n");
 		for (;;);
 	}
 
-	printf("Assigned a page!\n");
+	printf("Assigned a page (0x%lx)!\n", assigned);
 
 	// kernel->kernelPML4.print(false);
 
@@ -95,7 +97,9 @@ void page_interrupt() {
 	// for (size_t i = 0; i < page_size / sizeof(uint64_t) - 1; ++i)
 	// 	page_addr[i] = 0;
 
-	memset((void *) (address & ~0xfff), 0, page_size - 0x100);
+	kernel->backtrace();
+
+	// memset((void *) (address & ~0xfff), 0, page_size - 0x100);
 }
 
 void spurious_interrupt() {
