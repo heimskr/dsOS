@@ -12,13 +12,9 @@ namespace DsOS {
 	class Memory {
 		public:
 			struct BlockMeta {
-				void *extra1;
-				void *extra2;
 				size_t size;
 				BlockMeta *next;
 				bool free;
-				void *extra3;
-				void *extra4;
 			};
 
 		private:
@@ -31,7 +27,6 @@ namespace DsOS {
 			BlockMeta * findFreeBlock(BlockMeta * &last, size_t);
 			BlockMeta * requestSpace(BlockMeta *last, size_t);
 			void split(BlockMeta &, size_t);
-			BlockMeta * getBlock(void *);
 			int merge();
 
 		public:
@@ -47,6 +42,7 @@ namespace DsOS {
 			void * allocate(size_t size, size_t alignment = 0);
 			void free(void *);
 			void setBounds(char *new_start, char *new_high);
+			BlockMeta * getBlock(void *);
 			size_t getAllocated() const;
 			size_t getUnallocated() const;
 	};

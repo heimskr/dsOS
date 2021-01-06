@@ -107,6 +107,23 @@ isr_iretq_\id :
 
 
 
+
+.macro print1 fmt, reg
+	movq \fmt , %rdi
+	movq \reg , %rsi
+	movq $0, %rax
+	call printf
+.endm
+
+.macro print0 fmt
+	movq \fmt , %rdi
+	movq $0, %rax
+	call printf
+.endm
+
+
+
+
 .section .bss
 	.comm gpf_addr, 8
 	.comm timer_addr, 8
@@ -114,6 +131,14 @@ isr_iretq_\id :
 .section .rodata
 timerfmt: .asciz "Timer interrupt: 0x%lx\n"
 pagefmt: .asciz ":: 0x%lx\n"
+raxfmt: .asciz "%%rax: 0x%lx\n"
+rbxfmt: .asciz "%%rbx: 0x%lx\n"
+rcxfmt: .asciz "%%rcx: 0x%lx\n"
+rdxfmt: .asciz "%%rdx: 0x%lx\n"
+rdifmt: .asciz "%%rdi: 0x%lx\n"
+rsifmt: .asciz "%%rsi: 0x%lx\n"
+addrfmt: .asciz "addr: 0x%lx\n"
+gpffmt: .asciz "General protection fault!\n"
 
 .data
 ticks: .8byte 0
@@ -135,16 +160,40 @@ timer_max: .8byte -1
 isr_13:
 	cli
 	push %rax
-	movq 16(%rsp), %rax
-	mov %rax, gpf_addr
+	push %rbx
+	push %rcx
+	push %rdx
+	push %rdi
+	push %rsi
+	print0 $gpffmt
+	print1 $addrfmt, 56(%rsp)
+	print1 $raxfmt, 48(%rsp)
+	print1 $rbxfmt, 40(%rsp)
+	print1 $rcxfmt, 32(%rsp)
+	print1 $rdxfmt, 24(%rsp)
+	print1 $rdifmt, 16(%rsp)
+	print1 $rsifmt, 8(%rsp)
+	pop %rsi
+	pop %rdi
+	pop %rdx
+	pop %rcx
+	pop %rbx
 	pop %rax
-isr_push_13:
-	pushw $0
-	pushw $13
-	isr_common general_protection_fault
-isr_iretq_13:
-	add $4, %rsp
+	1: jmp 1b
 	iretq
+// isr_13:
+// 	cli
+// 	push %rax
+// 	movq 16(%rsp), %rax
+// 	mov %rax, gpf_addr
+// 	pop %rax
+// isr_push_13:
+// 	pushw $0
+// 	pushw $13
+// 	isr_common general_protection_fault
+// isr_iretq_13:
+// 	add $4, %rsp
+// 	iretq
 
 .global isr_14
 .type isr_14, @function
@@ -154,18 +203,7 @@ isr_14:
 	mov 16(%rsp), %rax
 	push %rdi
 	push %rsi
-	mov $pagefmt, %rdi
-	mov %rax, %rsi
-	mov $0, %rax
-	call printf
-	mov $pagefmt, %rdi
-	mov %r14, %rsi
-	mov $0, %rax
-	call printf
-	mov $pagefmt, %rdi
-	mov %r15, %rsi
-	mov $0, %rax
-	call printf
+	print1 $pagefmt, %rax
 	pop %rsi
 	pop %rdi
 	pop %rax
@@ -183,13 +221,11 @@ isr_32:
 	mov 8(%rsp), %rax
 	push %rdi
 	push %rsi
-	mov $timerfmt, %rdi
 	incq (ticks)
-	// movq (ticks), %rsi
-	mov %rax, %rsi
 
-	mov $0, %rax
-	call printf
+	// print1 $timerfmt, (ticks)
+	print1 $timerfmt, %rax
+
 	movq (apic_base), %rax
 	add $0xb0, %rax
 	movl $0, (%rax)

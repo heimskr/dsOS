@@ -51,8 +51,8 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 
 		// Write 8 `op_t' per iteration until less than 8 `op_t' remain.
 		xlen = len / (sizeof(op_t) * 8);
-		asm volatile("movq %0, %%r14" :: "r"(dstpp));
-		asm volatile("movq %0, %%r15" :: "r"(&((op_t *) dstp)[4]));
+		// asm volatile("movq %0, %%r14" :: "r"(dstpp));
+		// asm volatile("movq %0, %%r15" :: "r"(&((op_t *) dstp)[4]));
 		while (xlen > 0) {
 			((op_t *) dstp)[0] = cccc;
 			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 0, cccc);

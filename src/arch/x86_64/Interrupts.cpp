@@ -79,6 +79,7 @@ void page_interrupt() {
 	x86_64::PageMeta &meta = kernel->pager;
 	if (!meta) {
 		printf("Kernel pager is invalid!\n");
+		kernel->backtrace();
 		for (;;);
 	}
 
@@ -92,12 +93,6 @@ void page_interrupt() {
 	printf("Assigned a page (0x%lx)!\n", assigned);
 
 	// kernel->kernelPML4.print(false);
-
-	// uint64_t *page_addr = (uint64_t *) (address & ~0xfff);
-	// for (size_t i = 0; i < page_size / sizeof(uint64_t) - 1; ++i)
-	// 	page_addr[i] = 0;
-
-	kernel->backtrace();
 
 	memset((void *) (address & ~0xfff), 'q', page_size);
 }

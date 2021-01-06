@@ -38,14 +38,10 @@ namespace DsOS {
 		if (Serial::init())
 			for (char ch: "\n\n\n")
 				Serial::write(ch);
-		uint64_t rcs = 0, pfla = 0;
-		asm("mov %%cs, %0" : "=r" (rcs));
-		// printf("Current ring: %d\n", rcs & 3);
-		asm("mov %%cr2, %0" : "=r" (pfla));
-		// printf("PFLA: %llu\n", pfla);
 		detectMemory();
 		arrangeMemory();
 		initPageDescriptors();
+		x86_64::IDT::init();
 
 		// pml4->print();
 
@@ -60,7 +56,6 @@ namespace DsOS {
 		// printf("Core count: %d\n", x86_64::coreCount());
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
-		x86_64::IDT::init();
 
 		pager = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
 		pager.assignSelf();
@@ -70,29 +65,21 @@ namespace DsOS {
 
 		x86_64::APIC::init(*this);
 
-		int *somewhere = new int(42);
-		printf("somewhere: [0x%lx] = %d\n", somewhere, *somewhere);
-
-		printf("sizeof(PageMeta) = %ld, sizeof(PageMeta4K) = %ld\n", sizeof(x86_64::PageMeta), sizeof(x86_64::PageMeta4K));
-		printf("pageCount = %d, bitmapSize = %ld\n", pager.pageCount(), pager.bitmapSize());
-
 		kernelPML4.print(false);
-
-		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
-		// printf("<%d> : ", pager.findFree());
-		// printf("<%d>\n", pager.pagesUsed());
-
-		int x = *((int *) 0xdeadbeef);
-		printf("x = %d\n", x);
-
-		// printf("<%d> : <%d>\n", pager.findFree(), pager.pagesUsed());
 
 		x86_64::PIC::clearIRQ(1);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
 
+
 		std::unordered_map<int, std::string> map;
+
+		try {
+			throw 42;
+		} catch(int err) {
+			printf("caught %d\n", err);
+		}
 
 		printf("%lu\n", map.size());
 
@@ -119,13 +106,7 @@ namespace DsOS {
 		// x86_64::APIC::initTimer(1);
 		// x86_64::APIC::disableTimer();
 
-		uint64_t *rbp, rip;
-		asm volatile("mov %%rbp, %0; lea (%%rip), %1" : "=r"(rbp), "=r"(rip));
-		printf("rbp(0): 0x%lx\n", rbp);
-		printf("rip:    0x%lx\n", rip);
-
 		// schedule();
-		kernelPML4.print(false);
 
 		for (;;);
 	}
@@ -135,7 +116,7 @@ namespace DsOS {
 		asm volatile("mov %%rbp, %0" : "=r"(rbp));
 		printf("Backtrace:\n");
 		for (int i = 0; (uintptr_t) rbp != 0; ++i) {
-			printf("[%lx] (%d)\n", *(rbp + 1), i);
+			printf("[ 0x%lx ] (%d)\n", *(rbp + 1), i);
 			rbp = (uint64_t *) *rbp;
 		}
 	}
