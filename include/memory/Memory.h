@@ -58,7 +58,7 @@ extern "C" {
 extern DsOS::Memory *global_memory;
 
 #define MEMORY_OPERATORS_SET
-
+#ifndef __cpp_exceptions
 inline void * operator new(size_t size)   throw() { return malloc(size); }
 inline void * operator new[](size_t size) throw() { return malloc(size); }
 inline void * operator new(size_t, void *ptr)   throw() { return ptr; }
@@ -69,5 +69,16 @@ inline void operator delete(void *, void *)   throw() {}
 inline void operator delete[](void *, void *) throw() {}
 inline void operator delete(void *, unsigned long)   throw() {}
 inline void operator delete[](void *, unsigned long) throw() {}
-
+#else
+inline void * operator new(size_t size)   { return malloc(size); }
+inline void * operator new[](size_t size) { return malloc(size); }
+inline void * operator new(size_t, void *ptr)   { return ptr; }
+inline void * operator new[](size_t, void *ptr) { return ptr; }
+inline void operator delete(void *ptr)   noexcept { free(ptr); }
+inline void operator delete[](void *ptr) noexcept { free(ptr); }
+inline void operator delete(void *, void *)   noexcept {}
+inline void operator delete[](void *, void *) noexcept {}
+inline void operator delete(void *, unsigned long)   noexcept {}
+inline void operator delete[](void *, unsigned long) noexcept {}
+#endif
 #endif

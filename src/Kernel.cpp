@@ -2,7 +2,6 @@
 #include "Terminal.h"
 #include "DsUtil.h"
 #include "hardware/Serial.h"
-#include "lib/printf.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
 #include "arch/x86_64/APIC.h"
@@ -11,6 +10,7 @@
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
 #include <string>
+#include <unordered_map>
 
 extern void *multiboot_data;
 extern unsigned int multiboot_magic;
@@ -18,10 +18,6 @@ extern unsigned int multiboot_magic;
 extern void *tmp_stack;
 
 #define DEBUG_MMAP
-
-// void timer_test() {
-// 	printf("Timer done.\n");
-// }
 
 void schedule();
 
@@ -95,6 +91,17 @@ namespace DsOS {
 
 		timer_addr = &::schedule;
 		timer_max = 4;
+
+		std::unordered_map<int, std::string> map;
+
+		printf("%lu\n", map.size());
+
+		map[42] = "hello";
+
+		for (const std::pair<const int, std::string> &pair: map)
+			printf("%d, \"%s\"\n", pair.first, pair.second.c_str());
+
+
 
 		x86_64::APIC::initTimer(1);
 
