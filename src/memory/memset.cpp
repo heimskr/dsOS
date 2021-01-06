@@ -19,16 +19,8 @@
 #include "memory/memset.h"
 
 extern "C" void * memset(void *dstpp, int c, size_t len) {
-	constexpr char special = 'Z';
-	// for (size_t i = 0; i < len; ++i)
-	// 	((char *) dstpp)[i] = c;
-	// return dstpp;
-		
-	//*
 	printf("memset(0x%lx, %d, %lu)\n", (uintptr_t) dstpp, c, len);
 	long int dstp = (long int) dstpp;
-
-	printf_putc = false;
 
 	if (len >= 8) {
 		size_t xlen;
@@ -44,40 +36,21 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 		// There are at least some bytes to set. No need to test for LEN == 0 in this alignment loop.
 		while (dstp % sizeof(op_t) != 0) {
 			((char *) dstp)[0] = c;
-			if (c == special) printf("[0x%lx <- %d]\n", dstp, c);
 			++dstp;
 			--len;
 		}
 
 		// Write 8 `op_t' per iteration until less than 8 `op_t' remain.
 		xlen = len / (sizeof(op_t) * 8);
-		// asm volatile("movq %0, %%r14" :: "r"(dstpp));
-		// asm volatile("movq %0, %%r15" :: "r"(&((op_t *) dstp)[4]));
 		while (xlen > 0) {
 			((op_t *) dstp)[0] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 0, cccc);
 			((op_t *) dstp)[1] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 1, cccc);
 			((op_t *) dstp)[2] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 2, cccc);
 			((op_t *) dstp)[3] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 3, cccc);
 			((op_t *) dstp)[4] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 4, cccc);
 			((op_t *) dstp)[5] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 5, cccc);
 			((op_t *) dstp)[6] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 6, cccc);
 			((op_t *) dstp)[7] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 7, cccc);
-			// ((op_t *) dstp)[0] = cccc;
-			// ((op_t *) dstp)[1] = cccc;
-			// ((op_t *) dstp)[2] = cccc;
-			// ((op_t *) dstp)[3] = cccc;
-			// ((op_t *) dstp)[4] = cccc;
-			// ((op_t *) dstp)[5] = cccc;
-			// ((op_t *) dstp)[6] = cccc;
-			// ((op_t *) dstp)[7] = cccc;
 			dstp += 8 * sizeof(op_t);
 			--xlen;
 		}
@@ -88,7 +61,6 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 		xlen = len / sizeof(op_t);
 		while (xlen > 0) {
 			((op_t *) dstp)[0] = cccc;
-			if (c == special) printf("[0x%lx <- 0x%lx]\n", ((op_t *) dstp) + 0, cccc);
 			dstp += sizeof(op_t);
 			--xlen;
 		}
@@ -99,13 +71,9 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 	// Write the last few bytes.
 	while (len > 0) {
 		((char *) dstp)[0] = c;
-			if (c == special) printf("[0x%lx <- %d]\n", dstp, c);
 		++dstp;
 		--len;
 	}
 
-	printf_putc = true;
-
 	return dstpp;
-	//*/
 }

@@ -13,7 +13,7 @@ extern uint64_t ticks;
 
 namespace x86_64::APIC {
 	void init(DsOS::Kernel &kernel) {
-		printf("Initializing APIC timer.\n");
+		printf("Initializing APIC.\n");
 		uint64_t msr = rdmsr(MSR);
 		apic_base = (uint32_t *) (msr & 0xffffff000);
 		wrmsr(MSR, msr | ENABLE, msr >> 32);

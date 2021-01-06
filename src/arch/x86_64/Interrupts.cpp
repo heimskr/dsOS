@@ -102,6 +102,7 @@ void spurious_interrupt() {
 }
 
 void irq1() {
+	printf("what\n");
 	DsOS::PS2Keyboard::onIRQ1();
 }
 
