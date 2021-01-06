@@ -150,6 +150,7 @@ namespace DsOS {
 }
 
 extern "C" void * malloc(size_t size) {
+	printf("malloc(0x%lx)\n", size);
 	if (global_memory == nullptr)
 		return nullptr;
 	return global_memory->allocate(size);

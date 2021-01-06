@@ -96,24 +96,36 @@ namespace DsOS {
 
 		printf("%lu\n", map.size());
 
-		map[42] = "hello";
+		// map[42] = std::string(0x1000 - 0x00, 'X');
+		map[42] = std::string(0x1700, 'X');
 
 		for (const std::pair<const int, std::string> &pair: map)
-			printf("%d, \"%s\"\n", pair.first, pair.second.c_str());
-
-
+			printf("%d, 0x%lx, \"%s\"\n", pair.first, pair.second.c_str(), pair.second.c_str());
 
 		x86_64::APIC::initTimer(1);
+		x86_64::APIC::disableTimer();
 
+		uint64_t *rbp, rip;
+		asm volatile("mov %%rbp, %0; lea (%%rip), %1" : "=r"(rbp), "=r"(rip));
+		printf("rbp(0): 0x%lx\n", rbp);
+		printf("rip:    0x%lx\n", rip);
 
-
-		// x86_64::APIC::disableTimer();
-
+		// schedule();
 		for (;;);
 	}
 
+	void Kernel::backtrace() {
+		uint64_t *rbp;
+		asm volatile("mov %%rbp, %0" : "=r"(rbp));
+		printf("Backtrace:\n");
+		for (int i = 0; (uintptr_t) rbp != 0; ++i) {
+			printf("[%lx] (%d)\n", *(rbp + 1), i);
+			rbp = (uint64_t *) *rbp;
+		}
+	}
+
 	void Kernel::schedule() {
-		printf("Nice.\n");
+		backtrace();
 	}
 
 	void Kernel::detectMemory() {

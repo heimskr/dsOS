@@ -51,6 +51,8 @@ namespace DsOS {
 			static void wait(size_t millimoments = 1000);
 
 			void schedule();
+
+			static void backtrace();
 	};
 }
 

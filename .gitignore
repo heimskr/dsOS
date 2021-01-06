@@ -4,6 +4,7 @@
 /.dep
 /.metals
 /.vscode
+/lib/*.a
 /disk.img
 .DS_Store
 ._.DS_Store

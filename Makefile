@@ -44,8 +44,8 @@ $(foreach fname,$(ASSEMBLED),$(eval $(call ASSEMBLED_TEMPLATE,$(fname))))
 src/arch/x86_64/Interrupts.o: src/arch/x86_64/Interrupts.cpp include/arch/x86_64/Interrupts.h
 	$(CPP) $(CPPFLAGS) -mgeneral-regs-only -DARCHX86_64 -c $< -o $@
 
-kernel: $(OBJS) kernel.ld Makefile musl/lib/libc.a
-	$(CPP) -z max-page-size=0x1000 $(CPPFLAGS) -no-pie -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS) musl/lib/libc.a
+kernel: $(OBJS) kernel.ld Makefile musl/lib/libc.a lib/libsupc++.a
+	$(CPP) -z max-page-size=0x1000 $(CPPFLAGS) -no-pie -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS) musl/lib/libc.a lib/libsupc++.a
 
 musl/lib/libc.a:
 	$(MAKE) -C musl

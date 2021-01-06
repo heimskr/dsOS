@@ -15,9 +15,11 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#include "lib/printf.h"
 #include "memory/memset.h"
 
 extern "C" void * memset(void *dstpp, int c, size_t len) {
+	printf("memset(0x%lx, %d, %lu)\n", (uintptr_t) dstpp, c, len);
 	long int dstp = (long int) dstpp;
 
 	if (len >= 8) {
@@ -40,6 +42,8 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 
 		// Write 8 `op_t' per iteration until less than 8 `op_t' remain.
 		xlen = len / (sizeof(op_t) * 8);
+		asm volatile("movq %0, %%r14" :: "r"(dstpp));
+		asm volatile("movq %0, %%r15" :: "r"(&((op_t *) dstp)[4]));
 		while (xlen > 0) {
 			((op_t *) dstp)[0] = cccc;
 			((op_t *) dstp)[1] = cccc;

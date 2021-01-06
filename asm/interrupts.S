@@ -112,7 +112,8 @@ isr_iretq_\id :
 	.comm timer_addr, 8
 
 .section .rodata
-fmt32: .asciz "Timer interrupt: 0x%lx\n"
+timerfmt: .asciz "Timer interrupt: 0x%lx\n"
+pagefmt: .asciz ":: 0x%lx\n"
 
 .data
 ticks: .8byte 0
@@ -125,7 +126,7 @@ timer_max: .8byte -1
 .section .text
 	isr_noerrc  0, div0
 	isr_errc    8, double_fault
-	isr_errc   14, page_interrupt
+	// isr_errc   14, page_interrupt
 	// isr_noerrc 33, irq1
 	isr_noerrc 39, spurious_interrupt
 
@@ -145,6 +146,35 @@ isr_iretq_13:
 	add $4, %rsp
 	iretq
 
+.global isr_14
+.type isr_14, @function
+isr_14:
+	cli
+	push %rax
+	mov 16(%rsp), %rax
+	push %rdi
+	push %rsi
+	mov $pagefmt, %rdi
+	mov %rax, %rsi
+	mov $0, %rax
+	call printf
+	mov $pagefmt, %rdi
+	mov %r14, %rsi
+	mov $0, %rax
+	call printf
+	mov $pagefmt, %rdi
+	mov %r15, %rsi
+	mov $0, %rax
+	call printf
+	pop %rsi
+	pop %rdi
+	pop %rax
+	// push $0
+	// push $14
+	isr_common page_interrupt
+	// add $4, %rsp
+	iretq
+
 .global isr_32
 .type isr_32, @function
 isr_32:
@@ -153,7 +183,7 @@ isr_32:
 	mov 8(%rsp), %rax
 	push %rdi
 	push %rsi
-	mov $fmt32, %rdi
+	mov $timerfmt, %rdi
 	incq (ticks)
 	// movq (ticks), %rsi
 	mov %rax, %rsi

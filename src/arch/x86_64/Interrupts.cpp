@@ -91,7 +91,11 @@ void page_interrupt() {
 
 	// kernel->kernelPML4.print(false);
 
-	memset((void *) (address & ~0xfff), 0, page_size);
+	// uint64_t *page_addr = (uint64_t *) (address & ~0xfff);
+	// for (size_t i = 0; i < page_size / sizeof(uint64_t) - 1; ++i)
+	// 	page_addr[i] = 0;
+
+	memset((void *) (address & ~0xfff), 0, page_size - 0x100);
 }
 
 void spurious_interrupt() {
