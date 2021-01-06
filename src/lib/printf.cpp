@@ -1,7 +1,7 @@
 #include "hardware/Serial.h"
 #include "Terminal.h"
 #include "lib/printf.h"
-#include <string.h>
+#include <cstring>
 #include <cstdint>
 
 enum class Status {Scan, Decide, D, U, S, X};
