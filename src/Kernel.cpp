@@ -72,14 +72,7 @@ namespace DsOS {
 		timer_addr = &::schedule;
 		timer_max = 4;
 
-
 		std::unordered_map<int, std::string> map;
-
-		try {
-			throw 42;
-		} catch(int err) {
-			printf("caught %d\n", err);
-		}
 
 		printf("%lu\n", map.size());
 

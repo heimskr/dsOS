@@ -6,7 +6,7 @@ AS           := x86_64-elf-g++
 SHARED_FLAGS := -fno-builtin -O2 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel -fno-pie
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
-CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-rtti -std=c++20 -Drestrict=__restrict__
+CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++20 -Drestrict=__restrict__
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
 # QEMU_EXTRA   ?= -usb -device usb-kbd disk.img
@@ -19,7 +19,7 @@ SOURCES    = $(ASSEMBLED) $(CPPSRC) $(CSRC)
 SPECIAL   := src/arch/x86_64/Interrupts.cpp
 OBJS       = $(patsubst %.S,%.o,$(ASSEMBLED)) $(patsubst %.cpp,%.o,$(CPPSRC)) $(patsubst %.c,%.o,$(CSRC))
 ISO_FILE  := kernel.iso
-LIBS      := musl/lib/libc.a lib/libsupc++.a lib/libgcc.a lib/libunwind.a
+LIBS      := musl/lib/libc.a
 
 all: kernel
 
