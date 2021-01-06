@@ -98,13 +98,13 @@ namespace DsOS {
 
 		// map[42] = std::string(0x1000 - 0x00, 'X');
 		constexpr char special = 'Z';
-		map[42] = std::string(0x1700, special);
+		map[42] = std::string(0x2500, special);
 
 		for (const std::pair<const int, std::string> &pair: map) {
 			// printf("%d, 0x%lx, \"%s\"\n", pair.first, pair.second.c_str(), pair.second.c_str());
 			const char *str = pair.second.c_str();
 			printf("%d, 0x%lx, \"", pair.first, str);
-			for (size_t i = 0; i < 0x1000; ++i) {
+			for (size_t i = 0; i < pair.second.size(); ++i) {
 				printf("%c", str[i]);
 				if (str[i] != special) {
 					printf_putc = false;

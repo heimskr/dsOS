@@ -99,7 +99,7 @@ void page_interrupt() {
 
 	kernel->backtrace();
 
-	// memset((void *) (address & ~0xfff), 0, page_size - 0x100);
+	memset((void *) (address & ~0xfff), 'q', page_size);
 }
 
 void spurious_interrupt() {
