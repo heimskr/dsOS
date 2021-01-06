@@ -4,7 +4,7 @@
 #include "Defs.h"
 #include "lib/printf.h"
 
-#define MEMORY_ALIGN 32
+#define MEMORY_ALIGN 4096
 
 void spin(size_t time = 3);
 
@@ -23,8 +23,8 @@ namespace DsOS {
 			char *start, *high, *end;
 			BlockMeta *base = nullptr;
 
-			char * realign(char * &);
-			BlockMeta * findFreeBlock(BlockMeta **last, size_t);
+			uintptr_t realign(uintptr_t);
+			BlockMeta * findFreeBlock(BlockMeta * &last, size_t);
 			BlockMeta * requestSpace(BlockMeta *last, size_t);
 			void split(BlockMeta &, size_t);
 			BlockMeta * getBlock(void *);
@@ -40,7 +40,7 @@ namespace DsOS {
 			Memory & operator=(const Memory &) = delete;
 			Memory & operator=(Memory &&) = delete;
 
-			void * allocate(size_t);
+			void * allocate(size_t size, size_t alignment = 0);
 			void free(void *);
 			void setBounds(char *new_start, char *new_high);
 			size_t getAllocated() const;
@@ -51,6 +51,7 @@ namespace DsOS {
 extern "C" void * malloc(size_t);
 extern "C" void * calloc(size_t, size_t);
 extern "C" void free(void *);
+extern "C" int posix_memalign(void **memptr, size_t alignment, size_t size);
 
 extern DsOS::Memory *global_memory;
 

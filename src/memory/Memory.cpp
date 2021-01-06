@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "memory/Memory.h"
 #include "memory/memset.h"
 
@@ -9,29 +11,30 @@ void spin(size_t time) {
 
 namespace DsOS {
 	Memory::Memory(char *start_, char *high_): start(start_), high(high_), end(start_) {
-		realign(start);
+		start = (char *) realign((uintptr_t) start);
 		global_memory = this;
 	}
 
 	Memory::Memory(): Memory((char *) 0, (char *) 0) {}
 
-	char * Memory::realign(char * &val) {
-		if ((long long) val % MEMORY_ALIGN)
-			val += MEMORY_ALIGN - ((long long) val % MEMORY_ALIGN);
+	uintptr_t Memory::realign(uintptr_t val) {
+		size_t offset = (val + sizeof(BlockMeta)) % MEMORY_ALIGN;
+		if (offset)
+			val += MEMORY_ALIGN - offset;
 		return val;
 	}
 
-	Memory::BlockMeta * Memory::findFreeBlock(BlockMeta **last, size_t size) {
+	Memory::BlockMeta * Memory::findFreeBlock(BlockMeta * &last, size_t size) {
 		BlockMeta *current = base;
 		while (current && !(current->free && current->size >= size)) {
-			*last = current;
+			last = current;
 			current = current->next;
 		}
 		return current;
 	}
 
 	Memory::BlockMeta * Memory::requestSpace(BlockMeta *last, size_t size) {
-		BlockMeta *block = (BlockMeta *) realign(end);
+		BlockMeta *block = (BlockMeta *) realign((uintptr_t) end);
 
 		if (last)
 			last->next = block;
@@ -45,7 +48,7 @@ namespace DsOS {
 		return block;
 	}
 
-	void * Memory::allocate(size_t size) {
+	void * Memory::allocate(size_t size, size_t alignment) {
 		BlockMeta *block = nullptr;
 
 		if (size <= 0)
@@ -58,7 +61,7 @@ namespace DsOS {
 			base = block;
 		} else {
 			BlockMeta *last = base;
-			block = findFreeBlock(&last, size);
+			block = findFreeBlock(last, size);
 			if (!block) {
 				block = requestSpace(last, size);
 				if (!block)
@@ -76,11 +79,9 @@ namespace DsOS {
 	void Memory::split(BlockMeta &block, size_t size) {
 		if (block.size > size + sizeof(BlockMeta)) {
 			// We have enough space to split the block, unless alignment takes up too much.
-			BlockMeta *new_block = (BlockMeta *) ((char *) &block + size + sizeof(BlockMeta) + 1);
-			
+			BlockMeta *new_block = (BlockMeta *) realign((uintptr_t) &block + size + sizeof(BlockMeta) + 1);
+
 			// After we realign, we need to make sure that the new block's new size isn't negative.
-			char *new_bytes = reinterpret_cast<char *>(new_block);
-			realign(new_bytes);
 
 			if (block.next) {
 				const int new_size = (char *) block.next - (char *) new_block - sizeof(BlockMeta);
@@ -140,7 +141,7 @@ namespace DsOS {
 		start = new_start;
 		high = new_high;
 		end = new_start;
-		realign(start);
+		realign((uintptr_t) start);
 	}
 
 	size_t Memory::getAllocated() const {
@@ -167,4 +168,11 @@ extern "C" void * calloc(size_t count, size_t size) {
 extern "C" void free(void *ptr) {
 	if (global_memory)
 		global_memory->free(ptr);
+}
+
+extern "C" int posix_memalign(void **memptr, size_t alignment, size_t size) {
+	// Return EINVAL if the alignment isn't zero or a power of two or is less than the size of a void pointer.
+	if ((alignment & (alignment - 1)) != 0 || alignment < sizeof(void *))
+		return 22; // EINVAL
+	
 }

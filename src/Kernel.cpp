@@ -10,7 +10,7 @@
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
-#include "lib/string"
+#include <string>
 
 extern void *multiboot_data;
 extern unsigned int multiboot_magic;
@@ -19,11 +19,11 @@ extern void *tmp_stack;
 
 #define DEBUG_MMAP
 
-extern uint64_t ticks;
-
 // void timer_test() {
 // 	printf("Timer done.\n");
 // }
+
+void schedule();
 
 namespace DsOS {
 	Kernel * Kernel::instance = nullptr;
@@ -93,10 +93,20 @@ namespace DsOS {
 
 		x86_64::PIC::clearIRQ(1);
 
-		x86_64::APIC::initTimer(2);
-		x86_64::APIC::disableTimer();
+		timer_addr = &::schedule;
+		timer_max = 4;
+
+		x86_64::APIC::initTimer(1);
+
+
+
+		// x86_64::APIC::disableTimer();
 
 		for (;;);
+	}
+
+	void Kernel::schedule() {
+		printf("Nice.\n");
 	}
 
 	void Kernel::detectMemory() {
@@ -169,4 +179,12 @@ namespace DsOS {
 		for (size_t i = 0; i < millimoments; ++i)
 			for (size_t j = 0; j < 8000000; ++j);
 	}
+}
+
+void schedule() {
+	if (!DsOS::Kernel::instance) {
+		printf("schedule(): Kernel instance is null!\n");
+		for (;;);
+	}
+	DsOS::Kernel::instance->schedule();
 }

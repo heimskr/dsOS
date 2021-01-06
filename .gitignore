@@ -4,6 +4,7 @@
 /.dep
 /.metals
 /.vscode
+/disk.img
 .DS_Store
 ._.DS_Store
 

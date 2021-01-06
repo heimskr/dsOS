@@ -2,25 +2,33 @@
 
 CC            = x86_64-elf-g++
 AS            = x86_64-elf-g++
-SHARED_FLAGS  = -fno-builtin -O0 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone \
+SHARED_FLAGS  = -fno-builtin -O1 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone \
                 -mcmodel=kernel -fno-pie
-CFLAGS        = $(SHARED_FLAGS) -fno-exceptions -fno-rtti -std=c++20
+CFLAGS        = $(SHARED_FLAGS) -Iinclude/lib -Iinclude/lib/minlibc
+CPPFLAGS      = $(CFLAGS) -fno-exceptions -fno-rtti -std=c++20
 ASFLAGS       = $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
-# QEMU_EXTRA  ?= -usb -device usb-kbd
+QEMU_EXTRA  ?= -usb -device usb-kbd disk.img
 
 ASSEMBLED := $(shell find asm/*.S)
-COMPILED  := $(shell find . -name \*.cpp)
-SOURCES    = $(ASSEMBLED) $(COMPILED)
+CSRC      := $(shell find . -name \*.c)
+CPPSRC    := $(shell find . -name \*.cpp)
+
+SOURCES    = $(ASSEMBLED) $(CPPSRC)
 SPECIAL   := ./src/arch/x86_64/Interrupts.cpp
 
-OBJS       = $(patsubst %.S,%.o,$(ASSEMBLED)) $(patsubst %.cpp,%.o,$(COMPILED))
+OBJS       = $(patsubst %.S,%.o,$(ASSEMBLED)) $(patsubst %.cpp,%.o,$(CPPSRC))
 ISO_FILE  := kernel.iso
 
 all: kernel
 
-define COMPILED_TEMPLATE
+define CPP_TEMPLATE
 $(patsubst %.cpp,%.o,$(1)): $(1)
+	$(CC) $(CPPFLAGS) -DARCHX86_64 -c $$< -o $$@
+endef
+
+define C_TEMPLATE
+$(patsubst %.c,%.o,$(1)): $(1)
 	$(CC) $(CFLAGS) -DARCHX86_64 -c $$< -o $$@
 endef
 
@@ -29,14 +37,15 @@ $(patsubst %.S,%.o,$(1)): $(1)
 	$(AS) $(ASFLAGS) -DARCHX86_64 -c $$< -o $$@
 endef
 
-$(foreach fname,$(filter-out $(SPECIAL),$(COMPILED)),$(eval $(call COMPILED_TEMPLATE,$(fname))))
+$(foreach fname,$(filter-out $(SPECIAL),$(CPPSRC)),$(eval $(call CPP_TEMPLATE,$(fname))))
+$(foreach fname,$(CSRC),$(eval $(call C_TEMPLATE,$(fname))))
 $(foreach fname,$(ASSEMBLED),$(eval $(call ASSEMBLED_TEMPLATE,$(fname))))
 
 src/arch/x86_64/Interrupts.o: src/arch/x86_64/Interrupts.cpp include/arch/x86_64/Interrupts.h
-	$(CC) $(CFLAGS) -mgeneral-regs-only -DARCHX86_64 -c $< -o $@
+	$(CC) $(CPPFLAGS) -mgeneral-regs-only -DARCHX86_64 -c $< -o $@
 
 kernel: $(OBJS) kernel.ld Makefile
-	$(CC) -z max-page-size=0x1000 $(CFLAGS) -no-pie -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS)
+	$(CC) -z max-page-size=0x1000 $(CPPFLAGS) -no-pie -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS)
 
 iso: $(ISO_FILE)
 
@@ -60,7 +69,7 @@ DEPFLAGS = -f $(DEPFILE) -s $(DEPTOKEN)
 
 depend:
 	@ echo $(DEPTOKEN) > $(DEPFILE)
-	makedepend $(DEPFLAGS) -- $(CC) $(CFLAGS) -- $(SOURCES) 2>/dev/null
+	makedepend $(DEPFLAGS) -- $(CC) $(CPPFLAGS) -- $(SOURCES) 2>/dev/null
 	@ rm $(DEPFILE).bak
 
 sinclude $(DEPFILE)

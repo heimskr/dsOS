@@ -49,6 +49,8 @@ namespace DsOS {
 			void main();
 
 			static void wait(size_t millimoments = 1000);
+
+			void schedule();
 	};
 }
 

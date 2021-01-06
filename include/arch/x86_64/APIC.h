@@ -6,6 +6,7 @@
 
 extern void (*timer_addr)();
 extern uint64_t timer_max;
+extern uint64_t ticks;
 
 namespace DsOS {
 	class Kernel;
@@ -46,7 +47,6 @@ namespace x86_64::APIC {
 	constexpr uint32_t TIMER_DIVIDE_VALUE = 16;
 	constexpr uint32_t TIMER_NUM_CALIBRATIONS = 5;
 	constexpr uint32_t TIMER_SELECT_DIVIDER = 3;
-
 
 	void init(DsOS::Kernel &);
 	void initTimer(uint32_t frequency);

@@ -112,7 +112,7 @@ isr_iretq_\id :
 	.comm timer_addr, 8
 
 .section .rodata
-fmt32: .asciz "Timer interrupt: %ld\n"
+fmt32: .asciz "Timer interrupt: 0x%lx\n"
 
 .data
 ticks: .8byte 0
@@ -150,11 +150,13 @@ isr_iretq_13:
 isr_32:
 	cli
 	push %rax
+	mov 8(%rsp), %rax
 	push %rdi
 	push %rsi
 	mov $fmt32, %rdi
 	incq (ticks)
-	movq (ticks), %rsi
+	// movq (ticks), %rsi
+	mov %rax, %rsi
 
 	mov $0, %rax
 	call printf
@@ -185,7 +187,6 @@ isr_32_timer_check_done:
 .type isr_33, @function
 isr_33:
 	cli
-	// pushw $0
 	call irq1
 isr_iretq_33:
 	iretq

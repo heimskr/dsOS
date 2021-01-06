@@ -7,6 +7,8 @@ enum class Status {Scan, Decide, D, U, S, X};
 
 bool printf_putc = true;
 
+/*
+
 static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n);
 static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n);
 static void num_to_hex(char *out, char *&optr, const size_t max, long long unsigned int n);
@@ -218,3 +220,5 @@ static void num_to_hex(char *out, char *&optr, const size_t max, long long unsig
 			return;
 	}
 }
+
+//*/
