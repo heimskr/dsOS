@@ -1,13 +1,12 @@
 #include "hardware/Serial.h"
 #include "Terminal.h"
 #include "lib/printf.h"
-#include "lib/string.h"
+#include <string.h>
+#include <cstdint>
 
 enum class Status {Scan, Decide, D, U, S, X};
 
 bool printf_putc = true;
-
-/*
 
 static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n);
 static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n);
@@ -52,7 +51,7 @@ extern "C" int sprintf(char *out, const char *format, ...) {
 	return printed;
 }
 
-extern "C" int snprintf(char *out, const size_t max, const char *format, ...) {
+extern "C" int snprintf(char *out, size_t max, const char *format, ...) {
 	va_list list;
 	va_start(list, format);
 	out[0] = '\0';
@@ -63,7 +62,7 @@ extern "C" int snprintf(char *out, const size_t max, const char *format, ...) {
 
 #define APPEND(ch) do { if (!mappend(out, optr, max, (ch))) return printed; ++printed; } while(0)
 
-extern "C" int vsnprintf(char *out, const size_t max, const char *format, va_list list) {
+extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list) {
 	if (max == 0)
 		return 0;
 
@@ -220,5 +219,3 @@ static void num_to_hex(char *out, char *&optr, const size_t max, long long unsig
 			return;
 	}
 }
-
-//*/

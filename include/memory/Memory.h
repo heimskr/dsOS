@@ -4,7 +4,7 @@
 #include "Defs.h"
 #include "lib/printf.h"
 
-#define MEMORY_ALIGN 4096
+#define MEMORY_ALIGN 32
 
 void spin(size_t time = 3);
 
@@ -48,10 +48,12 @@ namespace DsOS {
 	};
 }
 
-extern "C" void * malloc(size_t);
-extern "C" void * calloc(size_t, size_t);
-extern "C" void free(void *);
-extern "C" int posix_memalign(void **memptr, size_t alignment, size_t size);
+extern "C" {
+	void * malloc(size_t);
+	void * calloc(size_t, size_t);
+	void free(void *);
+	int posix_memalign(void **memptr, size_t alignment, size_t size);
+}
 
 extern DsOS::Memory *global_memory;
 

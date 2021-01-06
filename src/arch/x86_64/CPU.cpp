@@ -1,5 +1,5 @@
 #include "arch/x86_64/CPU.h"
-#include "lib/string.h"
+#include <string.h>
 
 namespace x86_64 {
 	void cpuid(unsigned value, unsigned leaf, unsigned &eax, unsigned &ebx, unsigned &ecx, unsigned &edx) {
@@ -29,7 +29,7 @@ namespace x86_64 {
 		char model[13];
 		getModel(model);
 		unsigned eax, ebx, ecx, edx;
-		if (streq(model, "GenuineIntel")) {
+		if (strcmp(model, "GenuineIntel") == 0) {
 			cpuid(4, 0, eax, ebx, ecx, edx);
 			return ((eax >> 26) & 0x3f) + 1;
 		} else {

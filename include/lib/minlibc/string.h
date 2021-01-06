@@ -20,6 +20,15 @@ char   *strrchr(const char *s, int c);
 char   *strerror(int errnum);
 char   *strstr(const char *, const char *);
 char   *strchr(const char *, int c);
+char   *strcat(char *dest, const char *src);
+char   *strncat(char *dest, const char *src, size_t n);
+int     strcoll(const char *str1, const char *str2);
+size_t  strxfrm(char *dest, const char *src, size_t n);
+size_t  strcspn(const char *s, const char *reject);
+char   *strpbrk(const char *s, const char *accept);
+size_t  strspn(const char *s, const char *accept);
+char   *strtok(char *s, const char *delim);
+
 
 void   *memcpy(void *dest, const void *src, size_t n);
 void   *memset(void *s, int c, size_t n);

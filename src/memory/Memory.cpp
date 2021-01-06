@@ -5,10 +5,6 @@
 
 DsOS::Memory *global_memory = nullptr;
 
-void spin(size_t time) {
-	for (size_t i = 0; i < 100000000 * time; ++i);
-}
-
 namespace DsOS {
 	Memory::Memory(char *start_, char *high_): start(start_), high(high_), end(start_) {
 		start = (char *) realign((uintptr_t) start);
@@ -48,7 +44,7 @@ namespace DsOS {
 		return block;
 	}
 
-	void * Memory::allocate(size_t size, size_t alignment) {
+	void * Memory::allocate(size_t size, size_t /* alignment */) {
 		BlockMeta *block = nullptr;
 
 		if (size <= 0)
@@ -170,9 +166,9 @@ extern "C" void free(void *ptr) {
 		global_memory->free(ptr);
 }
 
-extern "C" int posix_memalign(void **memptr, size_t alignment, size_t size) {
+extern "C" int posix_memalign(void ** /* memptr */, size_t alignment, size_t /* size */) {
 	// Return EINVAL if the alignment isn't zero or a power of two or is less than the size of a void pointer.
 	if ((alignment & (alignment - 1)) != 0 || alignment < sizeof(void *))
 		return 22; // EINVAL
-	
+	return 0;
 }

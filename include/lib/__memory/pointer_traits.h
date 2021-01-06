@@ -10,120 +10,160 @@
 #ifndef _LIBCPP___MEMORY_POINTER_TRAITS_H
 #define _LIBCPP___MEMORY_POINTER_TRAITS_H
 
-#include "lib/type_traits"
+#include <__config>
+#include <type_traits>
 
+#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
 #pragma GCC system_header
-
-namespace std {
-	template <typename T, typename = void>
-	struct __has_element_type: false_type {};
-
-	template <typename T>
-	struct __has_element_type<T, typename __void_t<typename T::element_type>::type>: true_type {};
-
-	template <typename Ptr, bool = __has_element_type<Ptr>::value>
-	struct __pointer_traits_element_type;
-
-	template <typename Ptr>
-	struct __pointer_traits_element_type<Ptr, true> {
-		typedef typename Ptr::element_type type;
-	};
-
-	template <template <typename, typename...> typename S, typename T, typename... Args>
-	struct __pointer_traits_element_type<S<T, Args...>, true> {
-		typedef typename S<T, Args...>::element_type type;
-	};
-
-	template <template <typename, typename...> typename S, typename T, typename... Args>
-	struct __pointer_traits_element_type<S<T, Args...>, false> {
-		typedef T type;
-	};
-
-	template <typename T, typename = void>
-	struct __has_difference_type: false_type {};
-
-	template <typename T>
-	struct __has_difference_type<T, typename __void_t<typename T::difference_type>::type>: true_type {};
-
-	template <typename Ptr, bool = __has_difference_type<Ptr>::value>
-	struct __pointer_traits_difference_type {
-		typedef ptrdiff_t type;
-	};
-
-	template <typename Ptr>
-	struct __pointer_traits_difference_type<Ptr, true> {
-		typedef typename Ptr::difference_type type;
-	};
-
-	template <typename T, typename U>
-	struct __has_rebind {
-		private:
-			struct __two {char __lx; char __lxx;};
-
-			template <typename _Xp>
-			static __two __test(...);
-
-			template <typename _Xp>
-			static char __test(typename _Xp::template rebind<U>* = 0);
-
-		public:
-			static const bool value = sizeof(__test<T>(0)) == 1;
-	};
-
-	template <typename T, typename U, bool = __has_rebind<T, U>::value>
-	struct __pointer_traits_rebind {
-		typedef typename T::template rebind<U> type;
-	};
-
-	template <template <typename, typename...> typename S, typename T, typename ...Args, typename U>
-	struct __pointer_traits_rebind<S<T, Args...>, U, true> {
-		typedef typename S<T, Args...>::template rebind<U> type;
-	};
-
-	template <template <typename, typename...> typename S, typename T, typename ...Args, typename U>
-	struct __pointer_traits_rebind<S<T, Args...>, U, false> {
-		typedef S<U, Args...> type;
-	};
-
-	template <typename Ptr>
-	struct pointer_traits {
-		typedef Ptr pointer;
-		typedef typename __pointer_traits_element_type<pointer>::type element_type;
-		typedef typename __pointer_traits_difference_type<pointer>::type difference_type;
-
-		template <typename U>
-		using rebind = typename __pointer_traits_rebind<pointer, U>::type;
-
-		private:
-			struct __nat {};
-
-		public:
-			static pointer pointer_to(typename conditional<is_void<element_type>::value, __nat, element_type>::type &__r) {
-				return pointer::pointer_to(__r);
-			}
-	};
-
-	template <typename T>
-	struct pointer_traits<T *> {
-		typedef T * pointer;
-		typedef T element_type;
-		typedef ptrdiff_t difference_type;
-
-		template <typename U> using rebind = U*;
-
-		private:
-			struct __nat {};
-		
-		public:
-			constexpr static pointer pointer_to(typename conditional<is_void<element_type>::value, __nat, element_type>::type& __r) noexcept {
-				return std::addressof(__r);
-			}
-	};
-
-	template <typename From, typename To>
-	struct __rebind_pointer {
-		typedef typename pointer_traits<From>::template rebind<To> type;
-	};
-}
-
 #endif
+
+_LIBCPP_PUSH_MACROS
+#include <__undef_macros>
+
+_LIBCPP_BEGIN_NAMESPACE_STD
+
+template <class _Tp, class = void>
+struct __has_element_type : false_type {};
+
+template <class _Tp>
+struct __has_element_type<_Tp,
+              typename __void_t<typename _Tp::element_type>::type> : true_type {};
+
+template <class _Ptr, bool = __has_element_type<_Ptr>::value>
+struct __pointer_traits_element_type;
+
+template <class _Ptr>
+struct __pointer_traits_element_type<_Ptr, true>
+{
+    typedef _LIBCPP_NODEBUG_TYPE typename _Ptr::element_type type;
+};
+
+template <template <class, class...> class _Sp, class _Tp, class ..._Args>
+struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, true>
+{
+    typedef _LIBCPP_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::element_type type;
+};
+
+template <template <class, class...> class _Sp, class _Tp, class ..._Args>
+struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, false>
+{
+    typedef _LIBCPP_NODEBUG_TYPE _Tp type;
+};
+
+template <class _Tp, class = void>
+struct __has_difference_type : false_type {};
+
+template <class _Tp>
+struct __has_difference_type<_Tp,
+            typename __void_t<typename _Tp::difference_type>::type> : true_type {};
+
+template <class _Ptr, bool = __has_difference_type<_Ptr>::value>
+struct __pointer_traits_difference_type
+{
+    typedef _LIBCPP_NODEBUG_TYPE ptrdiff_t type;
+};
+
+template <class _Ptr>
+struct __pointer_traits_difference_type<_Ptr, true>
+{
+    typedef _LIBCPP_NODEBUG_TYPE typename _Ptr::difference_type type;
+};
+
+template <class _Tp, class _Up>
+struct __has_rebind
+{
+private:
+    struct __two {char __lx; char __lxx;};
+    template <class _Xp> static __two __test(...);
+    _LIBCPP_SUPPRESS_DEPRECATED_PUSH
+    template <class _Xp> static char __test(typename _Xp::template rebind<_Up>* = 0);
+    _LIBCPP_SUPPRESS_DEPRECATED_POP
+public:
+    static const bool value = sizeof(__test<_Tp>(0)) == 1;
+};
+
+template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
+struct __pointer_traits_rebind
+{
+#ifndef _LIBCPP_CXX03_LANG
+    typedef _LIBCPP_NODEBUG_TYPE typename _Tp::template rebind<_Up> type;
+#else
+    typedef _LIBCPP_NODEBUG_TYPE typename _Tp::template rebind<_Up>::other type;
+#endif
+};
+
+template <template <class, class...> class _Sp, class _Tp, class ..._Args, class _Up>
+struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
+{
+#ifndef _LIBCPP_CXX03_LANG
+    typedef _LIBCPP_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::template rebind<_Up> type;
+#else
+    typedef _LIBCPP_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::template rebind<_Up>::other type;
+#endif
+};
+
+template <template <class, class...> class _Sp, class _Tp, class ..._Args, class _Up>
+struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
+{
+    typedef _Sp<_Up, _Args...> type;
+};
+
+template <class _Ptr>
+struct _LIBCPP_TEMPLATE_VIS pointer_traits
+{
+    typedef _Ptr                                                     pointer;
+    typedef typename __pointer_traits_element_type<pointer>::type    element_type;
+    typedef typename __pointer_traits_difference_type<pointer>::type difference_type;
+
+#ifndef _LIBCPP_CXX03_LANG
+    template <class _Up> using rebind = typename __pointer_traits_rebind<pointer, _Up>::type;
+#else
+    template <class _Up> struct rebind
+        {typedef typename __pointer_traits_rebind<pointer, _Up>::type other;};
+#endif  // _LIBCPP_CXX03_LANG
+
+private:
+    struct __nat {};
+public:
+    _LIBCPP_INLINE_VISIBILITY
+    static pointer pointer_to(typename conditional<is_void<element_type>::value,
+                                           __nat, element_type>::type& __r)
+        {return pointer::pointer_to(__r);}
+};
+
+template <class _Tp>
+struct _LIBCPP_TEMPLATE_VIS pointer_traits<_Tp*>
+{
+    typedef _Tp*      pointer;
+    typedef _Tp       element_type;
+    typedef ptrdiff_t difference_type;
+
+#ifndef _LIBCPP_CXX03_LANG
+    template <class _Up> using rebind = _Up*;
+#else
+    template <class _Up> struct rebind {typedef _Up* other;};
+#endif
+
+private:
+    struct __nat {};
+public:
+    _LIBCPP_INLINE_VISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
+    static pointer pointer_to(typename conditional<is_void<element_type>::value,
+                                      __nat, element_type>::type& __r) _NOEXCEPT
+        {return _VSTD::addressof(__r);}
+};
+
+template <class _From, class _To>
+struct __rebind_pointer {
+#ifndef _LIBCPP_CXX03_LANG
+    typedef typename pointer_traits<_From>::template rebind<_To>        type;
+#else
+    typedef typename pointer_traits<_From>::template rebind<_To>::other type;
+#endif
+};
+
+_LIBCPP_END_NAMESPACE_STD
+
+_LIBCPP_POP_MACROS
+
+#endif  // _LIBCPP___MEMORY_POINTER_TRAITS_H

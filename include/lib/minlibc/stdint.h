@@ -41,4 +41,6 @@ typedef unsigned       int  uintptr_t;
 #define UINT32_MAX  0xffffffffU
 #define UINT64_MAX  0xffffffffffffffffULL
 
+#define SIZE_MAX  0xffffffffffffffffULL
+
 #endif

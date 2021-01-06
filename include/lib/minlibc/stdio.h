@@ -28,28 +28,34 @@ extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
 
-FILE   *fopen(const char *path, const char *mode);
-int     fputc(int c, FILE *stream);
-int     fputs(const char *s, FILE *stream);
-size_t  fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
-size_t  fwrite(const void *, size_t, size_t, FILE *);
-int     fflush(FILE *stream);
-int     fseek(FILE *stream, long offset, int whence);
-long    ftell(FILE *stream);
-int     feof(FILE *stream);
-int     fclose(FILE *fp);
+#ifdef __cplusplus
+extern "C" {
+#endif
+	FILE   *fopen(const char *path, const char *mode);
+	int     fputc(int c, FILE *stream);
+	int     fputs(const char *s, FILE *stream);
+	size_t  fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+	size_t  fwrite(const void *, size_t, size_t, FILE *);
+	int     fflush(FILE *stream);
+	int     fseek(FILE *stream, long offset, int whence);
+	long    ftell(FILE *stream);
+	int     feof(FILE *stream);
+	int     fclose(FILE *fp);
 
-int     getc(FILE *stream);
-ssize_t getline(char **lineptr, size_t *n, FILE *stream);
-int     putchar(int c);
-int     puts(const char *s);
+	int     getc(FILE *stream);
+	ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+	int     putchar(int c);
+	int     puts(const char *s);
 
-int     printf(const char *format, ...);
-int     sprintf(char *str, const char *format, ...);
-int     snprintf(char *str, size_t size, const char *format, ...);
-int     fprintf(FILE *stream, const char *format, ...);
+	int     printf(const char *format, ...);
+	int     sprintf(char *str, const char *format, ...);
+	int     snprintf(char *str, size_t size, const char *format, ...);
+	int     fprintf(FILE *stream, const char *format, ...);
 
-void    perror(const char *s);
-void    pabort(const char *format, ...) __attribute__((noreturn));
+	void    perror(const char *s);
+	void    pabort(const char *format, ...) __attribute__((noreturn));
+#ifdef __cplusplus
+}
+#endif
 
 #endif
