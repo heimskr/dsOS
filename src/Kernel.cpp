@@ -105,6 +105,8 @@ namespace DsOS {
 		x86_64::APIC::initTimer(1);
 		x86_64::APIC::disableTimer();
 
+		kernelPML4.print(false);
+
 		// schedule();
 
 		for (;;);

@@ -22,10 +22,10 @@
 
 //*
 extern "C" void * memset(void *dstpp, int c, size_t len) {
-	char *ptr = (char *) dstpp;
-	while (len--)
-		*ptr++ = c;
-	return dstpp;
+	// char *ptr = (char *) dstpp;
+	// while (len--)
+	// 	*ptr++ = c;
+	// return dstpp;
 	// printf("memset(0x%lx, %d, %lu)\n", (uintptr_t) dstpp, c, len);
 	static int _id = 0;
 
@@ -57,7 +57,7 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 		// Write 8 `op_t' per iteration until less than 8 `op_t' remain.
 		xlen = len / (sizeof(op_t) * 8);
 		while (xlen > 0) {
-			if (len < 10000) printf("0x%lx (%d)\n", dstp, id);
+			if (len < 10000) printf("0x%lx (%d)", dstp, id);
 			((op_t *) dstp)[0] = cccc;
 			((op_t *) dstp)[1] = cccc;
 			((op_t *) dstp)[2] = cccc;
@@ -66,6 +66,12 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 			((op_t *) dstp)[5] = cccc;
 			((op_t *) dstp)[6] = cccc;
 			((op_t *) dstp)[7] = cccc;
+			if (len < 10000) {
+				printf(" {");
+				for (size_t i = 0; i < 64; ++i)
+					printf("%c", ((char *) dstp)[i]);
+				printf("}\n");
+			}
 			dstp += 8 * sizeof(op_t);
 			--xlen;
 		}
