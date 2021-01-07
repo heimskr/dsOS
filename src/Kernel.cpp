@@ -74,7 +74,11 @@ namespace DsOS {
 
 		std::unordered_map<int, std::string> map;
 
-		printf("map size: %lu\n", map.size());
+
+		// printf("map size: %lu\n", map.size());
+
+		// uint64_t *ptr = (uint64_t *) 0xdeadbeef; *ptr = 0x1234456789abcdef; printf("ptr: 0x%lx\n", *ptr);
+
 
 		// map[42] = std::string(0x1000 - 0x00, 'X');
 		constexpr char special = 'Z';
@@ -99,7 +103,7 @@ namespace DsOS {
 		printf("Hello.\n");
 
 		x86_64::APIC::initTimer(1);
-		// x86_64::APIC::disableTimer();
+		x86_64::APIC::disableTimer();
 
 		// schedule();
 

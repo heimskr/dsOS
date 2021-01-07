@@ -18,9 +18,22 @@
 #include "lib/printf.h"
 #include "memory/memset.h"
 
+
+
+//*
 extern "C" void * memset(void *dstpp, int c, size_t len) {
-	printf("memset(0x%lx, %d, %lu)\n", (uintptr_t) dstpp, c, len);
+	char *ptr = (char *) dstpp;
+	while (len--)
+		*ptr++ = c;
+	return dstpp;
+	// printf("memset(0x%lx, %d, %lu)\n", (uintptr_t) dstpp, c, len);
+	static int _id = 0;
+
 	long int dstp = (long int) dstpp;
+
+	int id = ++_id;
+
+	printf("[[ memset (%d: 0x%lx, %d, %lu)\n", id, dstpp, c, len);
 
 	if (len >= 8) {
 		size_t xlen;
@@ -30,11 +43,12 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 		cccc |= cccc << 8;
 		cccc |= cccc << 16;
 		if (sizeof(op_t) > 4)
-		// Do the shift in two steps to avoid warning if long has 32 bits.
-		cccc |= (cccc << 16) << 16;
+			// Do the shift in two steps to avoid warning if long has 32 bits.
+			cccc |= (cccc << 16) << 16;
 
 		// There are at least some bytes to set. No need to test for LEN == 0 in this alignment loop.
 		while (dstp % sizeof(op_t) != 0) {
+			printf("[dstp 0x%lx] (%d)\n", dstp, id);
 			((char *) dstp)[0] = c;
 			++dstp;
 			--len;
@@ -43,6 +57,7 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 		// Write 8 `op_t' per iteration until less than 8 `op_t' remain.
 		xlen = len / (sizeof(op_t) * 8);
 		while (xlen > 0) {
+			if (len < 10000) printf("0x%lx (%d)\n", dstp, id);
 			((op_t *) dstp)[0] = cccc;
 			((op_t *) dstp)[1] = cccc;
 			((op_t *) dstp)[2] = cccc;
@@ -70,10 +85,13 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 
 	// Write the last few bytes.
 	while (len > 0) {
+		printf(": 0x%lx (%d)\n", dstp, id);
 		((char *) dstp)[0] = c;
 		++dstp;
 		--len;
 	}
 
+	printf("]] memset (%d)\n", id);
 	return dstpp;
 }
+//*/

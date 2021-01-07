@@ -6,6 +6,7 @@
 /.vscode
 /lib/*.a
 /disk.img
+/serial.txt
 .DS_Store
 ._.DS_Store
 
