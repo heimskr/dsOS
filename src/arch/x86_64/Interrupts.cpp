@@ -94,15 +94,7 @@ void page_interrupt() {
 
 	// kernel->kernelPML4.print(false);
 
-	// asm volatile("clflush (%0)" :: "r"(assigned));
 	memset((void *) (address & ~0xfff), '\0', page_size);
-	printf("[:\n");
-	// for (size_t i = 0; i < page_size / sizeof(uint64_t); ++i) {
-	// 	*((uint64_t *) ((address & ~0xfff) + i)) = 0;
-	// }
-
-	printf(":]\n");
-	// asm volatile("wbinvd");
 }
 
 void spurious_interrupt() {

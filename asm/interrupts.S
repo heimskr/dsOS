@@ -152,7 +152,7 @@ timer_max: .8byte -1
 	isr_noerrc  0, div0
 	isr_errc    8, double_fault
 	// isr_errc   14, page_interrupt
-	// isr_noerrc 33, irq1
+	isr_noerrc 33, irq1
 	isr_noerrc 39, spurious_interrupt
 
 .global isr_13
@@ -181,19 +181,6 @@ isr_13:
 	pop %rax
 	1: jmp 1b
 	iretq
-// isr_13:
-// 	cli
-// 	push %rax
-// 	movq 16(%rsp), %rax
-// 	mov %rax, gpf_addr
-// 	pop %rax
-// isr_push_13:
-// 	pushw $0
-// 	pushw $13
-// 	isr_common general_protection_fault
-// isr_iretq_13:
-// 	add $4, %rsp
-// 	iretq
 
 .global isr_14
 .type isr_14, @function
@@ -207,10 +194,7 @@ isr_14:
 	pop %rsi
 	pop %rdi
 	pop %rax
-	// push $0
-	// push $14
 	isr_common page_interrupt
-	// add $4, %rsp
 	iretq
 
 .global isr_32
@@ -249,10 +233,10 @@ isr_32_timer_check_done:
 	pop %rax
 	iretq
 
-.global isr_33
-.type isr_33, @function
-isr_33:
-	cli
-	call irq1
-isr_iretq_33:
-	iretq
+// .global isr_33
+// .type isr_33, @function
+// isr_33:
+// 	cli
+// 	call irq1
+// isr_iretq_33:
+// 	iretq

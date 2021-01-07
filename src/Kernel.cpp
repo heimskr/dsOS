@@ -43,8 +43,6 @@ namespace DsOS {
 		initPageDescriptors();
 		x86_64::IDT::init();
 
-		// pml4->print();
-
 		printf("Kernel: 0x%lx\n", (uintptr_t) this);
 
 		// printf("CR0: %x, CR2: %x, CR3: %x, CR4: %x\n", x86_64::getCR0(), x86_64::getCR2(), x86_64::getCR3(), x86_64::getCR4());
@@ -77,35 +75,8 @@ namespace DsOS {
 
 		// printf("map size: %lu\n", map.size());
 
-		// uint64_t *ptr = (uint64_t *) 0xdeadbeef; *ptr = 0x1234456789abcdef; printf("ptr: 0x%lx\n", *ptr);
-
-
-		// map[42] = std::string(0x1000 - 0x00, 'X');
-		constexpr char special = 'Z';
-		map[42] = std::string(0x2500, special);
-
-		for (const std::pair<const int, std::string> &pair: map) {
-			// printf("%d, 0x%lx, \"%s\"\n", pair.first, pair.second.c_str(), pair.second.c_str());
-			const char *str = pair.second.c_str();
-			printf("%d, 0x%lx, \"", pair.first, str);
-			for (size_t i = 0; i < pair.second.size(); ++i) {
-				printf("%c", str[i]);
-				if (str[i] != special) {
-					printf_putc = false;
-					int x = str[i];
-					printf("[%d: 0x%lx]\n", x & 0xff, &str[i]);
-					printf_putc = true;
-				}
-			}
-			printf("\"\n");
-		}
-
-		printf("Hello.\n");
-
 		x86_64::APIC::initTimer(1);
 		x86_64::APIC::disableTimer();
-
-		kernelPML4.print(false);
 
 		// schedule();
 
