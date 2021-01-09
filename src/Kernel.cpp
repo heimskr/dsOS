@@ -2,6 +2,7 @@
 #include "Terminal.h"
 #include "DsUtil.h"
 #include "hardware/IDE.h"
+#include "hardware/MBR.h"
 #include "hardware/Serial.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
@@ -77,13 +78,7 @@ namespace DsOS {
 
 		IDE::init();
 
-		char buffer[2048] = {0};
 
-		const char *to_write = " Hello there.";
-
-		IDE::writeBytes(0, strlen(to_write), 10, to_write);
-
-		IDE::readBytes(0, 25, 0, buffer);
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {
@@ -94,7 +89,7 @@ namespace DsOS {
 		// 	memset(buffer, 0, sizeof(buffer));
 		// }
 		// printf_putc = true;
-		printf("\"%s\"\n", buffer);
+		// printf("\"%s\"\n", buffer);
 
 		// const char str[512] = "What's up?";
 		// IDE::writeSectors(0, 1, 0, str);
