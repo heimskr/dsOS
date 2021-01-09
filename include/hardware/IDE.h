@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 extern bool irqInvoked;
 
 namespace DsOS::IDE {
+	constexpr size_t SECTOR_SIZE = 512;
+
 	// Status codes
 	constexpr uint8_t ATA_SR_BSY = 0x80;
 	constexpr uint8_t ATA_SR_DRDY = 0x40;
@@ -111,6 +114,7 @@ namespace DsOS::IDE {
 	void init();
 	int readSectors(uint8_t drive, uint8_t numsects, uint32_t lba, char *buffer);
 	int writeSectors(uint8_t drive, uint8_t numsects, uint32_t lba, const char *buffer);
+	int readBytes(uint8_t drive, size_t bytes, size_t offset, char *buffer);
 
 	void init(uint32_t bar0, uint32_t bar1, uint32_t bar2, uint32_t bar3, uint32_t bar4);
 	uint8_t read(uint8_t channel, uint8_t reg);

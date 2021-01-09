@@ -25,7 +25,7 @@ namespace DsOS::IDE {
 	}
 
 	int readSectors(uint8_t drive, uint8_t numsects, uint32_t lba, char *buffer) {
-		int status = -1;
+		int status = 0;
 		if (drive > 3 || devices[drive].reserved == 0) {
 			status = 0x1; // Drive not found!
 		} else if (((lba + numsects) > devices[drive].size) && (devices[drive].type == IDE_ATA)) {
@@ -42,6 +42,27 @@ namespace DsOS::IDE {
 			status = printError(drive, err);
 		}
 		return -status;
+	}
+
+	int readBytes(uint8_t drive, size_t bytes, size_t offset, char *buffer) {
+		size_t bytes_read = 0;
+		uint32_t lba = offset / SECTOR_SIZE;
+		char read_buffer[SECTOR_SIZE];
+		int status = 0;
+
+		while (0 < bytes) {
+			if ((status = readSectors(drive, 1, lba, read_buffer)))
+				return status;
+			for (size_t i = 0; bytes_read < bytes && i + offset < SECTOR_SIZE; ++i)
+				buffer[bytes_read++] = read_buffer[i + offset];
+			if (bytes <= SECTOR_SIZE)
+				break;
+			bytes -= SECTOR_SIZE;
+			offset = 0;
+			++lba;
+		}
+
+		return 0;
 	}
 
 	int writeSectors(uint8_t drive, uint8_t numsects, uint32_t lba, const char *buffer) {

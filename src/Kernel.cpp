@@ -79,16 +79,18 @@ namespace DsOS {
 
 		char buffer[2048] = {0};
 
-		printf_putc = false;
-		for (int sector = 0; sector < 5; ++sector) {
-			printf("(%d)\n", IDE::readSectors(1, 1, sector, buffer));
-			for (size_t i = 0; i < sizeof(buffer); ++i)
-				printf("%c", buffer[i]);
-			printf("\n----------------------------\n");
-			memset(buffer, 0, sizeof(buffer));
-		}
-		printf_putc = true;
-		// printf("\"%s\"\n", buffer);
+		IDE::readBytes(0, 12, 0, buffer);
+
+		// printf_putc = false;
+		// for (int sector = 0; sector < 5; ++sector) {
+		// 	printf("(%d)\n", IDE::readSectors(1, 1, sector, buffer));
+		// 	for (size_t i = 0; i < sizeof(buffer); ++i)
+		// 		printf("%c", buffer[i]);
+		// 	printf("\n----------------------------\n");
+		// 	memset(buffer, 0, sizeof(buffer));
+		// }
+		// printf_putc = true;
+		printf("\"%s\"\n", buffer);
 
 		// const char str[512] = "What's up?";
 		// IDE::writeSectors(0, 1, 0, str);

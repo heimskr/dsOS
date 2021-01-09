@@ -1,6 +1,4 @@
-#ifndef DEFS_H_
-#define DEFS_H_
+#pragma once
 
-#include <stddef.h>
-
-#endif
+#include <cstddef>
+#include <cstdint>
