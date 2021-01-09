@@ -79,7 +79,11 @@ namespace DsOS {
 
 		char buffer[2048] = {0};
 
-		IDE::readBytes(0, 12, 0, buffer);
+		const char *to_write = " Hello there.";
+
+		IDE::writeBytes(0, strlen(to_write), 10, to_write);
+
+		IDE::readBytes(0, 25, 0, buffer);
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {

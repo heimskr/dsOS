@@ -1,5 +1,7 @@
 // http://wiki.osdev.org/IDE
 
+#include <string.h>
+
 #include "hardware/IDE.h"
 #include "hardware/Ports.h"
 #include "lib/printf.h"
@@ -44,7 +46,7 @@ namespace DsOS::IDE {
 		return -status;
 	}
 
-	int readBytes(uint8_t drive, size_t bytes, size_t offset, char *buffer) {
+	int readBytes(uint8_t drive, size_t bytes, size_t offset, void *buffer) {
 		size_t bytes_read = 0;
 		uint32_t lba = offset / SECTOR_SIZE;
 		char read_buffer[SECTOR_SIZE];
@@ -54,7 +56,7 @@ namespace DsOS::IDE {
 			if ((status = readSectors(drive, 1, lba, read_buffer)))
 				return status;
 			for (size_t i = 0; bytes_read < bytes && i + offset < SECTOR_SIZE; ++i)
-				buffer[bytes_read++] = read_buffer[i + offset];
+				((char *) buffer)[bytes_read++] = read_buffer[i + offset];
 			if (bytes <= SECTOR_SIZE)
 				break;
 			bytes -= SECTOR_SIZE;
@@ -65,7 +67,40 @@ namespace DsOS::IDE {
 		return 0;
 	}
 
-	int writeSectors(uint8_t drive, uint8_t numsects, uint32_t lba, const char *buffer) {
+	int writeBytes(uint8_t drive, size_t bytes, size_t offset, const void *buffer) {
+		uint32_t lba = offset / SECTOR_SIZE;
+		int status = 0;
+		char write_buffer[SECTOR_SIZE];
+
+		if (offset %= SECTOR_SIZE) {
+			if ((status = readSectors(drive, 1, lba, write_buffer)))
+				return status;
+			const size_t to_write = (SECTOR_SIZE - offset) < bytes? SECTOR_SIZE - offset : bytes;
+			memcpy(write_buffer + offset, buffer, to_write);
+			writeSectors(drive, 1, lba, write_buffer);
+			bytes -= to_write;
+			++lba;
+		}
+
+		while (0 < bytes) {
+			if (bytes < SECTOR_SIZE) {
+				if ((status = readSectors(drive, 1, lba, write_buffer)))
+					return status;
+				memcpy(write_buffer, buffer, bytes);
+				if ((status = writeSectors(drive, 1, lba, write_buffer)))
+					return status;
+			} else if ((status = writeSectors(drive, 1, lba, buffer)))
+					return status;
+			if (bytes <= SECTOR_SIZE)
+				break;
+			bytes -= SECTOR_SIZE;
+			++lba;
+		}
+
+		return 0;
+	}
+
+	int writeSectors(uint8_t drive, uint8_t numsects, uint32_t lba, const void *buffer) {
 		if (drive > 3 || devices[drive].reserved == 0) {
 			ideStatus = 0x1; // Drive not found!
 		} else if (((lba + numsects) > devices[drive].size) && (devices[drive].type == IDE_ATA)) {
@@ -73,7 +108,7 @@ namespace DsOS::IDE {
 		} else {
 			uint8_t err = 0;
 			if (devices[drive].type == IDE_ATA)
-				err = accessATA(ATA_WRITE, drive, lba, numsects, const_cast<char *>(buffer));
+				err = accessATA(ATA_WRITE, drive, lba, numsects, (char *) buffer);
 			else if (devices[drive].type == IDE_ATAPI)
 				err = 4; // Write-protected
 			ideStatus = printError(drive, err);
