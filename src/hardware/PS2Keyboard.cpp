@@ -1,9 +1,11 @@
 #include <stdint.h>
 
 #include "arch/x86_64/PIC.h"
+#include "hardware/IDE.h"
 #include "hardware/Ports.h"
 #include "hardware/PS2Keyboard.h"
 #include "lib/printf.h"
+#include "memory/memset.h"
 
 namespace DsOS::PS2Keyboard {
 	const Scanmap scanmapNormal[0x80] = {
@@ -275,5 +277,20 @@ namespace DsOS::PS2Keyboard {
 			printf("%s (0x%x) up\n", keyNames[scancode & ~0x80], scancode & ~0x80);
 		else
 			printf("%s (0x%x) down\n", keyNames[scancode], scancode);
+		if (scancode == 0x2b) {
+			char buffer[2048] = {0};
+			printf(":: 0x%lx\n", &irqInvoked);
+
+			printf_putc = false;
+			for (int sector = 0; sector < 5; ++sector) {
+				printf("(%d)\n", IDE::readSectors(1, 1, sector, buffer));
+				for (size_t i = 0; i < sizeof(buffer); ++i)
+					printf("%c", buffer[i]);
+				printf("\n----------------------------\n");
+				memset(buffer, 0, sizeof(buffer));
+			}
+			printf_putc = true;
+			printf("\"%s\"\n", buffer);
+		}
 	}
 }

@@ -9,8 +9,6 @@
 
 volatile uint32_t *apic_base;
 
-extern uint64_t ticks;
-
 namespace x86_64::APIC {
 	void init(DsOS::Kernel &kernel) {
 		printf("Initializing APIC.\n");

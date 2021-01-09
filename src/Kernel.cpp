@@ -1,6 +1,7 @@
 #include "Kernel.h"
 #include "Terminal.h"
 #include "DsUtil.h"
+#include "hardware/IDE.h"
 #include "hardware/Serial.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
@@ -63,24 +64,39 @@ namespace DsOS {
 
 		x86_64::APIC::init(*this);
 
-		kernelPML4.print(false);
-
 		x86_64::PIC::clearIRQ(1);
+		x86_64::PIC::clearIRQ(14);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
 
-		std::unordered_map<int, std::string> map;
-
-
 		// printf("map size: %lu\n", map.size());
 
-		x86_64::APIC::initTimer(1);
+		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
+
+		IDE::init();
+
+		char buffer[2048] = {0};
+
+		printf_putc = false;
+		for (int sector = 0; sector < 5; ++sector) {
+			printf("(%d)\n", IDE::readSectors(1, 1, sector, buffer));
+			for (size_t i = 0; i < sizeof(buffer); ++i)
+				printf("%c", buffer[i]);
+			printf("\n----------------------------\n");
+			memset(buffer, 0, sizeof(buffer));
+		}
+		printf_putc = true;
+		// printf("\"%s\"\n", buffer);
+
+		// const char str[512] = "What's up?";
+		// IDE::writeSectors(0, 1, 0, str);
 
 		// schedule();
 
-		for (;;);
+		for (;;)
+			asm volatile("hlt");
 	}
 
 	void Kernel::backtrace() {
@@ -94,6 +110,7 @@ namespace DsOS {
 	}
 
 	void Kernel::schedule() {
+		ticks = 0;
 		backtrace();
 	}
 

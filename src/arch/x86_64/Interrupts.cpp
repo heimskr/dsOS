@@ -12,9 +12,11 @@
 
 #define INTERRUPT 
 
+extern bool irqInvoked;
+
 namespace x86_64::IDT {
 	void add(int index, void (*fn)()) {
-		uint64_t offset = (uint64_t) fn;
+		uintptr_t offset = (uintptr_t) fn;
 		Descriptor &descriptor = idt[index];
 		descriptor.offset_1 = offset & 0xffff;
 		descriptor.offset_2 = (offset >> 16) & 0xffff;
@@ -27,7 +29,7 @@ namespace x86_64::IDT {
 
 	void init() {
 		idt_header.size = SIZE * sizeof(Descriptor) - 1;
-		idt_header.start = (uint32_t) (((uint64_t) &idt) & 0xffffffff);
+		idt_header.start = (uint32_t) (((uintptr_t) &idt) & 0xffffffff);
 
 		add(0, &isr_0);
 		add(8, &isr_8);
@@ -36,6 +38,7 @@ namespace x86_64::IDT {
 		add(32, &isr_32);
 		add(33, &isr_33);
 		add(39, &isr_39);
+		add(118, &isr_118);
 		asm volatile("lidt (%0)" :: "r" (&idt_header));
 	}
 }
@@ -102,8 +105,12 @@ void spurious_interrupt() {
 }
 
 void irq1() {
-	printf("what\n");
 	DsOS::PS2Keyboard::onIRQ1();
+}
+
+void irq14() {
+	printf("IRQ14\n");
+	// irqInvoked = 1;
 }
 
 extern "C" {
