@@ -1,5 +1,6 @@
 #include "Terminal.h"
 #include "DsUtil.h"
+#include "hardware/Serial.h"
 
 namespace DsOS {
 	size_t Terminal::row = 0;
@@ -9,6 +10,7 @@ namespace DsOS {
 	uint16_t * Terminal::buffer = reinterpret_cast<uint16_t *>(0xB8000);
 
 	void Terminal::clear() {
+		Serial::write("\e[2m[clear]\e[22m");
 		for (size_t y = 0; y < VGA_HEIGHT; ++y)
 			for (size_t x = 0; x < VGA_WIDTH; ++x)
 				buffer[y * VGA_WIDTH + x] = vgaEntry(' ', color);
@@ -51,6 +53,7 @@ namespace DsOS {
 	}
 
 	void Terminal::scrollUp(unsigned char lines) {
+		Serial::write("\e[2m[scrollUp]\e[22m");
 		for (unsigned char i = 0; i < lines; ++i) {
 			for (size_t j = 0; j < (VGA_HEIGHT - 1) * VGA_WIDTH; ++j)
 				buffer[j] = buffer[j + VGA_WIDTH];

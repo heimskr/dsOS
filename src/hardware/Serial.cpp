@@ -1,3 +1,5 @@
+#include <cstddef>
+
 #include "hardware/Ports.h"
 #include "hardware/Serial.h"
 
@@ -38,5 +40,10 @@ namespace DsOS::Serial {
 	void write(unsigned char data) {
 		while ((Ports::inb(COM1 + 5) & 0x20) == 0);
 		Ports::outb(COM1, data);
+	}
+
+	void write(const char *str) {
+		for (size_t i = 0; str[i] != '\0'; ++i)
+			write((unsigned char) str[i]);
 	}
 }

@@ -188,14 +188,15 @@ isr_13:
 .type isr_14, @function
 isr_14:
 	cli
-	push %rax
-	mov 16(%rsp), %rax
-	push %rdi
-	push %rsi
-	print1 $pagefmt, %rax
-	pop %rsi
-	pop %rdi
-	pop %rax
+	// call _ZN4DsOS6Kernel9backtraceEv
+	// push %rax
+	// mov 16(%rsp), %rax
+	// push %rdi
+	// push %rsi
+	// print1 $pagefmt, %rax
+	// pop %rsi
+	// pop %rdi
+	// pop %rax
 	isr_common page_interrupt
 	iretq
 

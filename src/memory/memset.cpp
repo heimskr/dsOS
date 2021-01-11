@@ -15,10 +15,15 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#include "hardware/Serial.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
 
 extern "C" void * memset(void *dstpp, int c, size_t len) {
+	bool old_putc = printf_putc;
+	printf_putc = false;
+	printf("\e[2m[memset 0x%lx, %d, %lu]\e[22m\n", dstpp, c, len);
+	printf_putc = old_putc;
 	long int dstp = (long int) dstpp;
 	if (len >= 8) {
 		size_t xlen;
@@ -72,6 +77,11 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 		++dstp;
 		--len;
 	}
+
+	old_putc = printf_putc;
+	printf_putc = false;
+	printf("\e[2m[/memset 0x%lx, %d, %lu]\e[22m\n", dstpp, c, len);
+	printf_putc = old_putc;
 
 	return dstpp;
 }

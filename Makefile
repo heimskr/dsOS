@@ -3,7 +3,7 @@
 CC           := x86_64-elf-gcc
 CPP          := x86_64-elf-g++
 AS           := x86_64-elf-g++
-SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel -fno-pie
+SHARED_FLAGS := -fno-builtin -O1 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel -fno-pie
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++20 -Drestrict=__restrict__

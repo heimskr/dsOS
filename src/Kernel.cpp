@@ -63,22 +63,45 @@ namespace DsOS {
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
 
+		printf("[%d]\n", __LINE__);
+
 		x86_64::APIC::init(*this);
+		printf("[%d]\n", __LINE__);
 
 		x86_64::PIC::clearIRQ(1);
 		x86_64::PIC::clearIRQ(14);
+		printf("[%d]\n", __LINE__);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
+		printf("[%d]\n", __LINE__);
 
 		// printf("map size: %lu\n", map.size());
 
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
+		printf("[%d]\n", __LINE__);
 
-		IDE::init();
+		std::string str(5000, 'A');
+		printf("[%d]\n", __LINE__);
+		printf("(");
+		for (char &ch: str) {
+			if (ch != 'A') {
+				printf_putc = false;
+				printf("[%d 0x%lx]\n", ch, &ch);
+				printf_putc = true;
+			} else
+				printf("%c", ch);
+		}
+		printf(")\n");
+		printf("[%d]\n", __LINE__);
 
 
+		// IDE::init();
+
+		// MBR mbr;
+		// mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
+		// IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {

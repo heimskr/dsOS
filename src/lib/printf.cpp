@@ -17,11 +17,13 @@ static bool mappend(char *out, char *&optr, const size_t max, const char ch) {
 		if (printf_putc)
 			DsOS::Terminal::putChar(ch);
 		if (!DsOS::Serial::init()) {
-			for (char ch: "Serial failed to initialize.\n")
-				DsOS::Terminal::putChar(ch);
+			DsOS::Terminal::write("Serial failed to initialize.\n");
 			for (;;);
 		}
-		DsOS::Serial::write(ch);
+		if (ch == '\0')
+			DsOS::Serial::write("\e[1m\\0\e[22m");
+		else
+			DsOS::Serial::write(ch);
 		return true;
 	}
 

@@ -5,4 +5,5 @@ namespace DsOS::Serial {
 	bool init();
 	unsigned char read();
 	void write(unsigned char);
+	void write(const char *);
 }
