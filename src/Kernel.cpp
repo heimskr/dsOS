@@ -3,6 +3,7 @@
 #include "DsUtil.h"
 #include "hardware/IDE.h"
 #include "hardware/MBR.h"
+#include "hardware/PS2Keyboard.h"
 #include "hardware/Serial.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
@@ -63,38 +64,24 @@ namespace DsOS {
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
 
-		printf("[%d]\n", __LINE__);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		x86_64::APIC::init(*this);
-		printf("[%d]\n", __LINE__);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		x86_64::PIC::clearIRQ(1);
 		x86_64::PIC::clearIRQ(14);
-		printf("[%d]\n", __LINE__);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
-		printf("[%d]\n", __LINE__);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		// printf("map size: %lu\n", map.size());
 
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
-		printf("[%d]\n", __LINE__);
-
-		std::string str(5000, 'A');
-		printf("[%d]\n", __LINE__);
-		printf("(");
-		for (char &ch: str) {
-			if (ch != 'A') {
-				printf_putc = false;
-				printf("[%d 0x%lx]\n", ch, &ch);
-				printf_putc = true;
-			} else
-				printf("%c", ch);
-		}
-		printf(")\n");
-		printf("[%d]\n", __LINE__);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 
 		// IDE::init();
@@ -119,8 +106,26 @@ namespace DsOS {
 
 		// schedule();
 
-		for (;;)
+		for (;;) {
+			// printf("Halting.\n");
+			if (last_scancode == (0x2c | 0x80)) {
+				printf("Hello!\n");
+				std::string str(5000, 'A');
+				printf("[%s:%d]\n", __FILE__, __LINE__);
+				printf("(");
+				for (char &ch: str) {
+					if (ch != 'A') {
+						printf_putc = false;
+						printf("[%d 0x%lx]\n", ch, &ch);
+						printf_putc = true;
+					} else
+						printf("%c", ch);
+				}
+				printf(")\n");
+				printf("[%s:%d]\n", __FILE__, __LINE__);
+			}
 			asm volatile("hlt");
+		}
 	}
 
 	void Kernel::backtrace() {

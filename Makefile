@@ -9,6 +9,7 @@ CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++20 -Drestrict=__restrict__
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
+QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12 -serial stdio -m 8G
 QEMU_EXTRA   ?= disk.img
 
 ASSEMBLED := $(shell find asm/*.S)
@@ -60,7 +61,7 @@ $(ISO_FILE): kernel
 	$(GRUB)-mkrescue -o $(ISO_FILE) iso
 
 run: $(ISO_FILE)
-	qemu-system-x86_64 -s -cdrom $(ISO_FILE) -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12 -serial stdio -m 8G $(QEMU_EXTRA)
+	qemu-system-x86_64 $(QEMU_MAIN) $(QEMU_EXTRA)
 
 clean:
 	rm -rf *.o **/*.o `find src -iname "*.o"` kernel iso kernel.iso

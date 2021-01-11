@@ -20,10 +20,13 @@
 #include "memory/memset.h"
 
 extern "C" void * memset(void *dstpp, int c, size_t len) {
-	bool old_putc = printf_putc;
-	printf_putc = false;
-	printf("\e[2m[memset 0x%lx, %d, %lu]\e[22m\n", dstpp, c, len);
-	printf_putc = old_putc;
+	void *old_dstpp = dstpp;
+	int old_c = c;
+	size_t old_len = len;
+	// bool old_putc = printf_putc;
+	// printf_putc = false;
+	// printf("\e[2m[memset 0x%lx, %d, %lu]\e[22m\n", dstpp, c, len);
+	// printf_putc = old_putc;
 	long int dstp = (long int) dstpp;
 	if (len >= 8) {
 		size_t xlen;
@@ -78,9 +81,9 @@ extern "C" void * memset(void *dstpp, int c, size_t len) {
 		--len;
 	}
 
-	old_putc = printf_putc;
+	bool old_putc = printf_putc;
 	printf_putc = false;
-	printf("\e[2m[/memset 0x%lx, %d, %lu]\e[22m\n", dstpp, c, len);
+	printf("\e[2m[/memset 0x%lx, %d, %lu]\e[22m\n", old_dstpp, old_c, old_len);
 	printf_putc = old_putc;
 
 	return dstpp;

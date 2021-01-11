@@ -2,6 +2,8 @@
 
 // Based on code from MINIX3.
 
+extern uint8_t last_scancode;
+
 namespace DsOS::PS2Keyboard {
 	void onIRQ1();
 

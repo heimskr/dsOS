@@ -45,9 +45,8 @@
 
 
 .macro isr_common fn
-	// pushall
+	pushall
 
-	push %rax
 	mov %ds, %ax
 	push %rax
 
@@ -66,9 +65,7 @@
 	mov %ax, %fs
 	mov %ax, %gs
 
-	pop %rax
-
-	// popall
+	popall
 
 	add $8, %rsp
 .endm
@@ -188,7 +185,7 @@ isr_13:
 .type isr_14, @function
 isr_14:
 	cli
-	// call _ZN4DsOS6Kernel9backtraceEv
+	call _ZN4DsOS6Kernel9backtraceEv
 	// push %rax
 	// mov 16(%rsp), %rax
 	// push %rdi

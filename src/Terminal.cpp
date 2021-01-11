@@ -53,7 +53,6 @@ namespace DsOS {
 	}
 
 	void Terminal::scrollUp(unsigned char lines) {
-		Serial::write("\e[2m[scrollUp]\e[22m");
 		for (unsigned char i = 0; i < lines; ++i) {
 			for (size_t j = 0; j < (VGA_HEIGHT - 1) * VGA_WIDTH; ++j)
 				buffer[j] = buffer[j + VGA_WIDTH];

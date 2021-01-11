@@ -7,6 +7,8 @@
 #include "lib/printf.h"
 #include "memory/memset.h"
 
+uint8_t last_scancode = 0;
+
 namespace DsOS::PS2Keyboard {
 	const Scanmap scanmapNormal[0x80] = {
 		/* 0x00 */ {},
@@ -273,6 +275,8 @@ namespace DsOS::PS2Keyboard {
 	void onIRQ1() {
 		x86_64::PIC::sendEOI(1);
 		uint8_t scancode = DsOS::Ports::inb(0x60);
+		last_scancode = scancode;
+
 		if (scancode & 0x80)
 			printf("%s (0x%x) up\n", keyNames[scancode & ~0x80], scancode & ~0x80);
 		else
