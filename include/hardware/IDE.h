@@ -93,15 +93,15 @@ namespace DsOS::IDE {
 	constexpr uint8_t ATA_SLAVE = 0x01;
 
 	struct Device {
-		bool reserved; // 0 (Empty) or 1 (This Drive really exists).
-		uint8_t  channel; // 0 (Primary Channel) or 1 (Secondary Channel).
-		uint8_t  drive; // 0 (Master Drive) or 1 (Slave Drive).
-		uint16_t type; // 0: ATA, 1:ATAPI.
-		uint16_t signature; // Drive Signature
-		uint16_t capabilities; // Features.
-		uint32_t commandSets; // Command Sets Supported.
-		uint32_t size; // Size in Sectors.
-		char     model[41]; // Model in string.
+		bool reserved;         // 0 (empty) or 1 (this drive really exists).
+		uint8_t  channel;      // 0 (Primary Channel) or 1 (Secondary Channel).
+		uint8_t  drive;        // 0 (Master Drive) or 1 (Slave Drive).
+		uint16_t type;         // 0: ATA, 1:A TAPI.
+		uint16_t signature;    // Drive signature
+		uint16_t capabilities; // Features
+		uint32_t commandSets;  // Command sets supported
+		uint32_t size;         // Size in sectors
+		char     model[41];    // Model string
 	};
 
 	struct ChannelRegisters {

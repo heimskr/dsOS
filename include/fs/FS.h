@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <ctime>
 #include <functional>
+#include <memory>
 #include <stdio.h>
 
 #include "Defs.h"
+#include "device/Device.h"
 
 namespace DsOS::FS {
 	constexpr size_t BLOCKSIZE = 512;
@@ -53,7 +55,7 @@ namespace DsOS::FS {
 
 	class Driver {
 		public:
-			uint32_t driveID;
+			std::shared_ptr<Device::DeviceBase> device;
 			virtual ~Driver() { cleanup(); }
 			virtual int rename(const char *path, const char *newpath) = 0;
 			virtual int release(const char *path, FileInfo &) = 0;
@@ -70,13 +72,13 @@ namespace DsOS::FS {
 			virtual int read(const char *path, char *buffer, size_t size, off_t offset, FileInfo &) = 0;
 			virtual int readdir(const char *path, void *buffer, DirFiller filler, off_t offset, FileInfo &) = 0;
 			virtual int getattr(const char *path, FileStats &) = 0;
-			virtual void cleanup();
+			virtual void cleanup() {}
 
 		protected:
 			Driver() = delete;
 			Driver(const Driver &) = delete;
 			Driver(Driver &&) = delete;
-			Driver(uint8_t drive_id): driveID(drive_id) {}
+			Driver(std::shared_ptr<Device::DeviceBase> device_): device(device_) {}
 
 			Driver & operator=(const Driver &) = delete;
 			Driver & operator=(Driver &&) = delete;
