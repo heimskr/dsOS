@@ -101,7 +101,7 @@ namespace DsOS::IDE {
 		uint16_t capabilities; // Features.
 		uint32_t commandSets; // Command Sets Supported.
 		uint32_t size; // Size in Sectors.
-		uint8_t  model[41]; // Model in string.
+		char     model[41]; // Model in string.
 	};
 
 	struct ChannelRegisters {
@@ -110,6 +110,8 @@ namespace DsOS::IDE {
 		uint16_t bmide; // Bus Master IDE
 		uint8_t  nIEN;  // nIEN (No Interrupt);
 	};
+
+	extern Device devices[4];
 
 	void init();
 	int readSectors(uint8_t drive, uint8_t numsects, uint32_t lba, char *buffer);
