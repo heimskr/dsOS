@@ -1,3 +1,13 @@
+#if defined(__linux__)
+#warning "You are not using a cross-compiler. You will most certainly run into trouble."
+#endif
+
+#if !defined(__x86_64__)
+#warning "The kernel needs to be compiled with an x86_64-elf compiler."
+#endif
+
+#include <string>
+
 #include "Kernel.h"
 #include "Terminal.h"
 #include "DsUtil.h"
@@ -12,8 +22,6 @@
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
-#include <string>
-#include <unordered_map>
 
 extern void *multiboot_data;
 extern unsigned int multiboot_magic;
@@ -237,4 +245,9 @@ void schedule() {
 		for (;;);
 	}
 	DsOS::Kernel::instance->schedule();
+}
+
+extern "C" void kernel_main() {
+	DsOS::Kernel kernel(x86_64::PageTableWrapper(&pml4, x86_64::PageTableWrapper::Type::PML4));
+	kernel.main();
 }
