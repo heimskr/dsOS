@@ -108,9 +108,10 @@ namespace DsOS {
 
 		for (;;) {
 			// printf("Halting.\n");
-			if (last_scancode == (0x2c | 0x80)) {
+			if (last_scancode == (0x2c | 0x80)) { // z
+				last_scancode = 0;
 				printf("Hello!\n");
-				std::string str(5000, 'A');
+				std::string str(50000, 'A');
 				printf("[%s:%d]\n", __FILE__, __LINE__);
 				printf("(");
 				for (char &ch: str) {
@@ -123,6 +124,21 @@ namespace DsOS {
 				}
 				printf(")\n");
 				printf("[%s:%d]\n", __FILE__, __LINE__);
+			} else if (last_scancode == (0x2b | 0x80)) { // backslash
+				last_scancode = 0;
+				char buffer[2048] = {0};
+				printf(":: 0x%lx\n", &irqInvoked);
+
+				printf_putc = false;
+				for (int sector = 0; sector < 5; ++sector) {
+					printf("(%d)\n", IDE::readSectors(1, 1, sector, buffer));
+					for (size_t i = 0; i < sizeof(buffer); ++i)
+						printf("%c", buffer[i]);
+					printf("\n----------------------------\n");
+					memset(buffer, 0, sizeof(buffer));
+				}
+				printf_putc = true;
+				printf("\"%s\"\n", buffer);
 			}
 			asm volatile("hlt");
 		}

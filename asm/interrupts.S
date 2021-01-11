@@ -1,5 +1,3 @@
-
-
 .macro pushall
 	push %rax
 	push %rbx
@@ -21,7 +19,6 @@
 
 
 
-
 .macro popall
 	pop %r15
 	pop %r14
@@ -40,7 +37,6 @@
 	pop %rbx
 	pop %rax
 .endm
-
 
 
 
@@ -72,7 +68,6 @@
 
 
 
-
 .macro isr_errc id, fn
 .global isr_\id
 .type isr_\id , @function
@@ -89,7 +84,6 @@ isr_iretq_\id :
 
 
 
-
 .macro isr_noerrc id, fn
 .global isr_\id
 .type isr_\id , @function
@@ -101,7 +95,6 @@ isr_push_\id :
 isr_iretq_\id :
 	iretq
 .endm
-
 
 
 
@@ -120,10 +113,8 @@ isr_iretq_\id :
 
 
 
-
 .section .bss
-	.comm gpf_addr, 8
-	.comm timer_addr, 8
+.comm timer_addr, 8
 
 .section .rodata
 timerfmt: .asciz "Timer interrupt: 0x%lx\n"
@@ -185,15 +176,6 @@ isr_13:
 .type isr_14, @function
 isr_14:
 	cli
-	call _ZN4DsOS6Kernel9backtraceEv
-	// push %rax
-	// mov 16(%rsp), %rax
-	// push %rdi
-	// push %rsi
-	// print1 $pagefmt, %rax
-	// pop %rsi
-	// pop %rdi
-	// pop %rax
 	isr_common page_interrupt
 	iretq
 
@@ -208,7 +190,7 @@ isr_32:
 	incq (ticks)
 
 	// print1 $timerfmt, (ticks)
-	print1 $timerfmt, %rax
+	// print1 $timerfmt, %rax
 
 	movq (apic_base), %rax
 	add $0xb0, %rax

@@ -53,16 +53,8 @@ void double_fault() {
 	for (;;);
 }
 
-
-extern uint64_t gpf_addr;
-
-void general_protection_fault() {
-	printf("General protection fault caused by 0x%lx\n", gpf_addr);
-	for (;;);
-}
-
 void page_interrupt() {
-	uint64_t address = x86_64::getCR2();
+	const uint64_t address = x86_64::getCR2();
 	constexpr int page_size = 4096;
 	printf("Page fault: 0x%lx\n", address);
 	using PT = x86_64::PageTableWrapper;
@@ -93,11 +85,11 @@ void page_interrupt() {
 		for (;;);
 	}
 
+	uint64_t *base = (uint64_t *) (address & ~0xfff);
+	for (size_t i = 0; i < page_size / sizeof(uint64_t); ++i)
+		base[i] = 0;
+
 	printf("Assigned a page (0x%lx)!\n", assigned);
-
-	// kernel->kernelPML4.print(false);
-
-	memset((void *) (address & ~0xfff), '\0', page_size);
 }
 
 void spurious_interrupt() {

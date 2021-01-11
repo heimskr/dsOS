@@ -78,7 +78,7 @@ namespace x86_64 {
 	}
 
 	uintptr_t PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
-	                        void *physical_address) {
+	                             void *physical_address) {
 		if (pages == -1) {
 			printf("pages == -1\n");
 			return 0;
