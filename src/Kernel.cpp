@@ -92,7 +92,7 @@ namespace DsOS {
 		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 
-		// IDE::init();
+		IDE::init();
 
 		// MBR mbr;
 		// mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
@@ -115,7 +115,6 @@ namespace DsOS {
 		// schedule();
 
 		for (;;) {
-			// printf("Halting.\n");
 			if (last_scancode == (0x2c | 0x80)) { // z
 				last_scancode = 0;
 				printf("Hello!\n");
