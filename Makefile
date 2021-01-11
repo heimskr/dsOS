@@ -9,7 +9,7 @@ CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++20 -Drestrict=__restrict__
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
-QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -serial stdio -m 8G
+QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -boot d -serial stdio -m 8G
 QEMU_EXTRA   ?= disk.img # -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12
 
 ASSEMBLED := $(shell find asm/*.S)
