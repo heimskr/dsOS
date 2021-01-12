@@ -13,6 +13,7 @@
 
 #define _LIBCPP_NO_EXCEPTIONS
 #define _LIBCPP_NO_RTTI
+#define _LIBCPP_HAS_NO_THREADS
 
 
 #if defined(_MSC_VER) && !defined(__clang__)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 namespace DsOS {
 	struct CHS {
@@ -48,5 +49,16 @@ namespace DsOS {
 		MBREntry thirdEntry;
 		MBREntry fourthEntry;
 		uint8_t signature[2] = {0x55, 0xaa};
+		MBR(char *buffer) { // Buffer is expected to be 512 bytes long
+			size_t offset = 0;
+			memcpy(bootstrap,    buffer,                                   sizeof(bootstrap));
+			memcpy(diskID,       buffer + (offset += sizeof(bootstrap)),   sizeof(diskID));
+			memcpy(reserved,     buffer + (offset += sizeof(diskID)),      sizeof(reserved));
+			memcpy(&firstEntry,  buffer + (offset += sizeof(reserved)),    sizeof(firstEntry));
+			memcpy(&secondEntry, buffer + (offset += sizeof(firstEntry)),  sizeof(secondEntry));
+			memcpy(&thirdEntry,  buffer + (offset += sizeof(secondEntry)), sizeof(thirdEntry));
+			memcpy(&fourthEntry, buffer + (offset += sizeof(thirdEntry)),  sizeof(fourthEntry));
+			memcpy(signature,    buffer + (offset += sizeof(fourthEntry)), sizeof(signature));
+		}
 	} __attribute__((packed));
 }

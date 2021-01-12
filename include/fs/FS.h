@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 #include "Defs.h"
-#include "device/Device.h"
+#include "fs/Partition.h"
 
 namespace DsOS::FS {
 	constexpr size_t BLOCKSIZE = 512;
@@ -55,7 +55,7 @@ namespace DsOS::FS {
 
 	class Driver {
 		public:
-			std::shared_ptr<Device::DeviceBase> device;
+			Partition *partition;
 			virtual ~Driver() { cleanup(); }
 			virtual int rename(const char *path, const char *newpath) = 0;
 			virtual int release(const char *path, FileInfo &) = 0;
@@ -78,7 +78,7 @@ namespace DsOS::FS {
 			Driver() = delete;
 			Driver(const Driver &) = delete;
 			Driver(Driver &&) = delete;
-			Driver(std::shared_ptr<Device::DeviceBase> device_): device(device_) {}
+			Driver(Partition *partition_): partition(partition_) {}
 
 			Driver & operator=(const Driver &) = delete;
 			Driver & operator=(Driver &&) = delete;
