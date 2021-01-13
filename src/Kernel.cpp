@@ -101,8 +101,9 @@ namespace DsOS {
 		FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
 		using namespace FS::DsFAT;
 		FS::DsFAT::DsFATDriver driver(&first_partition);
-		driver.make(6400);
+		// driver.make(6400);
 		printf("[%s:%d]\n", __FILE__, __LINE__);
+		printf("sizeof(DirEntry) = %lu\n", sizeof(FS::DsFAT::DirEntry));
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {

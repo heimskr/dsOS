@@ -45,7 +45,7 @@ namespace DsOS::FS::DsFAT {
 		block_t startBlock = {-1};
 		FileType type;
 		mode_t modes = 0;
-		char padding[20] = {0}; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
+		char padding[16] = {0}; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
 
 		bool isFile() const { return type == FileType::File; }
 		bool isDirectory() const { return type == FileType::Directory; }
@@ -57,7 +57,7 @@ namespace DsOS::FS::DsFAT {
 			type = FileType::File;
 			modes = 0;
 		}
-	} __attribute__((packed));
+	};
 
 	static_assert(sizeof(DirEntry) % 64 == 0);
 }

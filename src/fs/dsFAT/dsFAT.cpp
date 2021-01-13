@@ -14,11 +14,8 @@ namespace DsOS::FS::DsFAT {
 	char DsFATDriver::nothing[sizeof(DirEntry)] = {0};
 
 	DsFATDriver::DsFATDriver(Partition *partition_): Driver(partition_) {
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		root.startBlock = -1;
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		readSuperblock(superblock);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 	}
 
 	int DsFATDriver::readSuperblock(Superblock &out) {
@@ -996,11 +993,8 @@ namespace DsOS::FS::DsFAT {
 
 			DirEntry *parent_entry;
 			off_t  parent_offset;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
 			status = newFile(destpath, 0, src_entry->isDirectory()? FileType::Directory : FileType::File,
 			                 &src_entry->times, &dest_entry, &dest_offset, &parent_entry, &parent_offset, 1);
-#pragma GCC diagnostic pop
 			if (status < 0) {
 				printf("[DsFATDriver::rename] Couldn't create new directory entry: %s\n", strerror(-status));
 				return status;

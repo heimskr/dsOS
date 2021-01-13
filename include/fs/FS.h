@@ -78,9 +78,7 @@ namespace DsOS::FS {
 			Driver() = delete;
 			Driver(const Driver &) = delete;
 			Driver(Driver &&) = delete;
-			Driver(Partition *partition_): partition(partition_) {
-				printf("[%s:%d]\n", __FILE__, __LINE__);
-			}
+			Driver(Partition *partition_): partition(partition_) {}
 
 			Driver & operator=(const Driver &) = delete;
 			Driver & operator=(Driver &&) = delete;
