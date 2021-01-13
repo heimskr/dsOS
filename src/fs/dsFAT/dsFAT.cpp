@@ -857,7 +857,9 @@ namespace DsOS::FS::DsFAT {
 	}
 
 	void DsFATDriver::initFAT(size_t table_size, size_t block_size) {
-		size_t written = 0;
+		size_t written = sizeof(Superblock) / sizeof(block_t);
+		printf("initFAT: writeOffset = %lu\n", writeOffset);
+		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
 		// These blocks point to the FAT, so they're not valid regions to write data.
 		writeMany((block_t) -1, table_size + 1);
 		written += table_size + 1;

@@ -21,6 +21,10 @@ namespace DsOS::FS::DsFAT {
 			Superblock superblock;
 			ssize_t blocksFree = -1;
 			DirEntry root;
+			size_t writeOffset = 0;
+			/** Ugly hack to avoid allocating memory on the heap because I'm too lazy to deal with freeing it. */
+			DirEntry overflow[OVERFLOW_MAX];
+			size_t overflowIndex = 0;
 
 			int writeSuperblock(const Superblock &);
 			int readSuperblock(Superblock &);
@@ -120,8 +124,6 @@ namespace DsOS::FS::DsFAT {
 
 			bool checkBlock(block_t);
 
-			size_t writeOffset = 0;
-
 			template <typename T>
 			int writeMany(T n, size_t count, off_t offset) {
 				int status;
@@ -138,6 +140,7 @@ namespace DsOS::FS::DsFAT {
 			template <typename T>
 			int writeMany(T n, size_t count) {
 				int status;
+				const size_t old_offset = writeOffset;
 				for (size_t i = 0; i < count; ++i) {
 					status = partition->write(&n, sizeof(T), writeOffset);
 					if (status != 0) {
@@ -146,6 +149,7 @@ namespace DsOS::FS::DsFAT {
 					}
 					writeOffset += sizeof(T);
 				}
+				printf("[M] writeOffset: %lu -> %lu (%lu * %lu)\n", old_offset, writeOffset, sizeof(T), count);
 				return 0;
 			}
 
@@ -156,15 +160,12 @@ namespace DsOS::FS::DsFAT {
 					printf("[DsFATDriver::write] Writing failed: %s\n", strerror(status));
 					return -status;
 				}
+				printf("[S] writeOffset: %lu -> %lu\n", writeOffset, writeOffset + sizeof(T));
 				writeOffset += sizeof(T);
 				return 0;
 			}
 
 			static size_t tableSize(size_t block_count, size_t block_size);
-
-			/** Ugly hack to avoid allocating memory on the heap because I'm too lazy to deal with freeing it. */
-			DirEntry overflow[OVERFLOW_MAX];
-			size_t overflowIndex = 0;
 
 			static char nothing[sizeof(DirEntry)];
 
@@ -189,6 +190,5 @@ namespace DsOS::FS::DsFAT {
 			DsFATDriver(Partition *);
 			PathCache pathCache = this;
 			FDCache fdCache = this;
-
 	};
 }

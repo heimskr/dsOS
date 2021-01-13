@@ -47,6 +47,8 @@ namespace DsOS {
 	}
 
 	void Kernel::main() {
+		kernelPML4.print(false);
+
 		Terminal::clear();
 		Terminal::write("Hello, kernel World!\n");
 		if (Serial::init())
@@ -69,48 +71,38 @@ namespace DsOS {
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
 
+
 		pager = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
 		pager.assignSelf();
 		pager.clear();
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
 
-		printf("[%s:%d]\n", __FILE__, __LINE__);
-
 		x86_64::APIC::init(*this);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		x86_64::PIC::clearIRQ(1);
 		x86_64::PIC::clearIRQ(14);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		// printf("map size: %lu\n", map.size());
 
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 
 		IDE::init();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		MBR mbr;
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		Device::IDEDevice device(0);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
+		using namespace FS::DsFAT;
 		FS::DsFAT::DsFATDriver driver(&first_partition);
+		driver.make(6400);
 		printf("[%s:%d]\n", __FILE__, __LINE__);
-		// driver.make(8192);
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {

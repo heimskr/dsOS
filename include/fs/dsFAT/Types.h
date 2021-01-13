@@ -9,10 +9,10 @@ namespace DsOS::FS::DsFAT {
 	using fd_t = uint64_t;
 
 	constexpr size_t DSFAT_PATH_MAX = 255;
-	constexpr size_t FD_MAX   = 128; // ???
+	constexpr size_t FD_MAX = 128; // ???
 
 	constexpr size_t PATHC_MAX = 1024;
-	constexpr size_t FDC_MAX = 1024;
+	constexpr size_t FDC_MAX = 4;
 
 	struct Superblock {
 		uint32_t magic;
@@ -21,7 +21,7 @@ namespace DsOS::FS::DsFAT {
 		uint32_t blockSize;
 		/** The block containing the root directory. */
 		block_t startBlock;
-	};
+	} __attribute__((packed));
 
 	struct Times {
 		time_t created;
