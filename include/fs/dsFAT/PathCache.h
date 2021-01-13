@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "fs/dsFAT/Types.h"
 
 namespace DsOS::FS::DsFAT {
@@ -18,10 +20,10 @@ namespace DsOS::FS::DsFAT {
 
 	struct PathCache {
 		DsFATDriver *parent;
-		PathCacheEntry entries[PATHC_MAX];
+		std::unordered_map<const char *, PathCacheEntry> map;
+
 		PathCache(DsFATDriver *parent_): parent(parent_) {}
-		// Superblock superblock;
-		// ssize_t blocksFree;
-		// DirEntry root;
+
+		PathCacheEntry * find(const char *);
 	};
 }

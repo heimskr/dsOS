@@ -7,7 +7,7 @@ namespace DsOS::FS::DsFAT {
 	using block_t = int32_t;
 	using fd_t = uint64_t;
 
-	constexpr size_t PATH_MAX = 256;
+	constexpr size_t DSFAT_PATH_MAX = 255;
 	constexpr size_t FD_MAX   = 128; // ???
 
 	constexpr size_t PATHC_MAX = 1024;
@@ -15,10 +15,10 @@ namespace DsOS::FS::DsFAT {
 
 	struct Superblock {
 		uint32_t magic;
-		uint32_t block_count;
-		uint32_t fat_blocks;
-		uint32_t block_size;
-		block_t start_block; // the block containing the root directory
+		uint32_t blockCount;
+		uint32_t fatBlocks;
+		uint32_t blockSize;
+		block_t startBlock; // the block containing the root directory
 	};
 
 	struct Times {
@@ -28,7 +28,7 @@ namespace DsOS::FS::DsFAT {
 	};
 
 	union Filename {
-		char str[PATH_MAX] = {0};
+		char str[DSFAT_PATH_MAX + 1] = {0};
 		uint64_t longs[sizeof(str) / sizeof(uint64_t)];
 	};
 
@@ -37,10 +37,15 @@ namespace DsOS::FS::DsFAT {
 	struct DirEntry {
 		Filename name;
 		Times times;
-		size_t length; // in bytes. for directories, 0 -> free
-		block_t startBlock; // 0 if free, -1 if invalid
+		/** Length of the directory entry in bytes. For directories, 0 -> free. */
+		size_t length;
+		/** 0 if free, -1 if invalid. */
+		block_t startBlock;
 		FileType type;
 		mode_t modes;
-		char padding[16]; // update if PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
+		char padding[16]; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
+
+		bool isFile() const { return type == FileType::File; }
+		bool isDirectory() const { return type == FileType::Directory; }
 	} __attribute__((packed));
 }
