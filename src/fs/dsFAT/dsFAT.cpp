@@ -149,8 +149,8 @@ namespace DsOS::FS::DsFAT {
 			// FREE(entries);
 			// FREE(offsets);
 
-			// int status = fat_read_dir(imgfd, &dir, &entries, &offsets, &count, NULL);
 			int status = readDir(dir, entries, &offsets);
+			count = entries.size();
 			if (status < 0) {
 				// WARN(FATFINDH, "Couldn't read directory. Status: " BDR " (%s)", status, STRERR(status));
 				// FREE(remaining);
@@ -324,7 +324,7 @@ namespace DsOS::FS::DsFAT {
 		if (offset)
 			*offset = start;
 
-		partition->read(&root, sizeof(DirEntry));
+		partition->read(&root, sizeof(DirEntry), start);
 		return root;
 	}
 
@@ -571,9 +571,9 @@ namespace DsOS::FS::DsFAT {
 		// Read the directory to check whether there's a freed entry we can recycle. This can save us a lot of pain.
 		std::vector<DirEntry> entries;
 		std::vector<off_t> offsets;
-		size_t count;
 		int first_index;
 		status = readDir(*parent, entries, &offsets, &first_index);
+		size_t count = entries.size();
 
 		// Check all the directory entries except the initial meta-entries.
 		off_t offset = -1;
@@ -853,6 +853,17 @@ namespace DsOS::FS::DsFAT {
 		return -1;
 	}
 
+	void DsFATDriver::initFAT(size_t table_size, size_t block_size) {
+		size_t written = 0;
+		// These blocks point to the FAT, so they're not valid regions to write data.
+		writeMany((block_t) -1, table_size + 1);
+		written += table_size + 1;
+		writeMany((block_t) -2, 1);
+		++written;
+		// Might be sensitize to sizeof(block_t).
+		writeMany((block_t) 0, Util::blocks2words(table_size, block_size) - written);
+	}
+
 	block_t DsFATDriver::readFAT(size_t block_offset) {
 		block_t out;
 		int status = partition->read(&out, sizeof(block_t), block_offset * sizeof(block_t));
@@ -868,6 +879,30 @@ namespace DsOS::FS::DsFAT {
 			return -status;
 		}
 		return 0;
+	}
+
+	void DsFATDriver::initData(size_t block_count, size_t table_size) {
+		root.reset();
+		root.name.str[0] = '.';
+		root.length = 2 * sizeof(DirEntry);
+		root.startBlock = table_size + 1;
+		root.type = FileType::Directory;
+		// fat_update_times(&root, now);
+		// writeEntry(root,
+		// auto write_entry = [&](const DirEntry &entry) {
+		// 	for (size_t i = 0; i < sizeof(dir.name.words) / sizeof(dir.name.words[0]); ++i)
+		// 		write(dir.name.words[i]);
+		// 	write(dir.times.created);
+		// 	write(dir.times.modified);
+		// 	write(dir.times.accessed);
+		// 	write(dir.length);
+		// 	write(dir.start_block);
+		// 	write(dir.flags);
+		// 	write(static_cast<int>(0), 5);
+		// };
+		write(root);
+		root.name.str[1] = '.';
+		write(root);
 	}
 
 	bool DsFATDriver::hasFree(const size_t count) {
@@ -902,6 +937,11 @@ namespace DsOS::FS::DsFAT {
 		}
 
 		return true;
+	}
+
+	size_t DsFATDriver::tableSize(size_t block_count, size_t block_size) {
+		return block_count < block_size / sizeof(block_t)?
+			1 : DsOS::Util::updiv(block_count, block_size / sizeof(block_t));
 	}
 
 	int DsFATDriver::rename(const char *srcpath, const char *destpath) {
@@ -951,8 +991,11 @@ namespace DsOS::FS::DsFAT {
 
 			DirEntry *parent_entry;
 			off_t  parent_offset;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
 			status = newFile(destpath, 0, src_entry->isDirectory()? FileType::Directory : FileType::File,
 			                 &src_entry->times, &dest_entry, &dest_offset, &parent_entry, &parent_offset, 1);
+#pragma GCC diagnostic pop
 			if (status < 0) {
 				printf("[DsFATDriver::rename] Couldn't create new directory entry: %s\n", strerror(-status));
 				return status;
@@ -1053,5 +1096,59 @@ namespace DsOS::FS::DsFAT {
 
 	int DsFATDriver::getattr(const char *path, FileStats &) {
 		return 0;
+	}
+
+	bool DsFATDriver::make(uint32_t block_size) {
+		int status = partition->clear();
+		if (status != 0) {
+			printf("[DsFATDriver::make] Clearing partition failed: %s\n", strerror(status));
+			return false;
+		}
+
+		const size_t block_count = partition->length / block_size;
+
+		if (block_count < MINBLOCKS) {
+			printf("[DsFATDriver::make] Number of blocks for partition is too small: %lu\n", block_count);
+			return false;
+		}
+
+		if (block_size % sizeof(DirEntry)) {
+			// The block size must be a multiple of the size of a directory entry because it must be possible to fill a
+			// block with directory entries without any space left over.
+			printf("[DsFATDriver::make] Block size isn't a multiple of %lu.\n", sizeof(DirEntry));
+			return false;
+		}
+
+		if (block_size < 2 * sizeof(DirEntry)) {
+			printf("[DsFATDriver::make] Block size must be able to hold at least two directory entries.\n");
+			return false;
+		}
+
+		if (block_size < sizeof(Superblock)) {
+			printf("[DsFATDriver::make] Block size isn't large enough to contain a superblock (%luB).\n",
+				sizeof(Superblock));
+			return false;
+		}
+
+		const size_t table_size = tableSize(block_count, block_size);
+
+		if (UINT32_MAX <= table_size) {
+			printf("[DsFATDriver::make] Table size too large: %u\n", table_size);
+			return false;
+		}
+
+		superblock = {
+			.magic = MAGIC,
+			.blockCount = block_count,
+			.fatBlocks = static_cast<uint32_t>(table_size),
+			.blockSize = block_size,
+			.startBlock = static_cast<block_t>(table_size + 1)
+		};
+
+		writeOffset = 0;
+		write(superblock);
+		initFAT(table_size, block_size);
+		initData(block_count, table_size);
+		return true;
 	}
 }

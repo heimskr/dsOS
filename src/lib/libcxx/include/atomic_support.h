@@ -148,6 +148,7 @@ inline _LIBCPP_INLINE_VISIBILITY
 _ValueType __libcpp_atomic_exchange(_ValueType* __target,
                                     _ValueType __value, int __order = _AO_Seq)
 {
+    (void) __order;
     _ValueType old = *__target;
     *__target = __value;
     return old;

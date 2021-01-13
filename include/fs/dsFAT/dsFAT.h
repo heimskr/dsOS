@@ -11,15 +11,18 @@
 #include "fs/dsFAT/Types.h"
 
 namespace DsOS::FS::DsFAT {
-	const int NEWFILE_SKIP_MAX = 4;
-	const int OVERFLOW_MAX = 32;
+	constexpr uint32_t MAGIC = 0xfa91283e;
+	constexpr int NEWFILE_SKIP_MAX = 4;
+	constexpr int OVERFLOW_MAX = 32;
+	constexpr size_t MINBLOCKS = 3;
 
 	class DsFATDriver: public Driver {
 		private:
-			bool ready = false;
 			Superblock superblock;
 			ssize_t blocksFree = -1;
 			DirEntry root;
+
+			int writeSuperblock(const Superblock &);
 			int readSuperblock(Superblock &);
 			void error(const std::string &);
 
@@ -105,14 +108,59 @@ namespace DsOS::FS::DsFAT {
 			 *  @return Returns the index of the first free block if any were found; -1 otherwise. */
 			block_t findFreeBlock();
 
+			void initFAT(size_t table_size, size_t block_size);
 			block_t readFAT(size_t block_offset);
 			int writeFAT(block_t block, size_t block_offset);
+
+			void initData(size_t block_count, size_t table_size);
 
 			bool hasFree(const size_t);
 			bool isFree(const DirEntry &);
 			ssize_t countFree();
 
 			bool checkBlock(block_t);
+
+			size_t writeOffset = 0;
+
+			template <typename T>
+			int writeMany(T n, size_t count, off_t offset) {
+				int status;
+				for (size_t i = 0; i < count; ++i) {
+					status = partition->write(&n, sizeof(T), offset + i * sizeof(T));
+					if (status != 0) {
+						printf("[DsFATDriver::writeInt] Writing failed: %s\n", strerror(status));
+						return -status;
+					}
+				}
+				return 0;
+			}
+
+			template <typename T>
+			int writeMany(T n, size_t count) {
+				int status;
+				for (size_t i = 0; i < count; ++i) {
+					status = partition->write(&n, sizeof(T), writeOffset);
+					if (status != 0) {
+						printf("[DsFATDriver::writeInt] Writing failed: %s\n", strerror(status));
+						return -status;
+					}
+					writeOffset += sizeof(T);
+				}
+				return 0;
+			}
+
+			template <typename T>
+			int write(const T &n) {
+				int status = partition->write(&n, sizeof(T), writeOffset);
+				if (status != 0) {
+					printf("[DsFATDriver::write] Writing failed: %s\n", strerror(status));
+					return -status;
+				}
+				writeOffset += sizeof(T);
+				return 0;
+			}
+
+			static size_t tableSize(size_t block_count, size_t block_size);
 
 			/** Ugly hack to avoid allocating memory on the heap because I'm too lazy to deal with freeing it. */
 			DirEntry overflow[OVERFLOW_MAX];
@@ -136,9 +184,11 @@ namespace DsOS::FS::DsFAT {
 			virtual int read(const char *path, char *buffer, size_t size, off_t offset, FileInfo &) override;
 			virtual int readdir(const char *path, void *buffer, DirFiller filler, off_t offset, FileInfo &) override;
 			virtual int getattr(const char *path, FileStats &) override;
+			bool make(uint32_t block_size);
 
 			DsFATDriver(Partition *);
 			PathCache pathCache = this;
 			FDCache fdCache = this;
+
 	};
 }

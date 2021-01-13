@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Defs.h"
+#include "fs/dsFAT/Types.h"
+
 #include <optional>
 #include <string>
 
@@ -14,4 +17,10 @@ namespace DsOS::FS::DsFAT::Util {
 	std::optional<std::string> pathLast(const char *);
 
 	std::optional<std::string> pathParent(const char *);
+
+	inline size_t blocks2words(const size_t blocks, const size_t block_size) {
+		// The blocksize is in bytes, so we divide it by sizeof(block) to get the number of words.
+		// Multiply that by the number of blocks to get how many words would be taken up by that many blocks.
+		return blocks * (size_t) (block_size * sizeof(char) / sizeof(block_t));
+	}
 }

@@ -9,4 +9,8 @@ namespace DsOS::FS {
 	int Partition::write(const void *buffer, size_t size, off_t offset) {
 		return parent->write(buffer, size, offset);
 	}
+
+	int Partition::clear() {
+		return parent->clear(offset, length);
+	}
 }

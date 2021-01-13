@@ -4,7 +4,7 @@
 #include <ctime>
 
 namespace DsOS::FS::DsFAT {
-	using block_t = int64_t;
+	using block_t = int32_t;
 	using fd_t = uint64_t;
 
 	constexpr size_t DSFAT_PATH_MAX = 255;
@@ -15,10 +15,11 @@ namespace DsOS::FS::DsFAT {
 
 	struct Superblock {
 		uint32_t magic;
-		uint32_t blockCount;
+		size_t blockCount;
 		uint32_t fatBlocks;
 		uint32_t blockSize;
-		block_t startBlock; // the block containing the root directory
+		/** The block containing the root directory. */
+		block_t startBlock;
 	};
 
 	struct Times {
@@ -43,10 +44,18 @@ namespace DsOS::FS::DsFAT {
 		block_t startBlock = {-1};
 		FileType type;
 		mode_t modes = 0;
-		char padding[18] = {0}; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
+		char padding[20] = {0}; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
 
 		bool isFile() const { return type == FileType::File; }
 		bool isDirectory() const { return type == FileType::Directory; }
+		void reset() {
+			memset(name.str, 0, sizeof(name));
+			times = {0, 0, 0};
+			length = 0;
+			startBlock = -1;
+			type = FileType::File;
+			modes = 0;
+		}
 	} __attribute__((packed));
 
 	static_assert(sizeof(DirEntry) % 64 == 0);
