@@ -20,7 +20,7 @@ namespace DsOS::Device {
 			char buffer[IDE::SECTOR_SIZE] = {0};
 			int status;
 			for (size_t i = 0, max = size / IDE::SECTOR_SIZE; i < max; ++i) {
-				status = IDE::writeSectors(ideID, IDE::SECTOR_SIZE, offset + IDE::SECTOR_SIZE * i, buffer);
+				status = IDE::writeSectors(ideID, 1, offset / IDE::SECTOR_SIZE + i, buffer);
 				if (status != 0)
 					return status;
 			}
@@ -41,6 +41,8 @@ namespace DsOS::Device {
 				return status;
 		}
 		delete[] buffer;
+
+		return 0;
 	}
 
 	std::string IDEDevice::getName() const {

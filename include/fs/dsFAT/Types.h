@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <string.h>
 
 namespace DsOS::FS::DsFAT {
 	using block_t = int32_t;
