@@ -1,5 +1,6 @@
 // http://wiki.osdev.org/IDE
 
+#include <cerrno>
 #include <string.h>
 
 #include "hardware/IDE.h"
@@ -29,9 +30,9 @@ namespace DsOS::IDE {
 	int readSectors(uint8_t drive, uint8_t numsects, uint32_t lba, char *buffer) {
 		int status = 0;
 		if (drive > 3 || devices[drive].reserved == 0) {
-			status = 0x1; // Drive not found!
+			status = ENXIO; // Drive not found!
 		} else if (((lba + numsects) > devices[drive].size) && (devices[drive].type == IDE_ATA)) {
-			status = 0x2; // Seeking to invalid position.
+			status = -EINVAL; // Seeking to invalid position.
 		} else {
 			uint8_t err = 0;
 			if (devices[drive].type == IDE_ATA)
@@ -429,14 +430,17 @@ namespace DsOS::IDE {
 		if (advanced_check) {
 			uint8_t state = read(channel, ATA_REG_STATUS); // Read status register
 
-			if (state & ATA_SR_DF)
-				return 1; // Device fault
+			if ((state & (ATA_SR_DF | ATA_SR_ERR)) || ((state & ATA_SR_DRQ) == 0))
+				return EIO;
 
-			if (state & ATA_SR_ERR)
-				return 2; // Error
+			// if (state & ATA_SR_DF)
+			// 	return 1; // Device fault
 
-			if ((state & ATA_SR_DRQ) == 0)
-				return 3; // DRQ should be set
+			// if (state & ATA_SR_ERR)
+			// 	return 2; // Error
+
+			// if ((state & ATA_SR_DRQ) == 0)
+			// 	return 3; // DRQ should be set
 		}
 
 		return 0; // No Error.

@@ -4,7 +4,7 @@
 #include <ctime>
 
 namespace DsOS::FS::DsFAT {
-	using block_t = int32_t;
+	using block_t = int64_t;
 	using fd_t = uint64_t;
 
 	constexpr size_t DSFAT_PATH_MAX = 255;
@@ -35,17 +35,19 @@ namespace DsOS::FS::DsFAT {
 	enum class FileType: int {File, Directory};
 
 	struct DirEntry {
-		Filename name;
+		Filename name = {0};
 		Times times;
 		/** Length of the directory entry in bytes. For directories, 0 -> free. */
-		size_t length;
+		size_t length = 0;
 		/** 0 if free, -1 if invalid. */
-		block_t startBlock;
+		block_t startBlock = {-1};
 		FileType type;
-		mode_t modes;
-		char padding[16]; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
+		mode_t modes = 0;
+		char padding[18] = {0}; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
 
 		bool isFile() const { return type == FileType::File; }
 		bool isDirectory() const { return type == FileType::Directory; }
 	} __attribute__((packed));
+
+	static_assert(sizeof(DirEntry) % 64 == 0);
 }

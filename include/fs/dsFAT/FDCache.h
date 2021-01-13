@@ -6,7 +6,10 @@ namespace DsOS::FS::DsFAT {
 	class DsFATDriver;
 	struct PathCacheEntry;
 
+	struct FDCache;
+
 	struct FDCacheEntry {
+		FDCache *parent;
 		bool alive;
 		fd_t descriptor;
 		PathCacheEntry *complement;

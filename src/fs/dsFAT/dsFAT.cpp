@@ -24,7 +24,7 @@ namespace DsOS::FS::DsFAT {
 		for (;;);
 	}
 
-	int DsFATDriver::find(fd_t fd, const char *path, DirEntry *out, off_t *offset, bool get_parent,
+	int DsFATDriver::find(fd_t fd, const char *path, DirEntry *out, DirEntry **outptr, off_t *offset, bool get_parent,
 	                      std::string *last_name) {
 		// ENTER;
 
@@ -75,7 +75,10 @@ namespace DsOS::FS::DsFAT {
 
 				if (offset)
 					*offset = pc_entry->offset;
-				if (out)
+
+				if (outptr)
+					*outptr = &pc_entry->entry;
+				else if (out)
 					*out = pc_entry->entry;
 
 				// DBG(FATFINDH, "Returning from cache."); FF_EXIT;
@@ -86,7 +89,9 @@ namespace DsOS::FS::DsFAT {
 		if (strcmp(path, "/") == 0 || strlen(path) == 0) {
 			// For the special case of "/" or "" (maybe that last one should be invalid...), return the root directory.
 			DirEntry &rootdir = getRoot(offset);
-			if (out)
+			if (outptr)
+				*outptr = &rootdir;
+			else if (out)
 				*out = rootdir;
 
 			// DBG(FATFINDH, "Returning the root."); FF_EXIT;
@@ -114,7 +119,9 @@ namespace DsOS::FS::DsFAT {
 
 			if (at_end && get_parent) {
 				// We just want the containing directory, thank you very much.
-				if (out)
+				if (outptr)
+					*outptr = &dir;
+				else if (out)
 					*out = dir;
 
 				if (offset)
@@ -162,7 +169,9 @@ namespace DsOS::FS::DsFAT {
 							// DBG(FATFINDH, "Returning file at the end.");
 							// DBGF(FATFINDH, "  Name" DL " " BSTR DM " offset" DL " " BLR, entry->fname.str, offsets[i]);
 
-							if (out)
+							if (outptr)
+								*outptr = &entry;
+							else if (out)
 								*out = entry;
 
 							if (offset)
@@ -181,7 +190,9 @@ namespace DsOS::FS::DsFAT {
 						// DBG(FATFINDH, "Returning directory at the end.");
 						// DBG2(FATFINDH, "  Name:", entry->fname.str);
 
-						if (out)
+						if (outptr)
+							*outptr = &entry;
+						else if (out)
 							*out = entry;
 
 						if (offset)
@@ -212,6 +223,86 @@ namespace DsOS::FS::DsFAT {
 		// WARNS(FATFINDH, "Reached the end of the function " UDARR " " IDS("EIO"));
 		// FF_EXIT;
 		return -EIO;
+	}
+
+	size_t DsFATDriver::forget(block_t start) {
+		// ENTER;
+
+		// DBGNE(FORGETH, "Forgetting", start);
+
+		int64_t next;
+		block_t block = start;
+		size_t removed = 0;
+		for (;;) {
+			next = readFAT(block);
+			if (next == -2) {
+				// DBGFE(FORGETH, "Freeing " BLR " (next == -2)", block);
+				writeFAT(0, block);
+				removed++;
+				break;
+			} else if (0 < next) {
+				// DBGFE(FORGETH, "Freeing " BLR " (0 < next)", block);
+				writeFAT(0, block);
+				removed++;
+				block = next;
+			} else
+				break;
+		}
+
+		blocksFree += removed;
+		// save(&superblock, pcache.fat);
+		// EXIT;
+		return removed;
+	}
+
+	int DsFATDriver::writeEntry(const DirEntry &dir, off_t offset) {
+		// HELLO(dir->fname.str);
+		// ENTER;
+		// DBGF(WRENTRYH, "Writing directory entry at offset " BLR " (" BLR DMS BLR DL BLR ") with filename " BSTR DM " length " BUR
+		// 	DM " start block " BDR " (next: " BDR ")",
+		// 	offset, offset / pcache.sb.block_size, (offset % pcache.sb.block_size) / sizeof(dir_t),
+		// 	(offset % pcache.sb.block_size) % sizeof(dir_t),  dir->fname.str, dir->length, dir->start_block,
+		// 	pcache.fat[dir->start_block]);
+
+		// CHECKSEEK(WRENTRYH, "Invalid offset:", offset);
+		// lseek(imgfd, offset, SEEK_SET);
+		// IFERRNOXC(WARN(WRENTRYH, "lseek() failed " UDARR " " DSR, strerror(errno)));
+
+		int status = partition->write(&dir, sizeof(DirEntry), offset);
+		if (status != 0) {
+			printf("[DsFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
+			return -status;
+		}
+		// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
+
+		if (offset == superblock.startBlock * superblock.blockSize) {
+			// If we're writing to "." in the root, update ".." as well.
+			// We need to make a copy of the entry so we can change its filename to "..".
+			DirEntry dir_cpy = dir;
+			memset(dir_cpy.name.str, 0, sizeof(dir_cpy.name.str));
+			dir_cpy.name.str[0] = dir_cpy.name.str[1] = '.';
+			// write(imgfd, &dir_cpy, sizeof(dir_t));
+			partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
+			// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
+		}
+
+		if (dir.startBlock == superblock.startBlock) {
+			// DBGF(WRENTRYH, "Writing root (" BDR SUDARR BDR "); dir %c= rootptr.", root.length, dir.length, &dir == &pcache.root? '=' : '!');
+			if (&dir != &root)
+				root.length = dir.length;
+		}
+
+		// If fat_write_entry() is called, it's probably because something about the entry was recently changed.
+		// If the length changed, this might invalidate a corresponding pcache entry.
+		// We're assuming the offset is still valid.
+		PathCacheEntry *found = pathCache.find(offset);
+		if (found && found->entry.length != dir.length) {
+			// DBGF(WRENTRYH, "Updating " IMS("pcache") " entry length for " BSR DLS BDR SUDARR BDR, found->path, found->entry.length, dir->length);
+			found->entry.length = dir.length;
+		}
+
+		// EXIT;
+		return 0;
 	}
 
 	DirEntry & DsFATDriver::getRoot(off_t *offset) {
@@ -393,6 +484,346 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
+	int DsFATDriver::newFile(const char *path, uint32_t length, FileType type, const Times *times, DirEntry **dir_out,
+	                         off_t *offset_out, DirEntry **parent_dir_out, off_t *parent_offset_out, bool noalloc) {
+		// HELLO(path);
+// #ifndef DEBUG_NEWFILE
+// 		METHOD_OFF(INDEX_NEWFILE);
+// #endif
+		// ENTER;
+		// DBG2(NEWFILEH, "Trying to create new file at", path);
+
+		DirEntry *parent = nullptr;
+		off_t parent_offset = 0;
+		std::string last_name;
+		int status = find(-1, path, nullptr, &parent, &parent_offset, true, &last_name);
+		bool parent_is_new = status == 1;
+
+		if (status < 0 && status != -ENOENT) {
+			// It's fine if we get ENOENT. The existence of a file shouldn't be a prerequisite for its creation.
+			printf("[DsFATDriver::newFile] find failed: %s\n", strerror(-status));
+			return status;
+		}
+
+		// First, check the filename length.
+		const size_t ln_length = last_name.size();
+		if (DSFAT_PATH_MAX < ln_length) {
+			// If it's too long, we can give up early.
+			printf("[DsFATDriver::newFile] Name too long (%lu chars)\n", ln_length);
+			// WARN(NEWFILEH, "Name too long: " BSR " " UDARR " " IDS("ENAMETOOLONG"), last_name);
+			// FREE(last_name);
+			// FREE(parent);
+			// NF_EXIT;
+			return -ENAMETOOLONG;
+		}
+
+		DirEntry newfile = {
+			.times = (times == NULL? Times(0, 0, 0) : *times), // TODO: implement time
+			.length = length,
+			.type = type,
+		};
+
+		block_t free_block = findFreeBlock();
+		if (noalloc) {
+			// We provide an option not to allocate space for the file. This is helpful for fat_rename, when we just
+			// need to find an offset where an existing directory entry can be moved to. It's possibly okay if no
+			// free block is available if the parent directory has enough space for another entry.
+			newfile.startBlock = 0;
+		} else {
+			// We'll need at least one free block to store the new file in so we can
+			// store the starting block in the directory entry we'll create soon.
+			if (free_block == -1) {
+				// If we don't have one, we'll complain about having no space left and give up.
+				// WARNS(NEWFILEH, "No free block " UDARR " " IDS("ENOSPC"));
+				// FREE(last_name);
+				// FREE(parent);
+				// NF_EXIT;
+				return -ENOSPC;
+			}
+
+			// SUCC(NEWFILEH, "Allocated " BSR " at block " BDR ".", path, free_block);
+
+			// Allocate the first block, decrement the free blocks count and flush the cache to disk.
+			// pcache.fat[free_block] = -2;
+			writeFAT(-2, free_block);
+			--blocksFree;
+			newfile.startBlock = free_block;
+
+			// There's not a point in copying the name to the entry if this function
+			// is being called just to get an offset to move an existing entry to.
+			memcpy(newfile.name.str, last_name.c_str(), ln_length);
+		}
+
+		// FREE(last_name);
+		block_t old_free_block = free_block;
+
+		// Read the directory to check whether there's a freed entry we can recycle. This can save us a lot of pain.
+		dir_t *entries;
+		off_t *offsets;
+		size_t count;
+		int first_index;
+		status = fat_read_dir(imgfd, parent, &entries, &offsets, &count, &first_index);
+
+		// Check all the directory entries except the initial meta-entries.
+		off_t offset = -1;
+		size_t offset_index = -1;
+		for (size_t i = (size_t) first_index; i < count; ++i) {
+			if (IS_FREE(entries[i])) {
+				// We found one! Store its offset in `offset` to replace its previous value of -1.
+				offset = offsets[i];
+				offset_index = i;
+				SUCC(NEWFILEH, ICS("Found") " freed entry at offset " BLR ".", offset);
+				break;
+			}
+		}
+
+		FREE(entries);
+		FREE(offsets);
+
+		const size_t bs = pcache.sb.block_size;
+		const uint64_t block_c = updiv(length, bs);
+
+		// There are four different scenarios that we have to accommodate when we want to add a new directory entry.
+		// The first and easiest is when the parent directory has a slot that used to contain an entry but was later freed.
+		// The second is when the parent directory is less than a block long, so we take its first free slot.
+		// The third is when the parent directory spans multiple blocks and is fully block-aligned, so we have to go through
+		// the effort of adding a new block to it. The fourth is like the third, except the parent directory isn't
+		// block-aligned so we don't have to expend a lot of effort, much like the second scenario.
+
+		int increase_parent_length = 1;
+
+		if (offset != -1) {
+			// Scenario one: we found a free entry earlier. Way too easy.
+			CDBGS(A_CYAN, NEWFILEH, "Scenario one.");
+			status = fat_write_entry(imgfd, &newfile, offset);
+			SCHECK(NEWFILEH, "Couldn't add entry to parent directory");
+			DBGF(NEWFILEH, "[S1] parent->length" SDEQ BUR DMS "offset_index" SDEQ BULR DMS "parent->length / sizeof(dir_t)"
+				SDEQ BULR DMS "%s",
+				parent->length, offset_index, parent->length / sizeof(dir_t), parent == &pcache.root? "==" : "!=");
+			if (parent->length / sizeof(dir_t) > offset_index) {
+				// Don't increase the length if it already extends past this entry.
+				increase_parent_length = 0;
+			}
+		} else if (parent->length <= bs - sizeof(dir_t)) {
+			// Scenario two: the parent directory has free space in its first block, which is also pretty easy to deal with.
+			CDBGS(A_CYAN, NEWFILEH, "Scenario two.");
+
+			if (!noalloc && !fat_has_free(block_c)) {
+				// If we're allocating space for the new file, we need enough blocks to hold it.
+				// If we don't have enough blocks, we should stop now before we make any changes to the filesystem.
+				WARN(NEWFILEH, "No free block " UDARR " " DSR, "ENOSPC");
+				pcache.fat[old_free_block] = 0;
+				FREE(parent);
+				NF_EXIT; return -ENOSPC;
+			}
+
+			// The offset of the free space is the sum of the parent's starting offset and its length.
+			// Try to write the entry to it.
+			offset = parent->start_block * bs + parent->length;
+			status = fat_write_entry(imgfd, &newfile, offset);
+			SCHECK(NEWFILEH, "Couldn't add entry to parent directory");
+		} else {
+			// Scenarios three and four: the parent directory spans multiple blocks.
+			// Four is mercifully simple, three less so.
+
+			// Skip to the last block; we don't need to read or change anything in the earlier blocks.
+			size_t remaining = parent->length;
+			block_t block = parent->start_block;
+			DBGN(NEWFILEH, "Parent start block:", block);
+			int skipped = 0;
+			while (bs < remaining) {
+				block = pcache.fat[block];
+				remaining -= bs;
+				if (++skipped <= NEWFILE_SKIP_MAX)
+					DBGN(NEWFILEH, "  Skipping to", block);
+			}
+
+			if (skipped > NEWFILE_SKIP_MAX) {
+				DBGF(NEWFILEH, "  " IDS("... %d more"), skipped);
+			}
+
+			DBGF(NEWFILEH, "bs - sizeof(dir_t) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " BLR
+				" < " BLR, bs, sizeof(dir_t), remaining, bs - sizeof(dir_t), remaining);
+
+			if (bs - sizeof(dir_t) < remaining) {
+				// Scenario three, the worst one: there isn't enough free space left in the
+				// parent directory to fit in another entry, so we have to add another block.
+				CDBGS(A_CYAN, NEWFILEH, "Scenario three.");
+
+				int nospc = 0;
+
+				if (!noalloc && !fat_has_free(2 + block_c)) {
+					// We need to make sure we have at least two free blocks: one for the expansion of the parent directory
+					// and another for the new directory entry. We also need more free blocks to contain the file,
+					// but that's mostly handled by the for loop below.
+					// TODO: is it actually 1 + block_c?
+					pcache.fat[old_free_block] = 0;
+					nospc = 1;
+				} else if (noalloc && !fat_has_free(1)) {
+					// If we don't need to allocate space for the new file,
+					// we need only one extra block for the parent directory.
+					nospc = 1;
+				}
+
+				if (nospc) {
+					// If we don't have enough free blocks, the operation fails due to lack of space.
+					WARN(NEWFILEH, "No free block (need " BLR ") " UDARR " " DSR, 2 + block_c, "ENOSPC");
+					FREE(parent);
+					NF_EXIT; return -ENOSPC;
+				}
+
+				// We'll take the value from the free block we found earlier to use as the next block in the parent
+				// directory.
+				pcache.fat[block] = old_free_block;
+				block = old_free_block;
+
+				if (!noalloc) {
+					// If we need to allocate space for the new file, we now try to find
+					// another free block to use as the new file's start block.
+					free_block = fat_find_free_block();
+					if (free_block == -1) {
+						WARN(NEWFILEH, "No free block " UDARR " " DSR, "ENOSPC");
+						pcache.fat[old_free_block] = 0;
+						FREE(parent);
+						NF_EXIT; return -ENOSPC;
+					}
+
+					// Decrease the free block count and assign the free block as the new file's starting block.
+					pcache.blocks_free--;
+					newfile.start_block = free_block;
+				}
+
+				// Write the directory entry to the block we allocated for expanding the parent directory.
+				offset = block * bs;
+				status = fat_write_entry(imgfd, &newfile, offset);
+				SCHECK(NEWFILEH, "Couldn't add entry to parent directory.");
+			} else {
+				// Scenario four: there's enough space in the parent directory to add the new entry. Nice.
+				CDBGS(A_CYAN, NEWFILEH, "Scenario four.");
+
+				offset = block * bs + remaining;
+				status = fat_write_entry(imgfd, &newfile, offset);
+				SCHECK(NEWFILEH, "Couldn't add entry to parent directory.");
+			}
+		}
+
+		if (increase_parent_length) {
+			// Increase the size of the parent directory and write it back to its original offset.
+			DBG(NEWFILEH, IMS("Increasing parent length."));
+			DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length+sizeof(dir_t)));
+			parent->length += sizeof(dir_t);
+			status = fat_write_entry(imgfd, parent, parent_offset);
+			SCHECK(NEWFILEH, "Couldn't write the parent directory to disk");
+		}
+
+		if (!noalloc) {
+			// If the file is more than one block in length, we need to allocate more entries in the file allocation table.
+			block_t block = newfile.start_block;
+			for (uint32_t size_left = length; bs < size_left; size_left -= bs) {
+				block_t another_free_block = fat_find_free_block();
+				if (another_free_block == -1) {
+					pcache.fat[block] = -2;
+					pcache.blocks_free = -1;
+					pcache.fat[old_free_block] = 0;
+					WARN(NEWFILEH, "No free block " UDARR " " DSR, "ENOSPC");
+					pathc_count_free();
+					fat_save(imgfd, &pcache.sb, pcache.fat);
+					FREE(parent);
+					NF_EXIT; return -ENOSPC;
+				}
+
+				pcache.blocks_free--;
+				block = pcache.fat[block] = another_free_block;
+			}
+
+			pcache.fat[block] = -2;
+
+			// Attempt to insert the new item into the pcache.
+			DBGF(NEWFILEH, "About to insert into " IMS("pcache") DLS BSTR DMS "offset" DLS BLR, newfile.fname.str, offset);
+			pathc_t *item;
+			status = pathc_insert(path, newfile, offset, &item);
+			DBG(NEWFILEH, "Inserted.");
+			if (status != 0 && status != 1) {
+				// Inserting a pcache entry should always work. If it doesn't, there's a bug somewhere.
+				DIE(NEWFILEH, IMS("pc_insert") "() failed (" BDR ")", status);
+			} else {
+				if (noalloc) {
+					item->alive = 0;
+				}
+
+				SETPTR(dir_out, &item->entry);
+			}
+
+			// if (dir_out != NULL) {
+		} else if (dir_out != NULL) {
+			// If someone's using noalloc, it's up to them to deal with the memory allocated here.
+
+
+
+			dir_t *dir = malloc(sizeof(dir_t));
+			memcpy(dir, &newfile, sizeof(dir_t));
+			if (dir_out)
+				*dir_out = dir;
+			// SETPTR(dir_out, dir);
+		}
+
+		// fat_save(imgfd, &pcache.sb, pcache.fat);
+
+		if (offset_out)
+			*offset_out = offset;
+
+		if (parent_dir_out)
+			*parent_dir_out = parent;
+
+		if (parent_offset_out)
+			*parent_offset_out = parent_offset;
+
+		SETPTR(       offset_out, offset);
+		SETPTR(   parent_dir_out, parent);
+		SETPTR(parent_offset_out, parent_offset);
+
+		// SUCCSE(NEWFILEH, "Created new file.");
+		// NF_EXIT;
+		return parent_is_new;
+	}
+
+	int DsFATDriver::remove(const char *path, bool remove_pentry) {
+		// DBGF(REMOVEH, "Removing " BSR " from the filesystem %s from " IMS("pcache") ".",
+		// 	path, remove_pentry? "and" : "but not");
+
+		DirEntry *found;
+		off_t offset;
+
+		// DBG_OFFE();
+		int status = find(-1, path, nullptr, &found, &offset, false, nullptr);
+		// DBG_ONE();
+		if (status < 0) {
+			printf("[DsFATDriver::remove] find failed: %s\n", strerror(-status));
+			return status;
+		}
+
+		// DBGF(REMOVEH, "Offset" DL " " BLR DM " start" DL " " BDR DM " next block" DL " " BDR,
+		// 	offset, found->start_block, pcache.fat[found->start_block]);
+
+		forget(found->startBlock);
+		found->startBlock = 0;
+		writeEntry(*found, offset);
+		// fat_save(imgfd, &pcache.sb, pcache.fat);
+
+		if (remove_pentry)
+			pathCache.erase(path);
+
+		return 0;
+	}
+
+	block_t DsFATDriver::findFreeBlock() {
+		auto block_c = superblock.blockCount;
+		for (decltype(block_c) i = 0; i < block_c; i++)
+			if (readFAT(i) == 0) // TODO: cache FAT
+				return i;
+		return -1;
+	}
+
 	block_t DsFATDriver::readFAT(size_t block_offset) {
 		block_t out;
 		partition->read(&out, sizeof(block_t), block_offset * sizeof(block_t));
@@ -417,7 +848,94 @@ namespace DsOS::FS::DsFAT {
 		return true;
 	}
 
-	int DsFATDriver::rename(const char *path, const char *newpath) {
+	int DsFATDriver::rename(const char *srcpath, const char *destpath) {
+		// HELLO(srcpath);
+		// DBGL;
+		// DBGF(RENAMEH, CMETHOD("rename") BSTR " " UARR " " BSTR, srcpath, destpath);
+
+		DirEntry *dest_entry, *src_entry;
+		off_t dest_offset, src_offset;
+		int status;
+
+		// It's okay if the destination doesn't exist, but the source is required to exist.
+		if ((status = find(-1, srcpath, nullptr, &src_entry, &src_offset, false, nullptr)) < 0) {
+			printf("[DsFATDriver::rename] find failed for old path: %s\n", strerror(-status));
+			return status;
+		}
+
+		// Start by removing the source from the pcache.
+		pathCache.erase(src_offset);
+
+		status = find(-1, destpath, nullptr, &dest_entry, &dest_offset, false, nullptr);
+		// DBGN(RENAMEH, "fat_find status:", status);
+		if (status < 0 && status != -ENOENT) {
+			printf("[DsFATDriver::rename] find failed for new path: %s\n", strerror(-status));
+			return status;
+		}
+
+		if (0 <= status) {
+			// DBGF(RENAMEH, IUS("Destination " BSR " already exists."), dest_entry->fname.str);
+			// Because the destination already exists, we need to unlink it to free up its space.
+			// The offset of its directory entry will then be available for us to use.
+			// We don't have to worry about not having enough space in this case; in fact,
+			// we're actually freeing up at least one block.
+			status = remove(destpath, true);
+			if (status < 0) {
+				printf("[DsFATDriver::rename] Couldn't unlink target: %s\n", strerror(-status));
+				return status;
+			}
+
+			// fat_remove would normally remove the corresponding pcache entry,
+			// but it uses string comparisons. We have the offset, so we can do
+			// it faster if we search by offset instead.
+			pathCache.erase(dest_offset);
+		} else if (status == -ENOENT) {
+			// DBGFE(RENAMEH, IUS("Destination " BSR " doesn't exist."), destpath);
+			// If the destination doesn't exist, we need to try to add another directory entry to the destination directory.
+
+			DirEntry *parent_entry;
+			off_t  parent_offset;
+			status = fat_newfile(destpath, 0, IS_DIR(*src_entry)? D_DIR : D_FILE, &src_entry->times,
+								&dest_entry, &dest_offset, &parent_entry, &parent_offset, 1);
+			if (status < 0) {
+				printf("[DsFATDriver::rename] Couldn't create new directory entry: %s\n", strerror(-status));
+				return status;
+			}
+			// DBGF(RENAMEH, BLR SUDARR BLR, src_offset, dest_offset);
+			// FREE(dest_entry);
+			// if (status == 1) {
+			// 	FREE(parent_entry);
+			// }
+
+			// We now know the offset of a free directory entry in the destination's parent directory.
+			// (We just created one, after all.) Now we copy over the source entry before freeing it.
+		}
+
+		// Zero out the source entry's filename, then copy in the basename of the destination.
+		std::optional<std::string> destbase = pathLast(destpath);
+		if (!destbase.has_value()) {
+			printf("[DsFATDriver::rename] destbase has no value!\n");
+			return -EINVAL;
+		}
+
+		memcpy(src_entry->fname.str,  nothing,  FNAME_MAX);
+		strncpy(src_entry->fname.str, destbase, FNAME_MAX);
+		FREE(destbase);
+
+		// Once we've ensured the destination doesn't exist or no longer exists,
+		// we move the source's directory entry to the destination's offset.
+		const int imgfd = pcache.imgfd;
+		SEEK(RENAMEH,  imgfd, dest_offset, SEEK_SET);
+		WRITE(RENAMEH, imgfd, src_entry, sizeof(dir_t));
+
+		// Now we need to remove the source entry's original directory entry from the disk image.
+		SEEK(RENAMEH,  imgfd, src_offset, SEEK_SET);
+		WRITE(RENAMEH, imgfd, nothing, sizeof(dir_t));
+
+		// Finally, we add the newly moved file to the pcache.
+		// DBG(RENAMEH, "Adding to " IMS("pcache") ".");
+		pathc_insert(destpath, *src_entry, dest_offset, NULL);
+		// SUCC(RENAMEH, "Moved " BSR " to " BSR ".", srcpath, destpath);
 		return 0;
 	}
 
