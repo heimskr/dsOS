@@ -49,6 +49,7 @@ namespace DsOS {
 		MBREntry thirdEntry;
 		MBREntry fourthEntry;
 		uint8_t signature[2] = {0x55, 0xaa};
+		MBR() = default;
 		MBR(char *buffer) { // Buffer is expected to be 512 bytes long
 			size_t offset = 0;
 			memcpy(bootstrap,    buffer,                                   sizeof(bootstrap));

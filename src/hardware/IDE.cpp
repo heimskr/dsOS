@@ -368,7 +368,7 @@ namespace DsOS::IDE {
 		if (err == 0)
 			return err;
 
-		printf("IDE:");
+		printf("IDE:\n");
 		if (err == 1) {
 			printf("- Device Fault\n");
 			err = 19;

@@ -11,6 +11,9 @@
 #include "Kernel.h"
 #include "Terminal.h"
 #include "DsUtil.h"
+#include "device/IDEDevice.h"
+#include "fs/dsFAT/dsFAT.h"
+#include "fs/Partition.h"
 #include "hardware/IDE.h"
 #include "hardware/MBR.h"
 #include "hardware/PS2Keyboard.h"
@@ -93,10 +96,21 @@ namespace DsOS {
 
 
 		IDE::init();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
-		// MBR mbr;
-		// mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
-		// IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
+		MBR mbr;
+		printf("[%s:%d]\n", __FILE__, __LINE__);
+		mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
+		printf("[%s:%d]\n", __FILE__, __LINE__);
+		IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
+		Device::IDEDevice device(0);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
+		FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
+		FS::DsFAT::DsFATDriver driver(&first_partition);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
+		// driver.make(8192);
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {

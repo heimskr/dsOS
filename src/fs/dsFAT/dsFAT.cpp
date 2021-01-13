@@ -14,8 +14,11 @@ namespace DsOS::FS::DsFAT {
 	char DsFATDriver::nothing[sizeof(DirEntry)] = {0};
 
 	DsFATDriver::DsFATDriver(Partition *partition_): Driver(partition_) {
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		root.startBlock = -1;
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		readSuperblock(superblock);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 	}
 
 	int DsFATDriver::readSuperblock(Superblock &out) {
