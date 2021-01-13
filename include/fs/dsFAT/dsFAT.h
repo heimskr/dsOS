@@ -11,13 +11,16 @@
 #include "fs/dsFAT/Types.h"
 
 namespace DsOS::FS::DsFAT {
+	const int NEWFILE_SKIP_MAX = 4;
+	const int OVERFLOW_MAX = 32;
+
 	class DsFATDriver: public Driver {
 		private:
 			bool ready = false;
 			Superblock superblock;
 			ssize_t blocksFree = -1;
 			DirEntry root;
-			void readSuperblock(Superblock &);
+			int readSuperblock(Superblock &);
 			void error(const std::string &);
 
 			/** Attempts to find a file within the filesystem. 
@@ -103,11 +106,19 @@ namespace DsOS::FS::DsFAT {
 			block_t findFreeBlock();
 
 			block_t readFAT(size_t block_offset);
-			void writeFAT(block_t block, size_t block_offset);
+			int writeFAT(block_t block, size_t block_offset);
 
+			bool hasFree(const size_t);
 			bool isFree(const DirEntry &);
+			ssize_t countFree();
 
 			bool checkBlock(block_t);
+
+			/** Ugly hack to avoid allocating memory on the heap because I'm too lazy to deal with freeing it. */
+			DirEntry overflow[OVERFLOW_MAX];
+			size_t overflowIndex = 0;
+
+			static char nothing[sizeof(DirEntry)];
 
 		public:
 			virtual int rename(const char *path, const char *newpath) override;
