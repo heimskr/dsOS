@@ -6,6 +6,7 @@
 #warning "The kernel needs to be compiled with an x86_64-elf compiler."
 #endif
 
+#include <memory>
 #include <string>
 
 #include "Kernel.h"
@@ -100,15 +101,15 @@ namespace DsOS {
 		Device::IDEDevice device(0);
 		FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
 		using namespace FS::DsFAT;
-		DsFATDriver driver(&first_partition);
-		driver.make(320 * 5);
-		int status = driver.readdir("/", [](const char *path, off_t offset) {
+		auto driver = std::make_unique<DsFATDriver>(&first_partition);
+		driver->make(320 * 5);
+		int status = driver->readdir("/", [](const char *path, off_t offset) {
 			printf("\"%s\" @ %ld\n", path, offset);
 		});
 		if (status != 0)
 			printf("readdir failed: %s\n", strerror(-status));
 
-		driver.superblock.print();
+		driver->superblock.print();
 
 		for (;;) {
 			if (last_scancode == (0x2c | 0x80)) { // z

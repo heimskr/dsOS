@@ -13,7 +13,7 @@ namespace DsOS::FS::DsFAT {
 	constexpr size_t FD_MAX = 128; // ???
 
 	constexpr size_t PATHC_MAX = 1024;
-	constexpr size_t FDC_MAX = 4;
+	constexpr size_t FDC_MAX = 1024;
 
 	struct Superblock {
 		uint32_t magic;
