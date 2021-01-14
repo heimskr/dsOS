@@ -6,7 +6,7 @@ namespace DsOS::FS::DsFAT {
 		memset(name.str, 0, sizeof(name));
 		times = {0, 0, 0};
 		length = 0;
-		startBlock = INVALID;
+		startBlock = UNUSABLE;
 		type = FileType::File;
 		modes = 0;
 	}

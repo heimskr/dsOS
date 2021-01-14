@@ -14,7 +14,7 @@ namespace DsOS::FS::DsFAT {
 	char DsFATDriver::nothing[sizeof(DirEntry)] = {0};
 
 	DsFATDriver::DsFATDriver(Partition *partition_): Driver(partition_) {
-		root.startBlock = INVALID;
+		root.startBlock = UNUSABLE;
 		readSuperblock(superblock);
 	}
 
@@ -317,7 +317,7 @@ namespace DsOS::FS::DsFAT {
 
 	DirEntry & DsFATDriver::getRoot(off_t *offset) {
 		// If the root directory is already cached, we can simply return a pointer to the cached entry.
-		if (root.startBlock != INVALID)
+		if (root.startBlock != UNUSABLE)
 			return root;
 
 		off_t start = superblock.startBlock * superblock.blockSize;
@@ -574,7 +574,7 @@ namespace DsOS::FS::DsFAT {
 		} else {
 			// We'll need at least one free block to store the new file in so we can
 			// store the starting block in the directory entry we'll create soon.
-			if (free_block == INVALID) {
+			if (free_block == UNUSABLE) {
 				// If we don't have one, we'll complain about having no space left and give up.
 				// WARNS(NEWFILEH, "No free block " UDARR " " IDS("ENOSPC"));
 				// FREE(last_name);
@@ -734,7 +734,7 @@ namespace DsOS::FS::DsFAT {
 					// If we need to allocate space for the new file, we now try to find
 					// another free block to use as the new file's start block.
 					free_block = findFreeBlock();
-					if (free_block == INVALID) {
+					if (free_block == UNUSABLE) {
 						printf("[DsFATDriver::newFile] No free block -> ENOSPC\n");
 						writeFAT(0, old_free_block);
 						// NF_EXIT;
@@ -786,7 +786,7 @@ namespace DsOS::FS::DsFAT {
 			block_t block = newfile.startBlock;
 			for (auto size_left = length; bs < size_left; size_left -= bs) {
 				block_t another_free_block = findFreeBlock();
-				if (another_free_block == INVALID) {
+				if (another_free_block == UNUSABLE) {
 					writeFAT(FINAL, block);
 					blocksFree = -1;
 					writeFAT(0, old_free_block);
@@ -880,7 +880,7 @@ namespace DsOS::FS::DsFAT {
 		for (decltype(block_c) i = 0; i < block_c; i++)
 			if (readFAT(i) == 0) // TODO: cache FAT
 				return i;
-		return INVALID;
+		return UNUSABLE;
 	}
 
 	block_t DsFATDriver::readFAT(size_t block_offset) {
@@ -910,8 +910,8 @@ namespace DsOS::FS::DsFAT {
 		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
 		// These blocks point to the FAT, so they're not valid regions to write data.
 		writeOffset = block_size;
-		printf("Writing INVALID %lu times to %lu\n", table_size + 1, writeOffset);
-		writeMany(INVALID, table_size + 1);
+		printf("Writing UNUSABLE %lu times to %lu\n", table_size + 1, writeOffset);
+		writeMany(UNUSABLE, table_size + 1);
 		written += table_size + 1;
 		printf("Writing FINAL 1 time to %lu\n", writeOffset);
 		writeMany(FINAL, 1);
@@ -1219,35 +1219,35 @@ namespace DsOS::FS::DsFAT {
 		printf("[DsFATDriver::readdir] Count: %lu\n", count);
 
 		size_t excluded = 0;
-	#ifdef READDIR_MAX_INCLUDE
+#ifdef READDIR_MAX_INCLUDE
 		size_t included = 0;
 		int last_index = -1;
-	#endif
+#endif
 
 		for (int i = 0; i < (int) count; i++) {
 			const DirEntry &entry = entries[i];
 			printf("[] %s: ", isFree(entry)? "free" : "not free");
 			entry.print();
 			if (!isFree(entry)) {
-	#ifdef READDIR_MAX_INCLUDE
+#ifdef READDIR_MAX_INCLUDE
 				last_index = i;
 				if (++included < READDIR_MAX_INCLUDE)
-	#else
+#else
 				printf("[DsFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
-	#endif
+#endif
 
 				filler(entry.name.str, offsets[i]);
 			} else
 				excluded++;
 		}
 
-	#ifdef READDIR_MAX_INCLUDE
+#ifdef READDIR_MAX_INCLUDE
 		if (READDIR_MAX_INCLUDE < included)
 			printf("[DsFATDriver::readdir] ... %lu more\n", count - READDIR_MAX_INCLUDE);
 
 		if (READDIR_MAX_INCLUDE <= included)
 			printf("[DsFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
-	#endif
+#endif
 
 		if (0 < excluded) {
 			printf("[DsFATDriver::readdir] Excluding %lu freed entr%s.\n", excluded, excluded == 1? "y" : "ies");
