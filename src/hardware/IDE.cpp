@@ -89,18 +89,27 @@ namespace DsOS::IDE {
 		}
 
 		while (0 < bytes) {
+			printf("\e[35mBytes: %lu.", bytes);
+			for (size_t i = 0; i < bytes; ++i)
+				printf(" %lu:%x", i, cbuffer[i] & 0xff);
+			printf("\e[0m\n");
 			if (bytes < SECTOR_SIZE) {
 				if ((status = readSectors(drive, 1, lba, write_buffer)))
 					return status;
 				memcpy(write_buffer, cbuffer, bytes);
+				printf("\e[34m");
+				for (size_t i = 0; i < SECTOR_SIZE; ++i)
+					printf("%lu:%x ", i, write_buffer[i] & 0xff);
+				printf("\e[0m\n");
 				if ((status = writeSectors(drive, 1, lba, write_buffer)))
 					return status;
-			} else if ((status = writeSectors(drive, 1, lba, cbuffer)))
-					return status;
-			if (bytes <= SECTOR_SIZE)
 				break;
-			bytes -= SECTOR_SIZE;
-			cbuffer += SECTOR_SIZE;
+			} else {
+				if ((status = writeSectors(drive, 1, lba, cbuffer)))
+					return status;
+				bytes -= SECTOR_SIZE;
+				cbuffer += SECTOR_SIZE;
+			}
 			++lba;
 		}
 
