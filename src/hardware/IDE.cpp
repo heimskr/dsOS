@@ -47,7 +47,7 @@ namespace DsOS::IDE {
 	}
 
 	int readBytes(uint8_t drive, size_t bytes, size_t offset, void *buffer) {
-		size_t bytes_read = 0;
+		size_t total_bytes_read = 0, bytes_read = 0;
 		uint32_t lba = offset / SECTOR_SIZE;
 		printf("readBytes: bytes(%lu), offset(%lu), lba(%u)\n", bytes, offset, lba);
 		offset %= SECTOR_SIZE;
@@ -60,14 +60,17 @@ namespace DsOS::IDE {
 			if ((status = readSectors(drive, 1, lba, read_buffer)))
 				return status;
 			// printf("Hello. bytes=%lu\n", bytes);
+			bytes_read = 0;
 			for (size_t i = 0; (bytes_read < bytes) && ((i + offset) < SECTOR_SIZE); ++i) {
-				// const char read = read_buffer[i + offset];
-				// printf("(%lu) buffer[%lu] = read_buffer[%lu + %lu] = 0x%x '%c'\n", bytes, bytes_read, i, offset, read, read);
-				((char *) buffer)[bytes_read++] = read_buffer[i + offset];
+				const char read = read_buffer[i + offset];
+				printf("(%lu) buffer[%lu] = read_buffer[%lu + %lu] = 0x%x '%c'\n", bytes, total_bytes_read, i, offset, read, read);
+				((char *) buffer)[total_bytes_read++] = read_buffer[i + offset];
+				++bytes_read;
+				printf("(%lu < %lu) && ((%lu + %lu) < %lu)\n", bytes_read, bytes, i, offset, SECTOR_SIZE);
 			}
 			if (bytes <= SECTOR_SIZE)
 				break;
-			bytes -= SECTOR_SIZE;
+			bytes -= bytes_read;
 			offset = 0;
 			++lba;
 		}

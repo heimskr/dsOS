@@ -459,9 +459,13 @@ namespace DsOS::FS::DsFAT {
 				// read(imgfd, ptr, remaining);
 				// CHECKS(FILEREADH, "Couldn't read");
 				printf("remaining = %lu, block * bs = %u\n", remaining, block * bs);
-				partition->read(ptr, remaining, block * bs);
+				unsigned char *buf = new unsigned char[remaining];
+				memset(buf, 'Q', remaining);
+				partition->read(buf, remaining, block * bs);
 				for (size_t i = 0; i < remaining; ++i)
-					printf("ptr[i=%lu] = '%c', (%d)\n", i, ptr[i], ptr[i] & 0xff);
+					printf("buf[i=%lu] = '%c', (%d)\n", i, buf[i], buf[i] & 0xff);
+				out = std::vector(buf, buf + remaining);
+				delete[] buf;
 				ptr += remaining;
 				remaining = 0;
 
@@ -516,7 +520,7 @@ namespace DsOS::FS::DsFAT {
 					return -EINVAL;
 				} else {
 					checkBlock(block);
-					printf("block * bs = %u\n", block * bs);
+					printf("[%s:%d] block * bs = %u\n", __FILE__, __LINE__, block * bs);
 					partition->read(ptr, bs, block * bs);
 					ptr += bs;
 					remaining -= bs;
