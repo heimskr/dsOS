@@ -19,7 +19,6 @@ namespace DsOS::FS::DsFAT {
 	constexpr block_t UNUSABLE = -1;
 	constexpr block_t FINAL    = -2;
 
-
 	struct Superblock {
 		uint32_t magic;
 		size_t blockCount;

@@ -1127,6 +1127,7 @@ namespace DsOS::FS::DsFAT {
 		// }
 
 		printf("[DsFATDriver::create] Done. {offset: %ld, poffset: %ld}\n", offset, poffset);
+		// if (offset == 5440 & poffset == 4800) for (;;) asm("hlt");
 		// SUCC(CREATEH, "Done. " IDS("{") "offset" DLS BLR DMS "poffset" DLS BLR IDS("}"), offset, poffset);
 #ifdef DEBUG_DSFAT
 		// if (strcmp(path, "/dbg") == 0) {
