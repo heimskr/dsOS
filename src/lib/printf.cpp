@@ -145,9 +145,9 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 		if (status == Status::D) {
 			// TODO: padding and such
 			if (is_long)
-				signed_to_dec(out, optr, max, (long long int) va_arg(list, long long int));
+				signed_to_dec(out, optr, max, va_arg(list, long long int));
 			else
-				signed_to_dec(out, optr, max, (int) va_arg(list, int));
+				signed_to_dec(out, optr, max, va_arg(list, int));
 			status = Status::Scan;
 			is_long = false;
 		} else if (status == Status::U) {

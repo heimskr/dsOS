@@ -6,13 +6,18 @@ namespace DsOS::FS::DsFAT {
 		memset(name.str, 0, sizeof(name));
 		times = {0, 0, 0};
 		length = 0;
-		startBlock = -1;
+		startBlock = INVALID;
 		type = FileType::File;
 		modes = 0;
 	}
 
+	DirEntry::operator std::string() const {
+		return "DirEntry[name=" + std::string(name.str) + ", length=" + std::to_string(length) + ", startBlock=" +
+			std::to_string(startBlock) + ", type=" + std::to_string((int) type) + ", modes=" + std::to_string(modes) +
+			"]";
+	}
+
 	void DirEntry::print() const {
-		printf("DirEntry[name=\"%s\", length=%lu, startBlock=%d, type=%d, modes=%u]\n",
-			name.str, length, startBlock, type, modes);
+		printf("%s\n", std::string(*this).c_str());
 	}
 }

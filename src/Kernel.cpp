@@ -92,7 +92,6 @@ namespace DsOS {
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
 
-
 		IDE::init();
 
 		MBR mbr;
@@ -131,6 +130,14 @@ namespace DsOS {
 		// for (size_t i = 0; i < 50; ++i) {
 		// 	printf("[%lu] %d\n", i, driver->readFAT(i));
 		// }
+
+		printf("offsetof(  DirEntry::      name) = 0x%lx = %lu\n", offsetof(DirEntry, name), offsetof(DirEntry, name));
+		printf("offsetof(  DirEntry::     times) = 0x%lx = %lu\n", offsetof(DirEntry, times), offsetof(DirEntry, times));
+		printf("offsetof(  DirEntry::    length) = 0x%lx = %lu\n", offsetof(DirEntry, length), offsetof(DirEntry, length));
+		printf("offsetof(  DirEntry::startBlock) = 0x%lx = %lu\n", offsetof(DirEntry, startBlock), offsetof(DirEntry, startBlock));
+		printf("offsetof(  DirEntry::      type) = 0x%lx = %lu\n", offsetof(DirEntry, type), offsetof(DirEntry, type));
+		printf("offsetof(  DirEntry::     modes) = 0x%lx = %lu\n", offsetof(DirEntry, modes), offsetof(DirEntry, modes));
+		printf("offsetof(  DirEntry::   padding) = 0x%lx = %lu\n", offsetof(DirEntry, padding), offsetof(DirEntry, padding));
 
 		for (;;) {
 			if (last_scancode == (0x2c | 0x80)) { // z

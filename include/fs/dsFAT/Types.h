@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <string>
 #include <string.h>
 #include "Defs.h"
 
@@ -13,7 +14,11 @@ namespace DsOS::FS::DsFAT {
 	constexpr size_t FD_MAX = 128; // ???
 
 	constexpr size_t PATHC_MAX = 1024;
-	constexpr size_t FDC_MAX = 1024;
+	constexpr size_t FDC_MAX   = 1024;
+
+	constexpr block_t UNUSABLE = -1;
+	constexpr block_t FINAL    = -2;
+
 
 	struct Superblock {
 		uint32_t magic;
@@ -52,6 +57,7 @@ namespace DsOS::FS::DsFAT {
 		bool isFile() const { return type == FileType::File; }
 		bool isDirectory() const { return type == FileType::Directory; }
 		void reset();
+		operator std::string() const;
 		void print() const;
 	};
 

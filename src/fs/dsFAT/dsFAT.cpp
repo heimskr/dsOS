@@ -14,7 +14,7 @@ namespace DsOS::FS::DsFAT {
 	char DsFATDriver::nothing[sizeof(DirEntry)] = {0};
 
 	DsFATDriver::DsFATDriver(Partition *partition_): Driver(partition_) {
-		root.startBlock = -1;
+		root.startBlock = INVALID;
 		readSuperblock(superblock);
 	}
 
@@ -241,8 +241,8 @@ namespace DsOS::FS::DsFAT {
 		size_t removed = 0;
 		for (;;) {
 			next = readFAT(block);
-			if (next == -2) {
-				// DBGFE(FORGETH, "Freeing " BLR " (next == -2)", block);
+			if (next == FINAL) {
+				// DBGFE(FORGETH, "Freeing " BLR " (next == FINAL)", block);
 				writeFAT(0, block);
 				removed++;
 				break;
@@ -317,7 +317,7 @@ namespace DsOS::FS::DsFAT {
 
 	DirEntry & DsFATDriver::getRoot(off_t *offset) {
 		// If the root directory is already cached, we can simply return a pointer to the cached entry.
-		if (root.startBlock != -1)
+		if (root.startBlock != INVALID)
 			return root;
 
 		off_t start = superblock.startBlock * superblock.blockSize;
@@ -439,6 +439,7 @@ namespace DsOS::FS::DsFAT {
 		// ENTER;
 		// DBGFE(FILEREADH, IDS("Reading file ") BSTR " of length " BDR, file->fname.str, file->length);
 		printf("[DsFATDriver::readFile] Reading file \"%s\" of length %lu @ %ld\n", file.name.str, file.length, file.startBlock * superblock.blockSize);
+		printf("                        file.startBlock = %ld, superblock.blockSize = %u\n", file.startBlock, superblock.blockSize);
 		if (file.length == 0) {
 			if (count)
 				*count = 0;
@@ -465,7 +466,7 @@ namespace DsOS::FS::DsFAT {
 				remaining = 0;
 
 				block_t nextblock = readFAT(block);
-				if (nextblock != -2) {
+				if (nextblock != FINAL) {
 					// The file should end here, but the file allocation table says there are still more blocks.
 #ifdef SHRINK_DIRS
 					const bool shrink = true;
@@ -478,13 +479,13 @@ namespace DsOS::FS::DsFAT {
 						// WARN(FILEREADH, SUB "remaining = " BDR DM " pcache.fat[" BDR "] = " BDR DM " bs = " BDR, remaining, block, pcache.fat[block], bs);
 					} else {
 						// WARN(FILEREADH, "%s " BSR " has extra FAT blocks; trimming.", IS_FILE(*file)? "File" : "Directory", file->fname.str);
-						writeFAT(-2, block);
-						// DBGF(FILEREADH, BDR " ← -2", block);
+						writeFAT(FINAL, block);
+						// DBGF(FILEREADH, BDR " ← FINAL", block);
 						block_t shrinkblock = nextblock;
 						for (;;) {
 							nextblock = readFAT(shrinkblock);
-							if (nextblock == -2) {
-								// DBG(FILEREADH, "Finished shrinking (-2).");
+							if (nextblock == FINAL) {
+								// DBG(FILEREADH, "Finished shrinking (FINAL).");
 								break;
 							} else if (nextblock == 0) {
 								// DBG(FILEREADH, "Finished shrinking (0).");
@@ -501,7 +502,7 @@ namespace DsOS::FS::DsFAT {
 					}
 				}
 			} else {
-				if (readFAT(block) == -2) {
+				if (readFAT(block) == FINAL) {
 					// There's still more data that should be remaining after this block, but
 					// the file allocation table says the file doesn't continue past this block.
 
@@ -573,7 +574,7 @@ namespace DsOS::FS::DsFAT {
 		} else {
 			// We'll need at least one free block to store the new file in so we can
 			// store the starting block in the directory entry we'll create soon.
-			if (free_block == -1) {
+			if (free_block == INVALID) {
 				// If we don't have one, we'll complain about having no space left and give up.
 				// WARNS(NEWFILEH, "No free block " UDARR " " IDS("ENOSPC"));
 				// FREE(last_name);
@@ -585,8 +586,8 @@ namespace DsOS::FS::DsFAT {
 			// SUCC(NEWFILEH, "Allocated " BSR " at block " BDR ".", path, free_block);
 
 			// Allocate the first block, decrement the free blocks count and flush the cache to disk.
-			// pcache.fat[free_block] = -2;
-			writeFAT(-2, free_block);
+			// pcache.fat[free_block] = FINAL;
+			writeFAT(FINAL, free_block);
 			--blocksFree;
 			printf("!noalloc: startBlock set to %d\n", free_block);
 			newfile.startBlock = free_block;
@@ -733,7 +734,7 @@ namespace DsOS::FS::DsFAT {
 					// If we need to allocate space for the new file, we now try to find
 					// another free block to use as the new file's start block.
 					free_block = findFreeBlock();
-					if (free_block == -1) {
+					if (free_block == INVALID) {
 						printf("[DsFATDriver::newFile] No free block -> ENOSPC\n");
 						writeFAT(0, old_free_block);
 						// NF_EXIT;
@@ -785,8 +786,8 @@ namespace DsOS::FS::DsFAT {
 			block_t block = newfile.startBlock;
 			for (auto size_left = length; bs < size_left; size_left -= bs) {
 				block_t another_free_block = findFreeBlock();
-				if (another_free_block == -1) {
-					writeFAT(-2, block);
+				if (another_free_block == INVALID) {
+					writeFAT(FINAL, block);
 					blocksFree = -1;
 					writeFAT(0, old_free_block);
 					printf("[DsFATDriver::newFile] No free block -> ENOSPC\n");
@@ -801,7 +802,7 @@ namespace DsOS::FS::DsFAT {
 				block = another_free_block;
 			}
 
-			writeFAT(-2, block);
+			writeFAT(FINAL, block);
 
 			// Attempt to insert the new item into the pcache.
 			// DBGF(NEWFILEH, "About to insert into " IMS("pcache") DLS BSTR DMS "offset" DLS BLR, newfile.fname.str, offset);
@@ -879,18 +880,17 @@ namespace DsOS::FS::DsFAT {
 		for (decltype(block_c) i = 0; i < block_c; i++)
 			if (readFAT(i) == 0) // TODO: cache FAT
 				return i;
-		return -1;
+		return INVALID;
 	}
 
 	block_t DsFATDriver::readFAT(size_t block_offset) {
 		block_t out;
-		printf("readFAT adjusted offset: %lu", superblock.blockSize + block_offset * sizeof(block_t));
 		int status = partition->read(&out, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
-			printf("\n[DsFATDriver::readFAT] Reading failed: %s\n", strerror(status));
+			printf("[DsFATDriver::readFAT] Reading failed: %s\n", strerror(status));
 			return status;
 		}
-		printf(" -> %d\n", out);
+		printf("readFAT adjusted offset: %lu -> %d\n", superblock.blockSize + block_offset * sizeof(block_t), out);
 		return out;
 	}
 
@@ -910,11 +910,11 @@ namespace DsOS::FS::DsFAT {
 		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
 		// These blocks point to the FAT, so they're not valid regions to write data.
 		writeOffset = block_size;
-		printf("Writing -1 %lu times to %lu\n", table_size + 1, writeOffset);
-		writeMany((block_t) -1, table_size + 1);
+		printf("Writing INVALID %lu times to %lu\n", table_size + 1, writeOffset);
+		writeMany(INVALID, table_size + 1);
 		written += table_size + 1;
-		printf("Writing -2 1 time to %lu\n", writeOffset);
-		writeMany((block_t) -2, 1);
+		printf("Writing FINAL 1 time to %lu\n", writeOffset);
+		writeMany(FINAL, 1);
 		++written;
 		// Might be sensitize to sizeof(block_t).
 		size_t times = Util::blocks2count(table_size, block_size) - written;
@@ -1236,7 +1236,7 @@ namespace DsOS::FS::DsFAT {
 				printf("[DsFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
 	#endif
 
-				filler(entry.name.str, 0);
+				filler(entry.name.str, offsets[i]);
 			} else
 				excluded++;
 		}

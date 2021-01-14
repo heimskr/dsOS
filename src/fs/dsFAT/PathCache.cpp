@@ -20,6 +20,7 @@ namespace DsOS::FS::DsFAT {
 	}
 
 	PathCacheEntry PathCache::create(const char *path, const DirEntry &entry, off_t offset) {
+		printf("\e[36m[PathCache::\e[1mcreate\e[22m(\"%s\", %s, %ld)]\e[0m\n", path, std::string(entry).c_str(), offset);
 		PathCacheEntry out = {
 			.parent     = this,
 			.path       = {0},
@@ -43,7 +44,7 @@ namespace DsOS::FS::DsFAT {
 	}
 
 	PCInsertStatus PathCache::insert(const char *path, const DirEntry &entry, off_t offset, PathCacheEntry **out) {
-		printf("[PathCache::insert] path(\"%s\"), offset(%ld), ", path, offset);
+		printf("\e[36m[PathCache::\e[1minsert\e[22m(\"%s\", %s, %ld, 0x%lx)]\e[0m\n", path, std::string(entry).c_str(), offset, out);
 		entry.print();
 		// TODO: mutexes.
 
@@ -115,7 +116,7 @@ namespace DsOS::FS::DsFAT {
 		if (out)
 			*out = &overwrite_iter->second;
 
-		printf("[PathCache::insert] Overwrote a path cache entry at index %lu.\n", map_offset);
+		printf("\e[36m[PathCache::insert]\e[0m Overwrote a path cache entry at index %lu.\n", map_offset);
 		overflowIndex = (overflowIndex + 1) % PATHC_MAX;
 
 		// if (locked != NULL) {
