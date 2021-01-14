@@ -71,14 +71,16 @@ namespace DsOS::IDE {
 
 	int writeBytes(uint8_t drive, size_t bytes, size_t offset, const void *buffer) {
 		uint32_t lba = offset / SECTOR_SIZE;
+		offset %= SECTOR_SIZE;
 		int status = 0;
 		char write_buffer[SECTOR_SIZE];
 		const char *cbuffer = static_cast<const char *>(buffer);
 
-		if (offset %= SECTOR_SIZE) {
+		if (offset != 0) {
 			if ((status = readSectors(drive, 1, lba, write_buffer)))
 				return status;
 			const size_t to_write = (SECTOR_SIZE - offset) < bytes? SECTOR_SIZE - offset : bytes;
+			printf("\e[35mOffset = %lu, bytes = %lu, to_write = %lu\e[0m\n", offset, bytes, to_write);
 			memcpy(write_buffer + offset, buffer, to_write);
 			writeSectors(drive, 1, lba, write_buffer);
 			bytes -= to_write;
@@ -90,7 +92,7 @@ namespace DsOS::IDE {
 			if (bytes < SECTOR_SIZE) {
 				if ((status = readSectors(drive, 1, lba, write_buffer)))
 					return status;
-				memcpy(write_buffer, buffer, bytes);
+				memcpy(write_buffer, cbuffer, bytes);
 				if ((status = writeSectors(drive, 1, lba, write_buffer)))
 					return status;
 			} else if ((status = writeSectors(drive, 1, lba, cbuffer)))
