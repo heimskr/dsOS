@@ -453,19 +453,7 @@ namespace DsOS::FS::DsFAT {
 		while (0 < remaining) {
 			if (remaining <= bs) {
 				checkBlock(block);
-				// CHECKBLOCK("file_rd ", "Invalid block");
-				// lseek(imgfd, block * bs, SEEK_SET);
-				// CHECKS(FILEREADH, "Couldn't seek");
-				// read(imgfd, ptr, remaining);
-				// CHECKS(FILEREADH, "Couldn't read");
-				printf("remaining = %lu, block * bs = %u\n", remaining, block * bs);
-				unsigned char *buf = new unsigned char[remaining];
-				memset(buf, 'Q', remaining);
-				partition->read(buf, remaining, block * bs);
-				for (size_t i = 0; i < remaining; ++i)
-					printf("buf[i=%lu] = '%c', (%d)\n", i, buf[i], buf[i] & 0xff);
-				out = std::vector(buf, buf + remaining);
-				delete[] buf;
+				partition->read(ptr, remaining, block * bs);
 				ptr += remaining;
 				remaining = 0;
 
@@ -478,13 +466,10 @@ namespace DsOS::FS::DsFAT {
 #endif
 
 					if (!shrink || !file.isDirectory()) {
-						// WARN(FILEREADH, "%s " BSR " has no bytes left, but the file allocation table says more blocks are "
-						// 	"allocated to it.", IS_FILE(*file)? "File" : "Directory", file->fname.str);
-						// WARN(FILEREADH, SUB "remaining = " BDR DM " pcache.fat[" BDR "] = " BDR DM " bs = " BDR, remaining,
-						// 	block, pcache.fat[block], bs);
+						// WARN(FILEREADH, "%s " BSR " has no bytes left, but the file allocation table says more blocks are allocated to it.", IS_FILE(*file)? "File" : "Directory", file->fname.str);
+						// WARN(FILEREADH, SUB "remaining = " BDR DM " pcache.fat[" BDR "] = " BDR DM " bs = " BDR, remaining, block, pcache.fat[block], bs);
 					} else {
-						// WARN(FILEREADH, "%s " BSR " has extra FAT blocks; trimming.", IS_FILE(*file)? "File" : "Directory",
-						// 	file->fname.str);
+						// WARN(FILEREADH, "%s " BSR " has extra FAT blocks; trimming.", IS_FILE(*file)? "File" : "Directory", file->fname.str);
 						block_t nextblock = readFAT(block);
 						writeFAT(-2, block);
 						// DBGF(FILEREADH, BDR " ← -2", block);
@@ -498,8 +483,7 @@ namespace DsOS::FS::DsFAT {
 								// DBG(FILEREADH, "Finished shrinking (0).");
 								break;
 							} else if ((block_t) superblock.fatBlocks <= nextblock) {
-								// WARN(FILEREADH, "FAT[" BDR "] = " BDR ", outside of FAT (" BDR " block%s)",
-								// 	shrinkblock, nextblock, superblock.fat_blocks, superblock.fat_blocks == 1? "" : "s");
+								// WARN(FILEREADH, "FAT[" BDR "] = " BDR ", outside of FAT (" BDR " block%s)", shrinkblock, nextblock, superblock.fat_blocks, superblock.fat_blocks == 1? "" : "s");
 								break;
 							}
 
@@ -513,9 +497,8 @@ namespace DsOS::FS::DsFAT {
 				if (readFAT(block) == -2) {
 					// There's still more data that should be remaining after this block, but
 					// the file allocation table says the file doesn't continue past this block.
-					// WARN(FILEREADH, "File still has " BDR " byte%s left, but the file allocation table doesn't have a next"
-					// 	" block after " BDR ".", remaining, remaining == 1 ? "" : "s", block);
 
+					// WARN(FILEREADH, "File still has " BDR " byte%s left, but the file allocation table doesn't have a next block after " BDR ".", remaining, remaining == 1 ? "" : "s", block);
 					// EXIT;
 					return -EINVAL;
 				} else {

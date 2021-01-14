@@ -47,7 +47,7 @@ namespace DsOS {
 	}
 
 	void Kernel::main() {
-		kernelPML4.print(false);
+		// kernelPML4.print(false);
 
 		Terminal::clear();
 		Terminal::write("Hello, kernel World!\n");
@@ -108,58 +108,7 @@ namespace DsOS {
 		if (status != 0)
 			printf("readdir failed: %s\n", strerror(-status));
 
-		printf("offsetof(  DirEntry::      name) = 0x%lx\n", offsetof(DirEntry, name));
-		printf("offsetof(  DirEntry::     times) = 0x%lx\n", offsetof(DirEntry, times));
-		printf("offsetof(  DirEntry::    length) = 0x%lx\n", offsetof(DirEntry, length));
-		printf("offsetof(  DirEntry::startBlock) = 0x%lx\n", offsetof(DirEntry, startBlock));
-		printf("offsetof(  DirEntry::      type) = 0x%lx\n", offsetof(DirEntry, type));
-		printf("offsetof(  DirEntry::     modes) = 0x%lx\n", offsetof(DirEntry, modes));
-		printf("offsetof(  DirEntry::   padding) = 0x%lx\n", offsetof(DirEntry, padding));
-		// printf("offsetof(Superblock::     magic) = 0x%lx\n", offsetof(Superblock, magic));
-		// printf("offsetof(Superblock::blockCount) = 0x%lx\n", offsetof(Superblock, blockCount));
-		// printf("offsetof(Superblock:: fatBlocks) = 0x%lx\n", offsetof(Superblock, fatBlocks));
-		// printf("offsetof(Superblock:: blockSize) = 0x%lx\n", offsetof(Superblock, blockSize));
-		// printf("offsetof(Superblock::startBlock) = 0x%lx (@ 0x%lx)\n", offsetof(Superblock, startBlock), driver.superblock.startBlock * driver.superblock.blockSize);
-		// driver.superblock.print();
-		driver.readSuperblock(driver.superblock);
 		driver.superblock.print();
-
-		// char idebuffer[IDE::SECTOR_SIZE];
-		// for (size_t i = 0; i < 10; ++i) {
-		// 	IDE::readSectors(0, 1, i, idebuffer);
-		// 	for (size_t j = 0; j < sizeof(idebuffer); ++j)
-		// 		printf("[%lu] '%c' (%d)\n", i * IDE::SECTOR_SIZE + j, idebuffer[j], idebuffer[j] & 0xff);
-		// }
-
-		// IDE::readBytes(0, 10, 4795, idebuffer);
-		// for (size_t i = 0; i < 10; ++i)
-		// 	printf("[%lu] '%c' (%d)\n", i + 4795, idebuffer[i], idebuffer[i] & 0xff);
-
-		// char buffer[512];
-		// first_partition.read(buffer, 512, 4795);
-		// memset(buffer, 'X', sizeof(buffer));
-		// first_partition.write(buffer, 512, 0x9000);
-		// memset(buffer, '!', sizeof(buffer));
-		// first_partition.read(buffer, 512, 0x9000);
-		// for (size_t i = 0; i < sizeof(buffer); ++i)
-		// 	printf(":: [%lu 0x%lx] '%c' (%d)\n", i + 0x9000, i + 0x9000, buffer[i], buffer[i] & 0xff);
-
-
-		// printf_putc = false;
-		// for (int sector = 0; sector < 5; ++sector) {
-		// 	printf("(%d)\n", IDE::readSectors(1, 1, sector, buffer));
-		// 	for (size_t i = 0; i < sizeof(buffer); ++i)
-		// 		printf("%c", buffer[i]);
-		// 	printf("\n----------------------------\n");
-		// 	memset(buffer, 0, sizeof(buffer));
-		// }
-		// printf_putc = true;
-		// printf("\"%s\"\n", buffer);
-
-		// const char str[512] = "What's up?";
-		// IDE::writeSectors(0, 1, 0, str);
-
-		// schedule();
 
 		for (;;) {
 			if (last_scancode == (0x2c | 0x80)) { // z

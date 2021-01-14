@@ -49,25 +49,16 @@ namespace DsOS::IDE {
 	int readBytes(uint8_t drive, size_t bytes, size_t offset, void *buffer) {
 		size_t total_bytes_read = 0, bytes_read = 0;
 		uint32_t lba = offset / SECTOR_SIZE;
-		printf("readBytes: bytes(%lu), offset(%lu), lba(%u)\n", bytes, offset, lba);
 		offset %= SECTOR_SIZE;
 		char read_buffer[SECTOR_SIZE];
-		int status = 0;
-
-		// Kernel::backtrace();
+		int status;
 
 		while (0 < bytes) {
 			if ((status = readSectors(drive, 1, lba, read_buffer)))
 				return status;
-			// printf("Hello. bytes=%lu\n", bytes);
 			bytes_read = 0;
-			for (size_t i = 0; (bytes_read < bytes) && ((i + offset) < SECTOR_SIZE); ++i) {
-				const char read = read_buffer[i + offset];
-				printf("(%lu) buffer[%lu] = read_buffer[%lu + %lu] = 0x%x '%c'\n", bytes, total_bytes_read, i, offset, read, read);
+			for (size_t i = 0; (bytes_read < bytes) && ((i + offset) < SECTOR_SIZE); ++i, ++bytes_read)
 				((char *) buffer)[total_bytes_read++] = read_buffer[i + offset];
-				++bytes_read;
-				printf("(%lu < %lu) && ((%lu + %lu) < %lu)\n", bytes_read, bytes, i, offset, SECTOR_SIZE);
-			}
 			if (bytes <= SECTOR_SIZE)
 				break;
 			bytes -= bytes_read;
