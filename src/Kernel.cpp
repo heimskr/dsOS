@@ -106,6 +106,8 @@ namespace DsOS {
 		int status;
 		status = driver->create("/foo", 0666);
 		if (status != 0) printf("create failed: %s\n", strerror(-status));
+		status = driver->create("/bar", 0666);
+		if (status != 0) printf("create failed: %s\n", strerror(-status));
 
 		status = driver->readdir("/", [](const char *path, off_t offset) {
 			printf("\"%s\" @ %ld\n", path, offset);
@@ -113,6 +115,10 @@ namespace DsOS {
 		if (status != 0) printf("readdir failed: %s\n", strerror(-status));
 
 		driver->superblock.print();
+
+		// for (size_t i = 0; i < 50; ++i) {
+		// 	printf("[%lu] %d\n", i, driver->readFAT(i));
+		// }
 
 		for (;;) {
 			if (last_scancode == (0x2c | 0x80)) { // z

@@ -61,7 +61,7 @@ namespace DsOS::FS::DsFAT {
 			 *  directory's offset. Returns a pointer to a struct representing the partition's root directory. */
 			DirEntry & getRoot(off_t * = nullptr);
 
-			/** Reads all the directory entries in a given directory and stores them in an array. 
+			/** Reads all the directory entries in a given directory and stores them in a vector.
 			 *  Note: can allocate new memory in *entries and *offsets.
 			 *  @param dir         A reference to a directory entry struct.
 			 *  @param entries     A vector that will be filled with directory entries.

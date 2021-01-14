@@ -353,12 +353,12 @@ namespace DsOS::FS::DsFAT {
 
 		const size_t count = dir.length / sizeof(DirEntry);
 		entries.clear();
-		entries.reserve(count);
+		entries.resize(count);
 		printf("[DsFATDriver::readDir] count = %lu\n", count);
 
 		if (offsets) {
 			offsets->clear();
-			offsets->reserve(count);
+			offsets->resize(count);
 		}
 
 		std::vector<uint8_t> raw;
@@ -561,6 +561,7 @@ namespace DsOS::FS::DsFAT {
 			// We provide an option not to allocate space for the file. This is helpful for fat_rename, when we just
 			// need to find an offset where an existing directory entry can be moved to. It's possibly okay if no
 			// free block is available if the parent directory has enough space for another entry.
+			printf("noalloc: startBlock set to 0\n");
 			newfile.startBlock = 0;
 		} else {
 			// We'll need at least one free block to store the new file in so we can
@@ -580,6 +581,7 @@ namespace DsOS::FS::DsFAT {
 			// pcache.fat[free_block] = -2;
 			writeFAT(-2, free_block);
 			--blocksFree;
+			printf("!noalloc: startBlock set to %d\n", free_block);
 			newfile.startBlock = free_block;
 
 			// There's not a point in copying the name to the entry if this function
@@ -877,14 +879,18 @@ namespace DsOS::FS::DsFAT {
 
 	block_t DsFATDriver::readFAT(size_t block_offset) {
 		block_t out;
-		printf("readFAT adjusted offset: %lu\n", superblock.blockSize + block_offset * sizeof(block_t));
+		printf("readFAT adjusted offset: %lu", superblock.blockSize + block_offset * sizeof(block_t));
 		int status = partition->read(&out, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
-		if (status != 0)
-			printf("[DsFATDriver::readFAT] Reading failed: %s\n", strerror(status));
+		if (status != 0) {
+			printf("\n[DsFATDriver::readFAT] Reading failed: %s\n", strerror(status));
+			return status;
+		}
+		printf(" -> %d\n", out);
 		return out;
 	}
 
 	int DsFATDriver::writeFAT(block_t block, size_t block_offset) {
+		printf("writeFAT adjusted offset: %lu <- %d\n", superblock.blockSize + block_offset * sizeof(block_t), block);
 		int status = partition->write(&block, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
 			printf("[DsFATDriver::writeFAT] Writing failed: %s\n", strerror(status));
@@ -898,11 +904,15 @@ namespace DsOS::FS::DsFAT {
 		printf("initFAT: writeOffset = %lu, table_size = %lu\n", writeOffset, table_size);
 		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
 		// These blocks point to the FAT, so they're not valid regions to write data.
+		writeOffset = block_size;
+		printf("Writing -1 %lu times to %lu\n", table_size + 1, writeOffset);
 		writeMany((block_t) -1, table_size + 1);
 		written += table_size + 1;
+		printf("Writing -2 1 time to %lu\n", writeOffset);
 		writeMany((block_t) -2, 1);
 		++written;
 		// Might be sensitize to sizeof(block_t).
+		printf("Writing 0 %lu times to %lu\n", Util::blocks2words(table_size + 1, block_size) - written, writeOffset);
 		writeMany((block_t) 0, Util::blocks2words(table_size + 1, block_size) - written);
 	}
 
@@ -928,6 +938,7 @@ namespace DsOS::FS::DsFAT {
 		write(root);
 		root.name.str[1] = '.';
 		write(root);
+		root.name.str[1] = '\0';
 	}
 
 	bool DsFATDriver::hasFree(const size_t count) {
@@ -1108,7 +1119,7 @@ namespace DsOS::FS::DsFAT {
 
 		DirEntry *newfile, *parent;
 		off_t offset, poffset;
-		status = newFile(path, 0, FileType::File, nullptr, &newfile, &offset, &parent, &poffset, 0);
+		status = newFile(path, 0, FileType::File, nullptr, &newfile, &offset, &parent, &poffset, false);
 		if (status < 0) {
 			printf("[DsFATDriver::create] newFile failed: %s\n", strerror(-status));
 			return status;
@@ -1200,6 +1211,9 @@ namespace DsOS::FS::DsFAT {
 			// For other directories, it has to be added dynamically.
 			filler(".", 0);
 
+		printf("[DsFATDriver::readdir] Found directory at offset %ld: ", file_offset);
+		found->print();
+
 		std::vector<DirEntry> entries;
 		std::vector<off_t> offsets;
 
@@ -1219,6 +1233,8 @@ namespace DsOS::FS::DsFAT {
 
 		for (int i = 0; i < (int) count; i++) {
 			const DirEntry &entry = entries[i];
+			printf("[] %s: ", isFree(entry)? "free" : "not free");
+			entry.print();
 			if (!isFree(entry)) {
 	#ifdef READDIR_MAX_INCLUDE
 				last_index = i;
