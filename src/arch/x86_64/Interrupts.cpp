@@ -9,6 +9,7 @@
 #include "lib/printf.h"
 #include "memory/memset.h"
 #include "Kernel.h"
+#include "Options.h"
 
 #define INTERRUPT 
 
@@ -56,14 +57,19 @@ void double_fault() {
 void page_interrupt() {
 	const uint64_t address = x86_64::getCR2();
 	constexpr int page_size = 4096;
+#ifdef DEBUG_PAGE_FAULTS
 	printf("Page fault: 0x%lx\n", address);
+#endif
 	using PT = x86_64::PageTableWrapper;
 	uint16_t  pml4i = PT::getPML4Index(address);
 	uint16_t   pdpi = PT::getPDPTIndex(address);
 	uint16_t    pdi = PT::getPDTIndex(address);
 	uint16_t    pti = PT::getPTIndex(address);
 	uint16_t offset = PT::getOffset(address);
+	(void) offset;
+#ifdef DEBUG_PAGE_FAULTS
 	printf("[PML4 %d, PDP %d, PD %d, PT %d, Offset %d]\n", pml4i, pdpi, pdi, pti, offset);
+#endif
 
 	DsOS::Kernel *kernel = DsOS::Kernel::instance;
 	if (!kernel) {
@@ -89,7 +95,9 @@ void page_interrupt() {
 	for (size_t i = 0; i < page_size / sizeof(uint64_t); ++i)
 		base[i] = 0;
 
+#ifdef DEBUG_PAGE_FAULTS
 	printf("Assigned a page (0x%lx)!\n", assigned);
+#endif
 }
 
 void spurious_interrupt() {

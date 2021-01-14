@@ -13,7 +13,7 @@
 namespace DsOS::FS {
 	constexpr size_t BLOCKSIZE = 512;
 
-	using DirFiller = std::function<int(void *, const char *, off_t)>;
+	using DirFiller = std::function<void(const char *, off_t)>;
 
 	struct FileInfo {
 		fd_t descriptor;
@@ -70,7 +70,7 @@ namespace DsOS::FS {
 			virtual int unlink(const char *path) = 0;
 			virtual int open(const char *path, FileInfo &) = 0;
 			virtual int read(const char *path, char *buffer, size_t size, off_t offset, FileInfo &) = 0;
-			virtual int readdir(const char *path, void *buffer, DirFiller filler, off_t offset, FileInfo &) = 0;
+			virtual int readdir(const char *path, DirFiller filler) = 0;
 			virtual int getattr(const char *path, FileStats &) = 0;
 			virtual void cleanup() {}
 

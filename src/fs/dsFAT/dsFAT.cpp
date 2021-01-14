@@ -266,8 +266,8 @@ namespace DsOS::FS::DsFAT {
 		// ENTER;
 		// DBGF(WRENTRYH, "Writing directory entry at offset " BLR " (" BLR DMS BLR DL BLR ") with filename " BSTR DM " length " BUR
 		// 	DM " start block " BDR " (next: " BDR ")",
-		// 	offset, offset / superblock.blockSize, (offset % superblock.blockSize) / sizeof(dir_t),
-		// 	(offset % superblock.blockSize) % sizeof(dir_t),  dir->fname.str, dir->length, dir->start_block,
+		// 	offset, offset / superblock.blockSize, (offset % superblock.blockSize) / sizeof(DirEntry),
+		// 	(offset % superblock.blockSize) % sizeof(DirEntry),  dir->fname.str, dir->length, dir->start_block,
 		// 	pcache.fat[dir->start_block]);
 
 		// CHECKSEEK(WRENTRYH, "Invalid offset:", offset);
@@ -287,7 +287,7 @@ namespace DsOS::FS::DsFAT {
 			DirEntry dir_cpy = dir;
 			memset(dir_cpy.name.str, 0, sizeof(dir_cpy.name.str));
 			dir_cpy.name.str[0] = dir_cpy.name.str[1] = '.';
-			// write(imgfd, &dir_cpy, sizeof(dir_t));
+			// write(imgfd, &dir_cpy, sizeof(DirEntry));
 			partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
 			if (status != 0) {
 				printf("[DsFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
@@ -341,6 +341,7 @@ namespace DsOS::FS::DsFAT {
 		if (dir.length == 0 || !dir.isDirectory()) {
 			// If the directory is free or actually a file, it's not valid.
 			// DR_EXIT;
+			printf("[DsFATDriver::readDir] Not a directory.\n");
 			return -ENOTDIR;
 		}
 
@@ -348,9 +349,12 @@ namespace DsOS::FS::DsFAT {
 		// 	WARN("dir_read", "Directory length " BDR " isn't a multiple of DirEntry size " BLR ".", dir.length,
 		// 		sizeof(DirEntry));
 
-		size_t count = dir.length / sizeof(DirEntry);
+		dir.print();
+
+		const size_t count = dir.length / sizeof(DirEntry);
 		entries.clear();
 		entries.reserve(count);
+		printf("[DsFATDriver::readDir] count = %lu\n", count);
 
 		if (offsets) {
 			offsets->clear();
@@ -363,6 +367,7 @@ namespace DsOS::FS::DsFAT {
 		int status = readFile(dir, raw, &byte_c);
 		if (status < 0) {
 			// DR_EXIT;
+			printf("[DsFATDriver::readDir] readFile failed: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -380,11 +385,27 @@ namespace DsOS::FS::DsFAT {
 				*first_index = 1;
 		}
 
+		printf("[DsFATDriver::readDir] first_fname = \"%s\", byte_c = %lu\n", first_fname, byte_c);
+
 		block_t block = dir.startBlock;
 		int rem;
 
 		for (size_t i = 0; i < count; i++) {
 			memcpy(entries.data() + i, raw.data() + sizeof(DirEntry) * i, sizeof(DirEntry));
+
+			// for (size_t j = 0; j < sizeof(DirEntry); ++j) {
+			// 	const char ch = *(raw.data() + sizeof(DirEntry) * i + j);
+			// 	if (ch == '\0')
+			// 		printf("[%lu] \\0\n", j);
+			// 	else
+			// 		printf("[%lu] %c\n", j, ch);
+			// }
+
+			DirEntry entry;
+			memcpy(&entry, raw.data() + sizeof(DirEntry) * i, sizeof(DirEntry));
+			printf("[DsFATDriver::readDir] [i=%d] ", i);
+			entry.print();
+
 			const int entries_per_block = superblock.blockSize / sizeof(DirEntry);
 			rem = i % entries_per_block;
 
@@ -395,6 +416,11 @@ namespace DsOS::FS::DsFAT {
 				block = readFAT(block);
 		}
 
+		for (const DirEntry &entry: entries) {
+			printf("[DsFATDriver::readDir] ");
+			entry.print();
+		}
+
 		// DR_EXIT;
 		return 0;
 	}
@@ -402,6 +428,7 @@ namespace DsOS::FS::DsFAT {
 	int DsFATDriver::readFile(const DirEntry &file, std::vector<uint8_t> &out, size_t *count) {
 		// ENTER;
 		// DBGFE(FILEREADH, IDS("Reading file ") BSTR " of length " BDR, file->fname.str, file->length);
+		printf("[DsFATDriver::readFile] Reading file \"%s\" of length %lu\n", file.name.str, file.length);
 		if (file.length == 0) {
 			if (count)
 				*count = 0;
@@ -409,7 +436,8 @@ namespace DsOS::FS::DsFAT {
 			return 0;
 		}
 
-		uint32_t bs = superblock.blockSize;
+		const auto bs = superblock.blockSize;
+		printf("[DsFATDriver::readFile] bs = %u\n", bs);
 
 		if (count)
 			*count = file.length;
@@ -417,7 +445,7 @@ namespace DsOS::FS::DsFAT {
 		out.clear();
 		out.resize(file.length);
 		uint8_t *ptr = out.data();
-		uint32_t remaining = file.length;
+		size_t remaining = file.length;
 		block_t block = file.startBlock;
 		while (0 < remaining) {
 			if (remaining <= bs) {
@@ -427,16 +455,17 @@ namespace DsOS::FS::DsFAT {
 				// CHECKS(FILEREADH, "Couldn't seek");
 				// read(imgfd, ptr, remaining);
 				// CHECKS(FILEREADH, "Couldn't read");
+				printf("remaining = %lu, block * bs = %u\n", remaining, block * bs);
 				partition->read(ptr, remaining, block * bs);
 				ptr += remaining;
 				remaining = 0;
 
 				if (readFAT(block) != -2) {
 					// The file should end here, but the file allocation table says there are still more blocks.
-#ifndef SHRINK_DIRS
-					bool shrink = false;
+#ifdef SHRINK_DIRS
+					const bool shrink = true;
 #else
-					bool shrink = true;
+					const bool shrink = false;
 #endif
 
 					if (!shrink || !file.isDirectory()) {
@@ -482,6 +511,7 @@ namespace DsOS::FS::DsFAT {
 					return -EINVAL;
 				} else {
 					checkBlock(block);
+					printf("block * bs = %u\n", block * bs);
 					partition->read(ptr, bs, block * bs);
 					ptr += bs;
 					remaining -= bs;
@@ -613,7 +643,7 @@ namespace DsOS::FS::DsFAT {
 				return status;
 			}
 
-			// DBGF(NEWFILEH, "[S1] parent->length" SDEQ BUR DMS "offset_index" SDEQ BULR DMS "parent->length / sizeof(dir_t)" SDEQ BULR DMS "%s", parent->length, offset_index, parent->length / sizeof(dir_t), parent == &pcache.root? "==" : "!=");
+			// DBGF(NEWFILEH, "[S1] parent->length" SDEQ BUR DMS "offset_index" SDEQ BULR DMS "parent->length / sizeof(DirEntry)" SDEQ BULR DMS "%s", parent->length, offset_index, parent->length / sizeof(DirEntry), parent == &pcache.root? "==" : "!=");
 			if (offset_index < parent->length / sizeof(DirEntry)) {
 				// Don't increase the length if it already extends past this entry.
 				increase_parent_length = 0;
@@ -661,7 +691,7 @@ namespace DsOS::FS::DsFAT {
 			if (NEWFILE_SKIP_MAX < skipped)
 				printf("[DsFATDriver::newFile]   ... %d more\n", skipped);
 
-			// DBGF(NEWFILEH, "bs - sizeof(dir_t) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " BLR " < " BLR, bs, sizeof(dir_t), remaining, bs - sizeof(dir_t), remaining);
+			// DBGF(NEWFILEH, "bs - sizeof(DirEntry) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " BLR " < " BLR, bs, sizeof(DirEntry), remaining, bs - sizeof(DirEntry), remaining);
 
 			if (bs - sizeof(DirEntry) < remaining) {
 				// Scenario three, the worst one: there isn't enough free space left in the
@@ -736,7 +766,7 @@ namespace DsOS::FS::DsFAT {
 		if (increase_parent_length) {
 			// Increase the size of the parent directory and write it back to its original offset.
 			printf("[DsFATDriver::newFile] Increasing parent length.\n");
-			// DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length+sizeof(dir_t)));
+			// DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length+sizeof(DirEntry)));
 			parent->length += sizeof(DirEntry);
 			status = writeEntry(*parent, parent_offset);
 			if (status < 0) {
@@ -853,19 +883,6 @@ namespace DsOS::FS::DsFAT {
 		return -1;
 	}
 
-	void DsFATDriver::initFAT(size_t table_size, size_t block_size) {
-		size_t written = sizeof(Superblock) / sizeof(block_t);
-		printf("initFAT: writeOffset = %lu\n", writeOffset);
-		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
-		// These blocks point to the FAT, so they're not valid regions to write data.
-		writeMany((block_t) -1, table_size + 1);
-		written += table_size + 1;
-		writeMany((block_t) -2, 1);
-		++written;
-		// Might be sensitize to sizeof(block_t).
-		writeMany((block_t) 0, Util::blocks2words(table_size, block_size) - written);
-	}
-
 	block_t DsFATDriver::readFAT(size_t block_offset) {
 		block_t out;
 		int status = partition->read(&out, sizeof(block_t), block_offset * sizeof(block_t));
@@ -881,6 +898,19 @@ namespace DsOS::FS::DsFAT {
 			return -status;
 		}
 		return 0;
+	}
+
+	void DsFATDriver::initFAT(size_t table_size, size_t block_size) {
+		size_t written = sizeof(Superblock) / sizeof(block_t);
+		printf("initFAT: writeOffset = %lu, table_size = %lu\n", writeOffset, table_size);
+		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
+		// These blocks point to the FAT, so they're not valid regions to write data.
+		writeMany((block_t) -1, table_size + 1);
+		written += table_size + 1;
+		writeMany((block_t) -2, 1);
+		++written;
+		// Might be sensitize to sizeof(block_t).
+		writeMany((block_t) 0, Util::blocks2words(table_size + 1, block_size) - written);
 	}
 
 	void DsFATDriver::initData(size_t block_count, size_t table_size) {
@@ -916,10 +946,6 @@ namespace DsOS::FS::DsFAT {
 		return false;
 	}
 
-	bool DsFATDriver::isFree(const DirEntry &entry) {
-		return entry.startBlock == 0 || readFAT(entry.startBlock) == 0;
-	}
-
 	ssize_t DsFATDriver::countFree() {
 		if (0 <= blocksFree)
 			return blocksFree;
@@ -939,6 +965,14 @@ namespace DsOS::FS::DsFAT {
 		}
 
 		return true;
+	}
+
+	bool DsFATDriver::isFree(const DirEntry &entry) {
+		return entry.startBlock == 0 || readFAT(entry.startBlock) == 0;
+	}
+
+	bool DsFATDriver::isRoot(const DirEntry &entry) {
+		return superblock.startBlock == entry.startBlock;
 	}
 
 	size_t DsFATDriver::tableSize(size_t block_count, size_t block_size) {
@@ -1089,7 +1123,83 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::readdir(const char *path, void *buffer, DirFiller filler, off_t offset, FileInfo &) {
+	int DsFATDriver::readdir(const char *path, DirFiller filler) {
+		// HELLO(path);
+		// UNUSED(offset);
+		// UNUSED(fi);
+
+		// DBGL;
+		// DBGF(READDIRH, OMETHOD("readdir") BSTR DM " fh " BLR, path, fi->fh);
+		// DBG_OFFE();
+
+		DirEntry *found;
+		off_t file_offset;
+
+		int status = find(-1, path, nullptr, &found, &file_offset);
+		if (status < 0) {
+			printf("[DsFATDriver::readdir] find failed: %s\n", strerror(-status));
+			return status;
+		}
+
+		if (!found->isDirectory()) {
+			// You can't really use readdir with a file.
+			printf("[DsFATDriver::readdir] Can't readdir() a file -> ENOTDIR\n");
+			// DBG_ON();
+			return -ENOTDIR;
+		}
+
+		if (!isRoot(*found))
+			// Only the root directory has a "." entry stored in the disk image.
+			// For other directories, it has to be added dynamically.
+			filler(".", 0);
+
+		std::vector<DirEntry> entries;
+		std::vector<off_t> offsets;
+
+		status = readDir(*found, entries, &offsets);
+		if (status < 0) {
+			printf("[DsFATDriver::readdir] readDir failed: %s\n", strerror(-status));
+			return status;
+		}
+		const size_t count = entries.size();
+		printf("[DsFATDriver::readdir] Count: %lu\n", count);
+
+		size_t excluded = 0;
+	#ifdef READDIR_MAX_INCLUDE
+		size_t included = 0;
+		int last_index = -1;
+	#endif
+
+		for (int i = 0; i < (int) count; i++) {
+			const DirEntry &entry = entries[i];
+			if (!isFree(entry)) {
+	#ifdef READDIR_MAX_INCLUDE
+				last_index = i;
+				if (++included < READDIR_MAX_INCLUDE)
+	#else
+				printf("[DsFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
+	#endif
+
+				filler(entry.name.str, 0);
+			} else
+				excluded++;
+		}
+
+	#ifdef READDIR_MAX_INCLUDE
+		if (READDIR_MAX_INCLUDE < included)
+			printf("[DsFATDriver::readdir] ... %lu more\n", count - READDIR_MAX_INCLUDE);
+
+		if (READDIR_MAX_INCLUDE <= included)
+			printf("[DsFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
+	#endif
+
+		if (0 < excluded) {
+			printf("[DsFATDriver::readdir] Excluding %lu freed entr%s.\n", excluded, excluded == 1? "y" : "ies");
+		}
+
+		printf("[DsFATDriver::readdir] Done.\n");
+		// DBGE(READDIRH, "Done.");
+		// DBG_ON();
 		return 0;
 	}
 

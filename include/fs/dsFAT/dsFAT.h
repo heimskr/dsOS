@@ -17,7 +17,7 @@ namespace DsOS::FS::DsFAT {
 	constexpr size_t MINBLOCKS = 3;
 
 	class DsFATDriver: public Driver {
-		private:
+		public:
 			Superblock superblock;
 			ssize_t blocksFree = -1;
 			DirEntry root;
@@ -46,8 +46,8 @@ namespace DsOS::FS::DsFAT {
 			 *  @return Returns 0 if the operation was successful and no memory as allocated, returns 1 if the operation
 			 *          was successful and memory was allocated in *out or **outptr, returns a negative error code
 			 *          otherwise. */
-			int find(fd_t, const char *, DirEntry *out, DirEntry **outptr, off_t *, bool get_parent,
-			         std::string *last_name);
+			int find(fd_t, const char *, DirEntry *out, DirEntry **outptr = nullptr, off_t * = nullptr,
+			         bool get_parent = false, std::string *last_name = nullptr);
 
 			/** Removes a chain of blocks from the file allocation table. 
 			 *  Returns the number of blocks that were freed. */
@@ -112,17 +112,19 @@ namespace DsOS::FS::DsFAT {
 			 *  @return Returns the index of the first free block if any were found; -1 otherwise. */
 			block_t findFreeBlock();
 
-			void initFAT(size_t table_size, size_t block_size);
 			block_t readFAT(size_t block_offset);
 			int writeFAT(block_t block, size_t block_offset);
 
+			void initFAT(size_t table_size, size_t block_size);
 			void initData(size_t block_count, size_t table_size);
 
 			bool hasFree(const size_t);
-			bool isFree(const DirEntry &);
 			ssize_t countFree();
 
 			bool checkBlock(block_t);
+
+			bool isFree(const DirEntry &);
+			bool isRoot(const DirEntry &);
 
 			template <typename T>
 			int writeMany(T n, size_t count, off_t offset) {
@@ -167,6 +169,12 @@ namespace DsOS::FS::DsFAT {
 
 			static size_t tableSize(size_t block_count, size_t block_size);
 
+			/** Converts a standard file handle (presumably required to be > 0, maybe even > 2) to a FAT file descriptor
+			 *  (can be 0). **/
+			static inline fd_t transformDescriptor(fd_t descriptor) {
+				return descriptor - 1;
+			}
+
 			static char nothing[sizeof(DirEntry)];
 
 		public:
@@ -183,7 +191,7 @@ namespace DsOS::FS::DsFAT {
 			virtual int unlink(const char *path) override;
 			virtual int open(const char *path, FileInfo &) override;
 			virtual int read(const char *path, char *buffer, size_t size, off_t offset, FileInfo &) override;
-			virtual int readdir(const char *path, void *buffer, DirFiller filler, off_t offset, FileInfo &) override;
+			virtual int readdir(const char *path, DirFiller filler) override;
 			virtual int getattr(const char *path, FileStats &) override;
 			bool make(uint32_t block_size);
 

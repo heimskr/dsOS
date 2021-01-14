@@ -50,14 +50,21 @@ namespace DsOS::IDE {
 	int readBytes(uint8_t drive, size_t bytes, size_t offset, void *buffer) {
 		size_t bytes_read = 0;
 		uint32_t lba = offset / SECTOR_SIZE;
+		offset %= SECTOR_SIZE;
 		char read_buffer[SECTOR_SIZE];
 		int status = 0;
+
+		printf("readBytes: bytes(%lu), offset(%lu)\n", bytes, offset);
 
 		while (0 < bytes) {
 			if ((status = readSectors(drive, 1, lba, read_buffer)))
 				return status;
-			for (size_t i = 0; bytes_read < bytes && i + offset < SECTOR_SIZE; ++i)
+			// printf("Hello. bytes=%lu\n", bytes);
+			for (size_t i = 0; (bytes_read < bytes) && ((i + offset) < SECTOR_SIZE); ++i) {
+				// const char read = read_buffer[i + offset];
+				// printf("(%lu) buffer[%lu] = read_buffer[%lu + %lu] = 0x%x '%c'\n", bytes, bytes_read, i, offset, read, read);
 				((char *) buffer)[bytes_read++] = read_buffer[i + offset];
+			}
 			if (bytes <= SECTOR_SIZE)
 				break;
 			bytes -= SECTOR_SIZE;

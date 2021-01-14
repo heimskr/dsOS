@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ctime>
 #include <string.h>
+#include "Defs.h"
 
 namespace DsOS::FS::DsFAT {
 	using block_t = int32_t;
@@ -21,6 +22,7 @@ namespace DsOS::FS::DsFAT {
 		uint32_t blockSize;
 		/** The block containing the root directory. */
 		block_t startBlock;
+		void print() const;
 	} __attribute__((packed));
 
 	struct Times {
@@ -49,14 +51,8 @@ namespace DsOS::FS::DsFAT {
 
 		bool isFile() const { return type == FileType::File; }
 		bool isDirectory() const { return type == FileType::Directory; }
-		void reset() {
-			memset(name.str, 0, sizeof(name));
-			times = {0, 0, 0};
-			length = 0;
-			startBlock = -1;
-			type = FileType::File;
-			modes = 0;
-		}
+		void reset();
+		void print() const;
 	};
 
 	static_assert(sizeof(DirEntry) % 64 == 0);

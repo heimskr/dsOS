@@ -100,10 +100,30 @@ namespace DsOS {
 		Device::IDEDevice device(0);
 		FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
 		using namespace FS::DsFAT;
-		FS::DsFAT::DsFATDriver driver(&first_partition);
-		// driver.make(6400);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
-		printf("sizeof(DirEntry) = %lu\n", sizeof(FS::DsFAT::DirEntry));
+		DsFATDriver driver(&first_partition);
+		driver.make(320 * 5);
+		int status = driver.readdir("/", [](const char *path, off_t offset) {
+			printf("\"%s\" @ %ld\n", path, offset);
+		});
+		if (status != 0)
+			printf("readdir failed: %s\n", strerror(-status));
+
+		printf("offsetof(  DirEntry::      name) = 0x%lx\n", offsetof(DirEntry, name));
+		printf("offsetof(  DirEntry::     times) = 0x%lx\n", offsetof(DirEntry, times));
+		printf("offsetof(  DirEntry::    length) = 0x%lx\n", offsetof(DirEntry, length));
+		printf("offsetof(  DirEntry::startBlock) = 0x%lx\n", offsetof(DirEntry, startBlock));
+		printf("offsetof(  DirEntry::      type) = 0x%lx\n", offsetof(DirEntry, type));
+		printf("offsetof(  DirEntry::     modes) = 0x%lx\n", offsetof(DirEntry, modes));
+		printf("offsetof(  DirEntry::   padding) = 0x%lx\n", offsetof(DirEntry, padding));
+		// printf("offsetof(Superblock::     magic) = 0x%lx\n", offsetof(Superblock, magic));
+		// printf("offsetof(Superblock::blockCount) = 0x%lx\n", offsetof(Superblock, blockCount));
+		// printf("offsetof(Superblock:: fatBlocks) = 0x%lx\n", offsetof(Superblock, fatBlocks));
+		// printf("offsetof(Superblock:: blockSize) = 0x%lx\n", offsetof(Superblock, blockSize));
+		// printf("offsetof(Superblock::startBlock) = 0x%lx (@ 0x%lx)\n", offsetof(Superblock, startBlock), driver.superblock.startBlock * driver.superblock.blockSize);
+		// driver.superblock.print();
+		driver.readSuperblock(driver.superblock);
+		driver.superblock.print();
+
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {
