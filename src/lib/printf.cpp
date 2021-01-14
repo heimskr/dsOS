@@ -8,9 +8,40 @@ enum class Status {Scan, Decide, D, U, S, X};
 
 bool printf_putc = true;
 
-static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n);
+// static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n);
 static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n);
 static void num_to_hex(char *out, char *&optr, const size_t max, long long unsigned int n);
+static bool mappend(char *out, char *&optr, const size_t max, const char ch);
+
+template <typename T>
+static void signed_to_dec(char *out, char *&optr, const size_t max, T n) {
+	if (out != nullptr && max <= static_cast<size_t>(optr - out))
+		return;
+
+	if (n == 0) {
+		mappend(out, optr, max, '0');
+		return;
+	}
+
+	char buffer[21] = {0};
+	int i = 0;
+	bool was_negative = n < 0;
+
+	if (was_negative)
+		n = -n;
+
+	while (0 < n) {
+		buffer[i++] = '0' + (n % 10);
+		n /= 10;
+	}
+
+	if (was_negative && !mappend(out, optr, max, '-'))
+		return;
+	
+	for (int j = i - 1; 0 <= j; --j)
+		if (!mappend(out, optr, max, buffer[j]))
+			return;
+}
 
 static bool mappend(char *out, char *&optr, const size_t max, const char ch) {
 	if (out == nullptr) {
@@ -78,7 +109,6 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 	bool is_long = false;
 	while (i < format_length) {
 		if (status == Status::Scan) {
-			is_long = true;
 			char ch = format[i++];
 			if (ch != '%')
 				APPEND(ch);
@@ -115,9 +145,9 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 		if (status == Status::D) {
 			// TODO: padding and such
 			if (is_long)
-				signed_to_dec(out, optr, max, va_arg(list, long long int));
+				signed_to_dec(out, optr, max, (long long int) va_arg(list, long long int));
 			else
-				signed_to_dec(out, optr, max, va_arg(list, int));
+				signed_to_dec(out, optr, max, (int) va_arg(list, int));
 			status = Status::Scan;
 			is_long = false;
 		} else if (status == Status::U) {
@@ -143,36 +173,6 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 	}
 
 	return printed;
-}
-
-static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n) {
-	if (out != nullptr && max <= static_cast<size_t>(optr - out))
-		return;
-
-	if (n == 0) {
-		mappend(out, optr, max, '0');
-		return;
-	}
-
-	char buffer[21] = {0};
-	int i = 0;
-	int was_negative = n < 0;
-
-	if (was_negative)
-		n = -n;
-
-	while (0 < n) {
-		buffer[i++] = '0' + (n % 10);
-		n /= 10;
-	}
-
-	if (was_negative && !mappend(out, optr, max, '-'))
-		return;
-	
-	for (int j = i - 1; 0 <= j; --j) {
-		if (!mappend(out, optr, max, buffer[j]))
-			return;
-	}
 }
 
 static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n) {
