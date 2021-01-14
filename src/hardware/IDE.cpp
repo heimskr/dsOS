@@ -225,7 +225,7 @@ namespace DsOS::IDE {
 				count++;
 			}
 
-		// 4- Print Summary:
+		// Print summary:
 		for (int i = 0; i < 4; i++)
 			if (devices[i].reserved)
 				printf("Slot %d: found %s Drive %dMB - %s\n", i,

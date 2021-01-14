@@ -17,6 +17,7 @@
 #include "fs/Partition.h"
 #include "hardware/IDE.h"
 #include "hardware/MBR.h"
+#include "hardware/PCI.h"
 #include "hardware/PS2Keyboard.h"
 #include "hardware/Serial.h"
 #include "memory/memset.h"
@@ -83,6 +84,7 @@ namespace DsOS {
 
 		x86_64::PIC::clearIRQ(1);
 		x86_64::PIC::clearIRQ(14);
+		x86_64::PIC::clearIRQ(15);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
@@ -93,6 +95,10 @@ namespace DsOS {
 		x86_64::APIC::disableTimer();
 
 		IDE::init();
+
+		PCI::scanDevices();
+
+		for (;;) asm("hlt");
 
 		MBR mbr;
 		mbr.firstEntry = {1 << 7, 0x42, 1, 2047};

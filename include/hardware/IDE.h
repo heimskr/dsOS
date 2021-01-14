@@ -93,7 +93,7 @@ namespace DsOS::IDE {
 	constexpr uint8_t ATA_SLAVE = 0x01;
 
 	struct Device {
-		bool reserved;         // 0 (empty) or 1 (this drive really exists).
+		bool reserved;         // False (empty) or true (this drive really exists).
 		uint8_t  channel;      // 0 (Primary Channel) or 1 (Secondary Channel).
 		uint8_t  drive;        // 0 (Master Drive) or 1 (Slave Drive).
 		uint16_t type;         // 0: ATA, 1:A TAPI.

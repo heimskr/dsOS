@@ -10,9 +10,68 @@
 /
 *******************************************************************************/
 
+// Some code is from https://github.com/imgits/ShellcodeOS/blob/master/OS/pci/pci.h
+
 #include "Defs.h"
 
 namespace DsOS::PCI {
+	uint8_t  readByte(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
+	uint16_t readWord(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
+	uint32_t readInt (uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
+	void writeByte(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint8_t  val);
+	void writeWord(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint16_t val);
+	void writeInt (uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint32_t val);
+
+	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
+	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
+	uint16_t getDeviceID(uint32_t bus, uint32_t device, uint32_t function);
+	uint16_t getCommand(uint32_t bus, uint32_t device, uint32_t function);
+	uint16_t getStatus(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getRevisionID(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getProgIF(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getBaseClass(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getSubClass(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getCacheLineSize(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getLatencyTimer(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getHeaderType(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getBIST(uint32_t bus, uint32_t device, uint32_t function);
+
+	void scanDevices();
+
+	enum class DeviceType {
+		VGA,            // VGA-Compatible Device
+		MassStorage,    // Mass Storage Controller
+		Network,        // Network Controller
+		Multimedia,     // Multimedia Device
+		Memory,         // Memory Controller
+		Bridge,         // Bridge Device
+		Communications, // Communications Device
+		System,         // System Peripheral
+		Input,          // Input Controller
+		Docking,        // Docking Station
+		Processor,      // Processor
+		Bus,            // USB 1394 ...
+		Wireless,       // Wireless Controller
+		FIFO,           // I20 FIFO
+		AV,             // TV Controller
+		Encryption,     // Encryption / decryption
+		DSP
+	};
+
+	struct IDs {
+		uint32_t vendor;
+		uint32_t device;
+		uint32_t subvendor;
+		uint32_t subdevice;
+	};
+
+	struct DeviceClass {
+		uint32_t baseclass;
+		uint32_t subclass;
+		uint32_t progif;
+	};
+
+	using status_t = int32_t;
 
 	struct PCIInfo {
 		uint16_t vendorID;   // Vendor ID

@@ -142,7 +142,8 @@ timer_max: .8byte -1
 	// isr_errc   14, page_interrupt
 	// isr_noerrc 33, irq1
 	isr_noerrc 39, spurious_interrupt
-	isr_noerrc 118, irq14
+	// isr_noerrc 46, irq14
+	isr_noerrc 47, irq15
 
 .global isr_13
 .type isr_13, @function
@@ -221,4 +222,12 @@ isr_33:
 	cli
 	call irq1
 isr_iretq_33:
+	iretq
+
+.global isr_46
+.type isr_46, @function
+isr_46:
+	cli
+	call irq14
+isr_iretq_46:
 	iretq

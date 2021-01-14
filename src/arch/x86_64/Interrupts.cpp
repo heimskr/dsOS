@@ -39,7 +39,8 @@ namespace x86_64::IDT {
 		add(32, &isr_32);
 		add(33, &isr_33);
 		add(39, &isr_39);
-		add(118, &isr_118);
+		add(46, &isr_46);
+		add(47, &isr_47);
 		asm volatile("lidt (%0)" :: "r" (&idt_header));
 	}
 }
@@ -109,7 +110,18 @@ void irq1() {
 }
 
 void irq14() {
+	DsOS::Ports::outb(0xa0, 0x20);
+	x86_64::PIC::sendEOI(1);
 	printf("IRQ14\n");
+	for (;;);
+	// irqInvoked = 1;
+}
+
+void irq15() {
+	DsOS::Ports::outb(0xa0, 0x20);
+	x86_64::PIC::sendEOI(1);
+	printf("IRQ15\n");
+	for (;;);
 	// irqInvoked = 1;
 }
 
