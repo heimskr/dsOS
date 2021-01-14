@@ -446,7 +446,7 @@ namespace DsOS::FS::DsFAT {
 			*count = file.length;
 
 		out.clear();
-		out.resize(file.length);
+		out.resize(file.length, '*');
 		uint8_t *ptr = out.data();
 		size_t remaining = file.length;
 		block_t block = file.startBlock;
@@ -1219,6 +1219,8 @@ namespace DsOS::FS::DsFAT {
 			printf("[DsFATDriver::make] Clearing partition failed: %s\n", strerror(status));
 			return false;
 		}
+
+		// int status;
 
 		const size_t block_count = partition->length / block_size;
 

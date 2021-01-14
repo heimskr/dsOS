@@ -135,10 +135,14 @@ namespace DsOS {
 		// for (size_t i = 0; i < 10; ++i)
 		// 	printf("[%lu] '%c' (%d)\n", i + 4795, idebuffer[i], idebuffer[i] & 0xff);
 
-		char buffer[512];
-		first_partition.read(buffer, 512, 4795);
-		for (size_t i = 0; i < sizeof(buffer); ++i)
-			printf("[%lu] '%c' (%d)\n", i + 4795, buffer[i], buffer[i] & 0xff);
+		// char buffer[512];
+		// first_partition.read(buffer, 512, 4795);
+		// memset(buffer, 'X', sizeof(buffer));
+		// first_partition.write(buffer, 512, 0x9000);
+		// memset(buffer, '!', sizeof(buffer));
+		// first_partition.read(buffer, 512, 0x9000);
+		// for (size_t i = 0; i < sizeof(buffer); ++i)
+		// 	printf(":: [%lu 0x%lx] '%c' (%d)\n", i + 0x9000, i + 0x9000, buffer[i], buffer[i] & 0xff);
 
 
 		// printf_putc = false;
