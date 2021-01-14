@@ -124,6 +124,22 @@ namespace DsOS {
 		driver.readSuperblock(driver.superblock);
 		driver.superblock.print();
 
+		// char idebuffer[IDE::SECTOR_SIZE];
+		// for (size_t i = 0; i < 10; ++i) {
+		// 	IDE::readSectors(0, 1, i, idebuffer);
+		// 	for (size_t j = 0; j < sizeof(idebuffer); ++j)
+		// 		printf("[%lu] '%c' (%d)\n", i * IDE::SECTOR_SIZE + j, idebuffer[j], idebuffer[j] & 0xff);
+		// }
+
+		// IDE::readBytes(0, 10, 4795, idebuffer);
+		// for (size_t i = 0; i < 10; ++i)
+		// 	printf("[%lu] '%c' (%d)\n", i + 4795, idebuffer[i], idebuffer[i] & 0xff);
+
+		char buffer[512];
+		first_partition.read(buffer, 512, 4795);
+		for (size_t i = 0; i < sizeof(buffer); ++i)
+			printf("[%lu] '%c' (%d)\n", i + 4795, buffer[i], buffer[i] & 0xff);
+
 
 		// printf_putc = false;
 		// for (int sector = 0; sector < 5; ++sector) {

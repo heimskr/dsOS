@@ -6,6 +6,7 @@
 #include "hardware/IDE.h"
 #include "hardware/Ports.h"
 #include "lib/printf.h"
+#include "Kernel.h"
 
 using DsOS::Ports::inb;
 using DsOS::Ports::outb;
@@ -38,10 +39,8 @@ namespace DsOS::IDE {
 			if (devices[drive].type == IDE_ATA)
 				err = accessATA(ATA_READ, drive, lba, numsects, buffer);
 			else if (devices[drive].type == IDE_ATAPI)
-				for (uint8_t i = 0; i < numsects; i++) {
-					printf("ok.\n");
+				for (uint8_t i = 0; i < numsects; i++)
 					err = readATAPI(drive, lba + i, buffer + (i * 2048));
-				}
 			status = printError(drive, err);
 		}
 		return -status;
@@ -50,11 +49,12 @@ namespace DsOS::IDE {
 	int readBytes(uint8_t drive, size_t bytes, size_t offset, void *buffer) {
 		size_t bytes_read = 0;
 		uint32_t lba = offset / SECTOR_SIZE;
+		printf("readBytes: bytes(%lu), offset(%lu), lba(%u)\n", bytes, offset, lba);
 		offset %= SECTOR_SIZE;
 		char read_buffer[SECTOR_SIZE];
 		int status = 0;
 
-		printf("readBytes: bytes(%lu), offset(%lu)\n", bytes, offset);
+		// Kernel::backtrace();
 
 		while (0 < bytes) {
 			if ((status = readSectors(drive, 1, lba, read_buffer)))

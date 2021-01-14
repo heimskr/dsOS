@@ -385,7 +385,10 @@ namespace DsOS::FS::DsFAT {
 				*first_index = 1;
 		}
 
-		printf("[DsFATDriver::readDir] first_fname = \"%s\", byte_c = %lu\n", first_fname, byte_c);
+		printf("[DsFATDriver::readDir] first_fname = \"%s\", byte_c = %lu, count = %lu\n", first_fname, byte_c, count);
+
+		// for (size_t i = 0; i < raw.size(); ++i)
+		// 	printf("[%lu] '%c' (%d)\n", i, raw[i], raw[i]);
 
 		block_t block = dir.startBlock;
 		int rem;
@@ -403,7 +406,7 @@ namespace DsOS::FS::DsFAT {
 
 			DirEntry entry;
 			memcpy(&entry, raw.data() + sizeof(DirEntry) * i, sizeof(DirEntry));
-			printf("[DsFATDriver::readDir] [i=%d] ", i);
+			printf("[DsFATDriver::readDir] [i=%d, offset=%lu] ", i, sizeof(DirEntry) * i);
 			entry.print();
 
 			const int entries_per_block = superblock.blockSize / sizeof(DirEntry);
@@ -457,6 +460,8 @@ namespace DsOS::FS::DsFAT {
 				// CHECKS(FILEREADH, "Couldn't read");
 				printf("remaining = %lu, block * bs = %u\n", remaining, block * bs);
 				partition->read(ptr, remaining, block * bs);
+				for (size_t i = 0; i < remaining; ++i)
+					printf("ptr[i=%lu] = '%c', (%d)\n", i, ptr[i], ptr[i] & 0xff);
 				ptr += remaining;
 				remaining = 0;
 
@@ -885,14 +890,15 @@ namespace DsOS::FS::DsFAT {
 
 	block_t DsFATDriver::readFAT(size_t block_offset) {
 		block_t out;
-		int status = partition->read(&out, sizeof(block_t), block_offset * sizeof(block_t));
+		printf("readFAT adjusted offset: %lu\n", superblock.blockSize + block_offset * sizeof(block_t));
+		int status = partition->read(&out, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0)
 			printf("[DsFATDriver::readFAT] Reading failed: %s\n", strerror(status));
 		return out;
 	}
 
 	int DsFATDriver::writeFAT(block_t block, size_t block_offset) {
-		int status = partition->write(&block, sizeof(block_t), block_offset * sizeof(block_t));
+		int status = partition->write(&block, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
 			printf("[DsFATDriver::writeFAT] Writing failed: %s\n", strerror(status));
 			return -status;
