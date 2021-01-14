@@ -364,6 +364,9 @@ namespace DsOS::FS::DsFAT {
 		std::vector<uint8_t> raw;
 		size_t byte_c;
 
+		printf("[DsFATDriver::readDir] About to read from ");
+		dir.print();
+
 		int status = readFile(dir, raw, &byte_c);
 		if (status < 0) {
 			// DR_EXIT;
@@ -371,21 +374,25 @@ namespace DsOS::FS::DsFAT {
 			return status;
 		}
 
-		char first_fname[DSFAT_PATH_MAX + 1];
-		memcpy(first_fname, raw.data(), DSFAT_PATH_MAX);
-		if (strcmp(first_fname, ".") == 0) {
+		for (uint8_t ch: raw)
+			printf("%x ", ch & 0xff);
+		printf("\n");
+
+		char first_name[DSFAT_PATH_MAX + 1];
+		memcpy(first_name, raw.data(), DSFAT_PATH_MAX);
+		if (strcmp(first_name, ".") == 0) {
 			// The directory contains a "." entry, presumably in addition to a ".." entry.
 			// This means there are two meta-entries before the actual entries.
 			if (first_index)
 				*first_index = 2;
-		} else if (strcmp(first_fname, "..") == 0) {
+		} else if (strcmp(first_name, "..") == 0) {
 			// The directory appears to contain just ".." and not "." (unless the order is reversed,
 			// but that should never happen). This means there's just one meta-entry.
 			if (first_index)
 				*first_index = 1;
 		}
 
-		printf("[DsFATDriver::readDir] first_fname = \"%s\", byte_c = %lu, count = %lu\n", first_fname, byte_c, count);
+		printf("[DsFATDriver::readDir] first_name = \"%s\", byte_c = %lu, count = %lu\n", first_name, byte_c, count);
 
 		// for (size_t i = 0; i < raw.size(); ++i)
 		// 	printf("[%lu] '%c' (%d)\n", i, raw[i], raw[i]);
@@ -431,7 +438,7 @@ namespace DsOS::FS::DsFAT {
 	int DsFATDriver::readFile(const DirEntry &file, std::vector<uint8_t> &out, size_t *count) {
 		// ENTER;
 		// DBGFE(FILEREADH, IDS("Reading file ") BSTR " of length " BDR, file->fname.str, file->length);
-		printf("[DsFATDriver::readFile] Reading file \"%s\" of length %lu\n", file.name.str, file.length);
+		printf("[DsFATDriver::readFile] Reading file \"%s\" of length %lu @ %ld\n", file.name.str, file.length, file.startBlock * superblock.blockSize);
 		if (file.length == 0) {
 			if (count)
 				*count = 0;
@@ -457,7 +464,8 @@ namespace DsOS::FS::DsFAT {
 				ptr += remaining;
 				remaining = 0;
 
-				if (readFAT(block) != -2) {
+				block_t nextblock = readFAT(block);
+				if (nextblock != -2) {
 					// The file should end here, but the file allocation table says there are still more blocks.
 #ifdef SHRINK_DIRS
 					const bool shrink = true;
@@ -470,7 +478,6 @@ namespace DsOS::FS::DsFAT {
 						// WARN(FILEREADH, SUB "remaining = " BDR DM " pcache.fat[" BDR "] = " BDR DM " bs = " BDR, remaining, block, pcache.fat[block], bs);
 					} else {
 						// WARN(FILEREADH, "%s " BSR " has extra FAT blocks; trimming.", IS_FILE(*file)? "File" : "Directory", file->fname.str);
-						block_t nextblock = readFAT(block);
 						writeFAT(-2, block);
 						// DBGF(FILEREADH, BDR " ← -2", block);
 						block_t shrinkblock = nextblock;
@@ -603,6 +610,8 @@ namespace DsOS::FS::DsFAT {
 		off_t offset = -1;
 		size_t offset_index = -1;
 		for (size_t i = (size_t) first_index; i < count; ++i) {
+			printf("[%lu] free(%d): ", i, isFree(entries[i])? 1 : 0);
+			entries[i].print();
 			if (isFree(entries[i])) {
 				// We found one! Store its offset in `offset` to replace its previous value of -1.
 				offset = offsets[i];
@@ -629,7 +638,8 @@ namespace DsOS::FS::DsFAT {
 
 		if (offset != -1) {
 			// Scenario one: we found a free entry earlier. Way too easy.
-			// CDBGS(A_CYAN, NEWFILEH, "Scenario one.");
+			printf("[DsFATDriver::newFile] Scenario one.\n");
+
 			status = writeEntry(newfile, offset);
 			if (status < 0) {
 				printf("[DsFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
@@ -644,7 +654,7 @@ namespace DsOS::FS::DsFAT {
 			}
 		} else if (parent->length <= bs - sizeof(DirEntry)) {
 			// Scenario two: the parent directory has free space in its first block, which is also pretty easy to deal with.
-			// CDBGS(A_CYAN, NEWFILEH, "Scenario two.");
+			printf("[DsFATDriver::newFile] Scenario two.\n");
 
 			if (!noalloc && !hasFree(block_c)) {
 				// If we're allocating space for the new file, we need enough blocks to hold it.
@@ -690,7 +700,7 @@ namespace DsOS::FS::DsFAT {
 			if (bs - sizeof(DirEntry) < remaining) {
 				// Scenario three, the worst one: there isn't enough free space left in the
 				// parent directory to fit in another entry, so we have to add another block.
-				// CDBGS(A_CYAN, NEWFILEH, "Scenario three.");
+				printf("[DsFATDriver::newFile] Scenario three.\n");
 
 				bool nospc = false;
 
@@ -745,7 +755,7 @@ namespace DsOS::FS::DsFAT {
 				}
 			} else {
 				// Scenario four: there's enough space in the parent directory to add the new entry. Nice.
-				// CDBGS(A_CYAN, NEWFILEH, "Scenario four.");
+				printf("[DsFATDriver::newFile] Scenario four.\n");
 
 				offset = block * bs + remaining;
 				status = writeEntry(newfile, offset);
@@ -803,15 +813,10 @@ namespace DsOS::FS::DsFAT {
 				printf("[DsFATDriver::newFile] pc_insert failed (%d)\n", insert_status);
 				for (;;);
 				return -666;
-			} else {
-				if (noalloc)
-					pathCache.erase(*item);
-				if (dir_out)
-					*dir_out = &item->entry;
-			}
-
-			// if (dir_out != NULL) {
+			} else if (dir_out)
+				*dir_out = &item->entry;
 		} else if (dir_out) {
+			printf("Overflowing. %lu -> %lu\n", overflowIndex, (overflowIndex + 1) % OVERFLOW_MAX);
 			overflow[overflowIndex] = newfile;
 			*dir_out = &overflow[overflowIndex];
 			overflowIndex = (overflowIndex + 1) % OVERFLOW_MAX;
@@ -900,7 +905,7 @@ namespace DsOS::FS::DsFAT {
 	}
 
 	void DsFATDriver::initFAT(size_t table_size, size_t block_size) {
-		size_t written = sizeof(Superblock) / sizeof(block_t);
+		size_t written = 0;
 		printf("initFAT: writeOffset = %lu, table_size = %lu\n", writeOffset, table_size);
 		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
 		// These blocks point to the FAT, so they're not valid regions to write data.
@@ -912,8 +917,9 @@ namespace DsOS::FS::DsFAT {
 		writeMany((block_t) -2, 1);
 		++written;
 		// Might be sensitize to sizeof(block_t).
-		printf("Writing 0 %lu times to %lu\n", Util::blocks2words(table_size + 1, block_size) - written, writeOffset);
-		writeMany((block_t) 0, Util::blocks2words(table_size + 1, block_size) - written);
+		size_t times = Util::blocks2count(table_size, block_size) - written;
+		printf("Writing 0 %lu times to %lu (table_size = %lu, written = %lu)\n", times, writeOffset, table_size, written);
+		writeMany((block_t) 0, times);
 	}
 
 	void DsFATDriver::initData(size_t block_count, size_t table_size) {
@@ -922,19 +928,6 @@ namespace DsOS::FS::DsFAT {
 		root.length = 2 * sizeof(DirEntry);
 		root.startBlock = table_size + 1;
 		root.type = FileType::Directory;
-		// fat_update_times(&root, now);
-		// writeEntry(root,
-		// auto write_entry = [&](const DirEntry &entry) {
-		// 	for (size_t i = 0; i < sizeof(dir.name.words) / sizeof(dir.name.words[0]); ++i)
-		// 		write(dir.name.words[i]);
-		// 	write(dir.times.created);
-		// 	write(dir.times.modified);
-		// 	write(dir.times.accessed);
-		// 	write(dir.length);
-		// 	write(dir.start_block);
-		// 	write(dir.flags);
-		// 	write(static_cast<int>(0), 5);
-		// };
 		write(root);
 		root.name.str[1] = '.';
 		write(root);

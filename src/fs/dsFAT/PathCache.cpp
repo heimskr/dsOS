@@ -1,6 +1,7 @@
 #include "fs/dsFAT/dsFAT.h"
 #include "fs/dsFAT/FDCache.h"
 #include "fs/dsFAT/PathCache.h"
+#include "lib/printf.h"
 
 namespace DsOS::FS::DsFAT {
 	PathCacheEntry::~PathCacheEntry() {
@@ -42,6 +43,8 @@ namespace DsOS::FS::DsFAT {
 	}
 
 	PCInsertStatus PathCache::insert(const char *path, const DirEntry &entry, off_t offset, PathCacheEntry **out) {
+		printf("[PathCache::insert] path(\"%s\"), offset(%ld), ", path, offset);
+		entry.print();
 		// TODO: mutexes.
 
 		// ENTER;
