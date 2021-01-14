@@ -1068,7 +1068,7 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::release(const char *path, FileInfo &) {
+	int DsFATDriver::release(const char *path) {
 		return 0;
 	}
 
@@ -1080,11 +1080,65 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::create(const char *path, mode_t mode, FileInfo &) {
+	int DsFATDriver::create(const char *path, mode_t modes) {
+		// HELLO(path);
+		// UNUSED(mode);
+		// UNUSED(fi);
+		// IGNORE_ECHO(path, 0);
+		// DBGL;
+
+#ifdef DEBUG_DSFAT
+		// if (IS_DOT(path)) {
+		// 	return handle_extra(path);
+		// }
+#endif
+
+		// DBGF(CREATEH, PMETHOD("create") BSTR DM " mode " BDR DM " flags " BXR, path, mode, fi->flags);
+		printf("[DsFATDriver::create] path \"%s\" modes %u\n", path, modes);
+
+		// int status = fat_find(imgfd, -1, path, NULL, NULL, NULL, 0, NULL);
+		int status = find(-1, path);
+		if (0 <= status) {
+			// The file already exists, so we don't have to bother creating another entry with the same name.
+			// That would be a pretty dumb thing to do...
+			// DBG2(CREATEH, "File already exists:", path);
+			printf("[DsFATDriver::create] File already exists: \"%s\"\n", path);
+			return -EEXIST;
+		}
+
+		DirEntry *newfile, *parent;
+		off_t offset, poffset;
+		status = newFile(path, 0, FileType::File, nullptr, &newfile, &offset, &parent, &poffset, 0);
+		if (status < 0) {
+			printf("[DsFATDriver::create] newFile failed: %s\n", strerror(-status));
+			return status;
+		}
+
+		newfile->modes = modes;
+		writeEntry(*newfile, offset);
+
+		// if (status == 1) {
+			// Free the directory entry if it's newly allocated.
+			// FREE(parent);
+		// }
+
+		printf("[DsFATDriver::create] Done. {offset: %ld, poffset: %ld}\n", offset, poffset);
+		// SUCC(CREATEH, "Done. " IDS("{") "offset" DLS BLR DMS "poffset" DLS BLR IDS("}"), offset, poffset);
+#ifdef DEBUG_DSFAT
+		// if (strcmp(path, "/dbg") == 0) {
+		// 	struct fuse_file_info fake_fi = {.flags = 0};
+		// 	char buf[4096];
+		// 	size_t old = pcache.blocks_free;
+		// 	pcache.blocks_free = -1;
+		// 	pathc_count_free();
+		// 	snprintf(buf, 4096, "Free (old): " BZR "\nFree (new): " BZR "\n", old, pcache.blocks_free);
+		// 	driver_write(path, buf, strlen(buf), 0, &fake_fi);
+		// }
+#endif
 		return 0;
 	}
 
-	int DsFATDriver::write(const char *path, const char *buffer, size_t size, off_t offset, FileInfo &) {
+	int DsFATDriver::write(const char *path, const char *buffer, size_t size, off_t offset) {
 		return 0;
 	}
 
@@ -1096,7 +1150,7 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::ftruncate(const char *path, off_t size, FileInfo &) {
+	int DsFATDriver::ftruncate(const char *path, off_t size) {
 		return 0;
 	}
 
@@ -1108,11 +1162,11 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::open(const char *path, FileInfo &) {
+	int DsFATDriver::open(const char *path) {
 		return 0;
 	}
 
-	int DsFATDriver::read(const char *path, char *buffer, size_t size, off_t offset, FileInfo &) {
+	int DsFATDriver::read(const char *path, char *buffer, size_t size, off_t offset) {
 		return 0;
 	}
 

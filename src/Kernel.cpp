@@ -103,11 +103,14 @@ namespace DsOS {
 		using namespace FS::DsFAT;
 		auto driver = std::make_unique<DsFATDriver>(&first_partition);
 		driver->make(320 * 5);
-		int status = driver->readdir("/", [](const char *path, off_t offset) {
+		int status;
+		status = driver->create("/foo", 0666);
+		if (status != 0) printf("create failed: %s\n", strerror(-status));
+
+		status = driver->readdir("/", [](const char *path, off_t offset) {
 			printf("\"%s\" @ %ld\n", path, offset);
 		});
-		if (status != 0)
-			printf("readdir failed: %s\n", strerror(-status));
+		if (status != 0) printf("readdir failed: %s\n", strerror(-status));
 
 		driver->superblock.print();
 

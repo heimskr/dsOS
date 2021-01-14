@@ -46,7 +46,7 @@ namespace DsOS::FS::DsFAT {
 			 *  @return Returns 0 if the operation was successful and no memory as allocated, returns 1 if the operation
 			 *          was successful and memory was allocated in *out or **outptr, returns a negative error code
 			 *          otherwise. */
-			int find(fd_t, const char *, DirEntry *out, DirEntry **outptr = nullptr, off_t * = nullptr,
+			int find(fd_t, const char *, DirEntry *out = nullptr, DirEntry **outptr = nullptr, off_t * = nullptr,
 			         bool get_parent = false, std::string *last_name = nullptr);
 
 			/** Removes a chain of blocks from the file allocation table. 
@@ -179,18 +179,18 @@ namespace DsOS::FS::DsFAT {
 
 		public:
 			virtual int rename(const char *path, const char *newpath) override;
-			virtual int release(const char *path, FileInfo &) override;
+			virtual int release(const char *path) override;
 			virtual int statfs(const char *, DriverStats &) override;
 			virtual int utimens(const char *path, const timespec &) override;
-			virtual int create(const char *path, mode_t mode, FileInfo &) override;
-			virtual int write(const char *path, const char *buffer, size_t size, off_t offset, FileInfo &) override;
+			virtual int create(const char *path, mode_t modes) override;
+			virtual int write(const char *path, const char *buffer, size_t size, off_t offset) override;
 			virtual int mkdir(const char *path, mode_t mode) override;
 			virtual int truncate(const char *path, off_t size) override;
-			virtual int ftruncate(const char *path, off_t size, FileInfo &) override;
+			virtual int ftruncate(const char *path, off_t size) override;
 			virtual int rmdir(const char *path) override;
 			virtual int unlink(const char *path) override;
-			virtual int open(const char *path, FileInfo &) override;
-			virtual int read(const char *path, char *buffer, size_t size, off_t offset, FileInfo &) override;
+			virtual int open(const char *path) override;
+			virtual int read(const char *path, char *buffer, size_t size, off_t offset) override;
 			virtual int readdir(const char *path, DirFiller filler) override;
 			virtual int getattr(const char *path, FileStats &) override;
 			bool make(uint32_t block_size);

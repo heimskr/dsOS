@@ -58,18 +58,18 @@ namespace DsOS::FS {
 			Partition *partition;
 			virtual ~Driver() { cleanup(); }
 			virtual int rename(const char *path, const char *newpath) = 0;
-			virtual int release(const char *path, FileInfo &) = 0;
+			virtual int release(const char *path) = 0;
 			virtual int statfs(const char *, DriverStats &) = 0;
 			virtual int utimens(const char *path, const timespec &) = 0;
-			virtual int create(const char *path, mode_t mode, FileInfo &) = 0;
-			virtual int write(const char *path, const char *buffer, size_t size, off_t offset, FileInfo &) = 0;
+			virtual int create(const char *path, mode_t mode) = 0;
+			virtual int write(const char *path, const char *buffer, size_t size, off_t offset) = 0;
 			virtual int mkdir(const char *path, mode_t mode) = 0;
 			virtual int truncate(const char *path, off_t size) = 0;
-			virtual int ftruncate(const char *path, off_t size, FileInfo &) = 0;
+			virtual int ftruncate(const char *path, off_t size) = 0;
 			virtual int rmdir(const char *path) = 0;
 			virtual int unlink(const char *path) = 0;
-			virtual int open(const char *path, FileInfo &) = 0;
-			virtual int read(const char *path, char *buffer, size_t size, off_t offset, FileInfo &) = 0;
+			virtual int open(const char *path) = 0;
+			virtual int read(const char *path, char *buffer, size_t size, off_t offset) = 0;
 			virtual int readdir(const char *path, DirFiller filler) = 0;
 			virtual int getattr(const char *path, FileStats &) = 0;
 			virtual void cleanup() {}
