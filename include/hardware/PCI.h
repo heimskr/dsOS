@@ -76,11 +76,88 @@ namespace DsOS::PCI {
 	struct BSF {
 		uint32_t bus, slot, function;
 
-		BSF() = delete;
 		BSF(uint32_t bus_, uint32_t slot_, uint32_t function_): bus(bus_), slot(slot_), function(function_) {}
 	};
 
+	struct HeaderNative { // type 0
+		uint16_t vendorID;
+		uint16_t deviceID;
+		uint16_t command;
+		uint16_t status;
+		uint8_t revision;
+		uint8_t progif;
+		uint8_t subclass;
+		uint8_t classCode;
+		uint8_t cacheLineSize;
+		uint8_t latencyTimer;
+		uint8_t headerType;
+		uint8_t bist;
+		uint32_t bar0;
+		uint32_t bar1;
+		uint32_t bar2;
+		uint32_t bar3;
+		uint32_t bar4;
+		uint32_t bar5;
+		uint32_t cardbusCISPointer;
+		uint16_t subsystemVendorID;
+		uint16_t subsystemID;
+		uint32_t expansionROMBaseAddress;
+		uint8_t capabilitiesPointer;
+		uint8_t reserved0[3];
+		uint32_t reserved1;
+		uint8_t interruptLine;
+		uint8_t interruptPIN;
+		uint8_t minGrant;
+		uint8_t maxLatency;
+	} __attribute__((packed));
+
+	struct HeaderPCItoPCI { // type 1
+		uint16_t vendorID;
+		uint16_t deviceID;
+		uint16_t command;
+		uint16_t status;
+		uint8_t revision;
+		uint8_t progif;
+		uint8_t subclass;
+		uint8_t classCode;
+		uint8_t cacheLineSize;
+		uint8_t latencyTimer;
+		uint8_t headerType;
+		uint8_t bist;
+		uint32_t bar0;
+		uint32_t bar1;
+		uint8_t primaryBusNumber;
+		uint8_t secondaryBusNumber;
+		uint8_t subordinateBusNumber;
+		uint8_t secondaryLatencyTimer;
+		uint8_t ioBase;
+		uint8_t ioLimit;
+		uint16_t secondaryStatus;
+		uint16_t memoryBase;
+		uint16_t memoryLimit;
+		uint16_t prefetchableMemoryBase;
+		uint16_t prefetchableMemoryLimit;
+		uint32_t prefetchableMemoryBaseUpper;
+		uint32_t prefetchableMemoryLimitUpper;
+		uint16_t ioBaseUpper;
+		uint16_t ioLimitUpper;
+		uint8_t capabilitiesPointer;
+		uint8_t reserved0[3];
+		uint32_t expansionROMBaseAddress;
+		uint8_t interruptLine;
+		uint8_t interruptPIN;
+		uint16_t bridgeControl;
+	} __attribute__((packed));
+
+	struct Device {
+		uint32_t type;
+		BSF bsf;
+		HeaderNative nativeHeader;
+	};
+
 	std::vector<BSF> getDevices(uint32_t base_class, uint32_t subclass);
+	HeaderNative readNativeHeader(const BSF &);
+	Device * initDevice(const BSF &);
 
 	using status_t = int32_t;
 
@@ -211,6 +288,12 @@ namespace DsOS::PCI {
 	constexpr uint8_t LATENCY     = 0x0d; // (1 byte)  Latency timer
 	constexpr uint8_t HEADER_TYPE = 0x0e; // (1 byte)  Header type
 	constexpr uint8_t BIST        = 0x0f; // (1 byte)  Built-in self-test
+	constexpr uint8_t BAR0        = 0x10; // 4
+	constexpr uint8_t BAR1        = 0x14; // 4
+	constexpr uint8_t BAR2        = 0x18; // 4
+	constexpr uint8_t BAR3        = 0x1c; // 4
+	constexpr uint8_t BAR4        = 0x20; // 4
+	constexpr uint8_t BAR5        = 0x24; // 4
 
 	// Offsets in PCI configuration space to the elements of the predefined header common to header types 0x00 and 0x01
 	constexpr uint8_t BASE_REGISTERS = 0x10; // Base registers (size varies)
@@ -552,4 +635,6 @@ namespace DsOS::PCI {
 	constexpr uint8_t  PM_STATE_D1 = 0x01;
 	constexpr uint8_t  PM_STATE_D2 = 0x02;
 	constexpr uint8_t  PM_STATE_D3 = 0x03;
+
+	constexpr uint16_t INVALID_VENDOR = 0xffff;
 }

@@ -4,6 +4,7 @@
 #include "hardware/PCIIDs.h"
 #include "hardware/Ports.h"
 #include "lib/printf.h"
+#include "memory/Memory.h"
 
 namespace DsOS::PCI {
 	using namespace DsOS::Ports;
@@ -63,27 +64,27 @@ namespace DsOS::PCI {
 	}
 
 	uint8_t getBaseClass(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0A);
+		return readByte(bus, device, function, 0x0a);
 	}
 
 	uint8_t getSubClass(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0B);
+		return readByte(bus, device, function, 0x0b);
 	}
 
 	uint8_t getCacheLineSize(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0C);
+		return readByte(bus, device, function, 0x0c);
 	}
 
 	uint8_t getLatencyTimer(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0D);
+		return readByte(bus, device, function, 0x0d);
 	}
 
 	uint8_t getHeaderType(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0E);
+		return readByte(bus, device, function, 0x0e);
 	}
 
 	uint8_t getBIST(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0F);
+		return readByte(bus, device, function, 0x0f);
 	}
 
 	std::vector<BSF> getDevices(uint32_t base_class, uint32_t subclass) {
@@ -92,12 +93,33 @@ namespace DsOS::PCI {
 			for (uint32_t slot = 0; slot < 32; ++slot)
 				for (uint32_t function = 0; function < 8; ++function) {
 					const uint32_t vendor = getVendorID(bus, slot, function);
-					if (vendor == 0xffff)
+					if (vendor == INVALID_VENDOR)
 						break;
 					if (getBaseClass(bus, slot, function) == base_class && getSubClass(bus, slot, function) == subclass)
 						out.push_back({bus, slot, function});
 				}
 		return out;
+	}
+
+	HeaderNative readNativeHeader(const BSF &bsf) {
+		HeaderNative native;
+		for (uint8_t i = 0; i < 64; i += 16) {
+			((uint32_t *) &native)[i] = readInt(bsf.bus, bsf.slot, bsf.function, i);
+			((uint32_t *) &native)[i + 1] = readInt(bsf.bus, bsf.slot, bsf.function, i + 4);
+			((uint32_t *) &native)[i + 2] = readInt(bsf.bus, bsf.slot, bsf.function, i + 8);
+			((uint32_t *) &native)[i + 3] = readInt(bsf.bus, bsf.slot, bsf.function, i + 12);
+		}
+		return native;
+	}
+
+	Device * initDevice(const BSF &bsf) {
+		HeaderNative native = readNativeHeader(bsf);
+		if (native.vendorID == INVALID_VENDOR)
+			return nullptr;
+		Device *device = new Device(0, bsf, {});
+		printf("Header type: %d\n", native.headerType);
+		printf("Class:subclass = %d:%d\n", native.classCode, native.subclass);
+		return device;
 	}
 
 	size_t scanDevices() {
@@ -107,20 +129,19 @@ namespace DsOS::PCI {
 				for (uint32_t function = 0; function < 8; ++function) {
 					const uint32_t vendor = getVendorID(bus, slot, function);
 
-					if (vendor == 0xffff)
+					if (vendor == INVALID_VENDOR)
 						break;
 
 					uint32_t device    = getDeviceID(bus, slot, function);
 					uint32_t baseclass = getBaseClass(bus, slot, function);
 					uint32_t subclass  = getSubClass(bus, slot, function);
 
-					if (ID::IDSet *pci_ids = ID::getDeviceIDs(vendor, device, 0, 0)) {
+					if (ID::IDSet *pci_ids = ID::getDeviceIDs(vendor, device, 0, 0))
 						printf("%lu %x:%x:%x Device: %s (class: %x, subclass: %x)\n",
 							device_count++, bus, slot, function, pci_ids->device_name, baseclass, subclass);
-					} else {
+					else
 						printf("%lu %x:%x:%x Vendor: %x, device: %x, class: %x, subclass: %x\n",
 							device_count++, bus, slot, function, vendor, device, baseclass, subclass);
-					}
 
 					uint32_t header_type = getHeaderType(bus, slot, function);
 					if ((header_type & 0x80) == 0)
