@@ -17,18 +17,19 @@ namespace x86_64 {
 		return (void *) ((uintptr_t) physicalStart + free_index * pageSize());
 	}
 
-	bool PageMeta::assignAddress(void *virtual_address, void *physical_address) {
+	bool PageMeta::assignAddress(void *virtual_address, void *physical_address, uint64_t extra_meta) {
 		using PTW = PageTableWrapper;
 		return assign(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
-		              PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address), physical_address);
+		              PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
+		              physical_address, extra_meta);
 	}
 
-	bool PageMeta::identityMap(void *address) {
-		return assignAddress(address, address);
+	bool PageMeta::identityMap(void *address, uint64_t extra_meta) {
+		return assignAddress(address, address, extra_meta);
 	}
 
-	bool PageMeta::identityMap(volatile void *address) {
-		return identityMap((void *) address);
+	bool PageMeta::identityMap(volatile void *address, uint64_t extra_meta) {
+		return identityMap((void *) address, extra_meta);
 	}
 
 	uint64_t PageMeta::addressToEntry(void *address) const {
@@ -82,7 +83,7 @@ namespace x86_64 {
 	}
 
 	uintptr_t PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
-	                             void *physical_address) {
+	                             void *physical_address, uint64_t extra_meta) {
 		if (pages == -1) {
 			printf("pages == -1\n");
 			return 0;
@@ -134,7 +135,7 @@ namespace x86_64 {
 			if (physical_address) {
 				pt[pt_index] = addressToEntry(physical_address);
 			} else if (void *free_addr = allocateFreePhysicalAddress()) {
-				pt[pt_index] = addressToEntry(free_addr);
+				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
 			} else {
 				printf("No free pages!\n");
 				for (;;);

@@ -140,14 +140,8 @@ namespace DsOS::PCI {
 	}
 
 	Device * initDevice(const BSF &bsf) {
-		HeaderNative native = readNativeHeader(bsf);
-		if (native.vendorID == INVALID_VENDOR)
-			return nullptr;
-		Device *device = new Device(bsf, native);
-		printf("Header type: %d\n", native.headerType);
-		printf("bar0[0x%x], bar1[0x%x], bar2[0x%x]\n", native.bar0, native.bar1, native.bar2);
-		printf("bar3[0x%x], bar4[0x%x], bar5[0x%x]\n", native.bar3, native.bar4, native.bar5);
-		return device;
+		const HeaderNative native = readNativeHeader(bsf);
+		return native.vendorID == INVALID_VENDOR? nullptr : new Device(bsf, native);
 	}
 
 	bool findAHCIController() {

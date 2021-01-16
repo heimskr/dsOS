@@ -98,15 +98,17 @@ namespace DsOS {
 
 		IDE::init();
 
-		PCI::printDevices();
+		// PCI::printDevices();
 
 		PCI::findAHCIController();
 
 		if (AHCI::controller) {
 			printf("Found AHCI controller.\n");
+			printf("Interrupt line: %d\n", AHCI::controller->nativeHeader.interruptLine);
+			printf("Interrupt PIN:  %d\n", AHCI::controller->nativeHeader.interruptPIN);
 			volatile SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) (AHCI::controller->nativeHeader.bar5 & ~0xfff);
-			pager.identityMap(abar);
-			pager.identityMap((char *) abar + 0x1000);
+			pager.identityMap(abar, MMU_CACHE_DISABLED);
+			pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
 			// abar->cap = abar->cap | (1 << 31);
 			// abar->ghc = abar->ghc | (1 << 31);
 			printf("cap: %u\n", abar->cap);
@@ -122,23 +124,24 @@ namespace DsOS {
 			printf("bohc: %u\n", abar->bohc);
 			for (int i = 0; i < 32; ++i) {
 				volatile SATA::HBAPort &port = abar->ports[i];
-				// printf("%d: clb: %u\n", i, port.clb);
-				// printf("%d: clbu: %u\n", i, port.clbu);
-				// printf("%d: fb: %u\n", i, port.fb);
-				// printf("%d: fbu: %u\n", i, port.fbu);
-				// printf("%d: is: %u\n", i, port.is);
-				// printf("%d: ie: %u\n", i, port.ie);
-				// printf("%d: cmd: %u\n", i, port.cmd);
-				// printf("%d: rsv0: %u\n", i, port.rsv0);
-				// printf("%d: tfd: %u\n", i, port.tfd);
-				// printf("%d: sig: %u\n", i, port.sig);
-				// printf("%d: ssts: %u\n", i, port.ssts);
-				// printf("%d: sctl: %u\n", i, port.sctl);
-				// printf("%d: serr: %u\n", i, port.serr);
-				// printf("%d: sact: %u\n", i, port.sact);
-				// printf("%d: ci: %u\n", i, port.ci);
-				// printf("%d: sntf: %u\n", i, port.sntf);
-				// printf("%d: fbs: %u\n", i, port.fbs);
+				printf("--------------------------------\n");
+				printf("%d: clb: %u\n", i, port.clb);
+				printf("%d: clbu: %u\n", i, port.clbu);
+				printf("%d: fb: %u\n", i, port.fb);
+				printf("%d: fbu: %u\n", i, port.fbu);
+				printf("%d: is: %u\n", i, port.is);
+				printf("%d: ie: %u\n", i, port.ie);
+				printf("%d: cmd: %u\n", i, port.cmd);
+				printf("%d: rsv0: %u\n", i, port.rsv0);
+				printf("%d: tfd: %u\n", i, port.tfd);
+				printf("%d: sig: %u\n", i, port.sig);
+				printf("%d: ssts: %u\n", i, port.ssts);
+				printf("%d: sctl: %u\n", i, port.sctl);
+				printf("%d: serr: %u\n", i, port.serr);
+				printf("%d: sact: %u\n", i, port.sact);
+				printf("%d: ci: %u\n", i, port.ci);
+				printf("%d: sntf: %u\n", i, port.sntf);
+				printf("%d: fbs: %u\n", i, port.fbs);
 			}
 		} else {
 			printf("No AHCI controller found.\n");
