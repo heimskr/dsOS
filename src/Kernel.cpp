@@ -104,18 +104,38 @@ namespace DsOS {
 
 		if (AHCI::controller) {
 			printf("Found AHCI controller.\n");
-			// SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) AHCI::controller->nativeHeader.bar5;
-			// printf("cap: %u\n", abar->cap);
-			// printf("ghc: %u\n", abar->ghc);
-			// printf("is: %u\n", abar->is);
-			// printf("pi: %u\n", abar->pi);
-			// printf("vs: %u\n", abar->vs);
-			// printf("ccc_ctl: %u\n", abar->ccc_ctl);
-			// printf("ccc_pts: %u\n", abar->ccc_pts);
-			// printf("em_loc: %u\n", abar->em_loc);
-			// printf("em_ctl: %u\n", abar->em_ctl);
-			// printf("cap2: %u\n", abar->cap2);
-			// printf("bohc: %u\n", abar->bohc);
+			volatile SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) (AHCI::controller->nativeHeader.bar5 & ~0xfff);
+			printf("cap: %u\n", abar->cap);
+			printf("ghc: %u\n", abar->ghc);
+			printf("is: %u\n", abar->is);
+			printf("pi: %u\n", abar->pi);
+			printf("vs: %u\n", abar->vs);
+			printf("ccc_ctl: %u\n", abar->ccc_ctl);
+			printf("ccc_pts: %u\n", abar->ccc_pts);
+			printf("em_loc: %u\n", abar->em_loc);
+			printf("em_ctl: %u\n", abar->em_ctl);
+			printf("cap2: %u\n", abar->cap2);
+			printf("bohc: %u\n", abar->bohc);
+			for (int i = 0; i < 32; ++i) {
+				volatile SATA::HBAPort &port = abar->ports[i];
+				printf("%d: clb: %u\n", i, port.clb);
+				printf("%d: clbu: %u\n", i, port.clbu);
+				printf("%d: fb: %u\n", i, port.fb);
+				printf("%d: fbu: %u\n", i, port.fbu);
+				printf("%d: is: %u\n", i, port.is);
+				printf("%d: ie: %u\n", i, port.ie);
+				printf("%d: cmd: %u\n", i, port.cmd);
+				printf("%d: rsv0: %u\n", i, port.rsv0);
+				printf("%d: tfd: %u\n", i, port.tfd);
+				printf("%d: sig: %u\n", i, port.sig);
+				printf("%d: ssts: %u\n", i, port.ssts);
+				printf("%d: sctl: %u\n", i, port.sctl);
+				printf("%d: serr: %u\n", i, port.serr);
+				printf("%d: sact: %u\n", i, port.sact);
+				printf("%d: ci: %u\n", i, port.ci);
+				printf("%d: sntf: %u\n", i, port.sntf);
+				printf("%d: fbs: %u\n", i, port.fbs);
+			}
 		} else {
 			printf("No AHCI controller found.\n");
 		}

@@ -40,6 +40,30 @@ namespace DsOS::PCI {
 		outl(0xcfc, val);
 	}
 
+	uint8_t readByte(const BSF &bsf, uint32_t offset) {
+		return readByte(bsf.bus, bsf.slot, bsf.function, offset);
+	}
+
+	uint16_t readWord(const BSF &bsf, uint32_t offset) {
+		return readWord(bsf.bus, bsf.slot, bsf.function, offset);
+	}
+
+	uint32_t readInt(const BSF &bsf, uint32_t offset) {
+		return readInt(bsf.bus, bsf.slot, bsf.function, offset);
+	}
+
+	void writeByte(const BSF &bsf, uint32_t offset, uint8_t val) {
+		writeByte(bsf.bus, bsf.slot, bsf.function, offset, val);
+	}
+
+	void writeWord(const BSF &bsf, uint32_t offset, uint16_t val) {
+		writeWord(bsf.bus, bsf.slot, bsf.function, offset, val);
+	}
+
+	void writeInt(const BSF &bsf, uint32_t offset, uint32_t val) {
+		writeInt(bsf.bus, bsf.slot, bsf.function, offset, val);
+	}
+
 	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function) {
 		return readWord(bus, device, function, 0x00);
 	}
@@ -104,12 +128,12 @@ namespace DsOS::PCI {
 
 	HeaderNative readNativeHeader(const BSF &bsf) {
 		HeaderNative native;
-		uint32_t bar5 = readInt(bsf.bus, bsf.slot, bsf.function, BAR5);
+		const uint32_t bar5 = readInt(bsf, BAR5);
 		for (uint8_t i = 0; i < 64; i += 16) {
-			((uint32_t *) &native)[i]     = readInt(bsf.bus, bsf.slot, bsf.function, i);
-			((uint32_t *) &native)[i + 1] = readInt(bsf.bus, bsf.slot, bsf.function, i + 4);
-			((uint32_t *) &native)[i + 2] = readInt(bsf.bus, bsf.slot, bsf.function, i + 8);
-			((uint32_t *) &native)[i + 3] = readInt(bsf.bus, bsf.slot, bsf.function, i + 12);
+			((uint32_t *) &native)[i]     = readInt(bsf, i);
+			((uint32_t *) &native)[i + 1] = readInt(bsf, i + 4);
+			((uint32_t *) &native)[i + 2] = readInt(bsf, i + 8);
+			((uint32_t *) &native)[i + 3] = readInt(bsf, i + 12);
 		}
 		native.bar5 = bar5;
 		return native;

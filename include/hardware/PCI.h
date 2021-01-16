@@ -19,12 +19,23 @@
 #include "Defs.h"
 
 namespace DsOS::PCI {
+	struct BSF {
+		uint32_t bus, slot, function;
+		BSF(uint32_t bus_, uint32_t slot_, uint32_t function_): bus(bus_), slot(slot_), function(function_) {}
+	};
+
 	uint8_t  readByte(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
 	uint16_t readWord(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
 	uint32_t readInt (uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
 	void writeByte(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint8_t  val);
 	void writeWord(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint16_t val);
 	void writeInt (uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint32_t val);
+	uint8_t  readByte(const BSF &, uint32_t offset);
+	uint16_t readWord(const BSF &, uint32_t offset);
+	uint32_t readInt (const BSF &, uint32_t offset);
+	void writeByte(const BSF &, uint32_t offset, uint8_t  val);
+	void writeWord(const BSF &, uint32_t offset, uint16_t val);
+	void writeInt (const BSF &, uint32_t offset, uint32_t val);
 
 	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
 	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
@@ -71,12 +82,6 @@ namespace DsOS::PCI {
 		uint32_t baseclass;
 		uint32_t subclass;
 		uint32_t progif;
-	};
-
-	struct BSF {
-		uint32_t bus, slot, function;
-
-		BSF(uint32_t bus_, uint32_t slot_, uint32_t function_): bus(bus_), slot(slot_), function(function_) {}
 	};
 
 	struct HeaderNative { // type 0
