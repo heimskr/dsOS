@@ -52,39 +52,39 @@ namespace DsOS::PCI {
 	}
 
 	uint16_t getStatus(uint32_t bus, uint32_t device, uint32_t function) {
-		return readWord(bus, device, function, 0x06);
+		return readWord(bus, device, function, STATUS);
 	}
 
 	uint8_t getRevisionID(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x08);
+		return readByte(bus, device, function, REVISION);
 	}
 
 	uint8_t getProgIF(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x09);
+		return readByte(bus, device, function, CLASS_API);
 	}
 
 	uint8_t getBaseClass(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0a);
+		return readByte(bus, device, function, CLASS_BASE);
 	}
 
 	uint8_t getSubClass(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0b);
+		return readByte(bus, device, function, CLASS_SUB);
 	}
 
 	uint8_t getCacheLineSize(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0c);
+		return readByte(bus, device, function, LINE_SIZE);
 	}
 
 	uint8_t getLatencyTimer(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0d);
+		return readByte(bus, device, function, LATENCY);
 	}
 
 	uint8_t getHeaderType(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0e);
+		return readByte(bus, device, function, HEADER_TYPE);
 	}
 
 	uint8_t getBIST(uint32_t bus, uint32_t device, uint32_t function) {
-		return readByte(bus, device, function, 0x0f);
+		return readByte(bus, device, function, BIST);
 	}
 
 	std::vector<BSF> getDevices(uint32_t base_class, uint32_t subclass) {
@@ -119,6 +119,16 @@ namespace DsOS::PCI {
 		Device *device = new Device(0, bsf, {});
 		printf("Header type: %d\n", native.headerType);
 		printf("Class:subclass = %d:%d\n", native.classCode, native.subclass);
+		printf("Vendor: 0x%x\n", native.vendorID);
+		printf("command[%d], status[%d]\n", native.command, native.status);
+		printf("Revision[%d], progif[%d], cacheLineSize[%d], latencyTimer[%d]\n", native.revision, native.progif, native.cacheLineSize, native.latencyTimer);
+		printf("bist[%d], bar0[0x%x], bar1[0x%x], bar2[0x%x]\n", native.bist, native.bar0, native.bar1, native.bar2);
+		printf("bar3[0x%x], bar4[0x%x], bar5[0x%x]\n", native.bar3, native.bar4, native.bar5);
+		printf("cardbusCIS[0x%x], subsystemVendorID[0x%x], subsystemID[%d]\n", native.cardbusCISPointer, native.subsystemVendorID, native.subsystemID);
+		printf("expansionROMBaseAddress[0x%x]\n", native.expansionROMBaseAddress);
+		printf("capabilitiesPointer[%d]\n", native.capabilitiesPointer);
+		printf("interruptLine[%d], interruptPIN[%d]\n", native.interruptLine, native.interruptPIN);
+		printf("minGrant[%d], maxLatency[%d]\n", native.minGrant, native.maxLatency);
 		return device;
 	}
 
@@ -137,8 +147,8 @@ namespace DsOS::PCI {
 					uint32_t subclass  = getSubClass(bus, slot, function);
 
 					if (ID::IDSet *pci_ids = ID::getDeviceIDs(vendor, device, 0, 0))
-						printf("%lu %x:%x:%x Device: %s (class: %x, subclass: %x)\n",
-							device_count++, bus, slot, function, pci_ids->device_name, baseclass, subclass);
+						printf("%lu %x:%x:%x Device: %s (vendor: %x, device: %x, class: %x, subclass: %x)\n",
+							device_count++, bus, slot, function, pci_ids->device_name, vendor, device, baseclass, subclass);
 					else
 						printf("%lu %x:%x:%x Vendor: %x, device: %x, class: %x, subclass: %x\n",
 							device_count++, bus, slot, function, vendor, device, baseclass, subclass);
