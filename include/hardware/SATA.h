@@ -71,7 +71,7 @@ namespace DsOS::SATA {
 		uint8_t control;     // Control register
 
 		// DWORD 4
-		uint8_t rsv1[4];    // Reserved
+		uint32_t rsv1;      // Reserved
 	};
 
 	struct FISRegD2H { // Device to host
@@ -101,10 +101,10 @@ namespace DsOS::SATA {
 		// DWORD 3
 		uint8_t countLow;     // Count register, 7:0
 		uint8_t countHigh;    // Count register, 15:8
-		uint8_t rsv3[2];      // Reserved
+		uint16_t rsv3;        // Reserved
 	
 		// DWORD 4
-		uint8_t rsv4[4];      // Reserved
+		uint32_t rsv4;        // Reserved
 	};
 
 	class FISData { // Bidirectional
@@ -114,7 +114,7 @@ namespace DsOS::SATA {
 		uint8_t pmport: 4; // Port multiplier
 		uint8_t rsv0: 4;   // Reserved
 	
-		uint8_t rsv1[2];   // Reserved
+		uint16_t rsv1;     // Reserved
 	
 		// DWORD 1 ~ N
 		uint32_t data[1];  // Payload
@@ -153,20 +153,20 @@ namespace DsOS::SATA {
 	
 		// DWORD 4
 		uint16_t tc;          // Transfer count
-		uint8_t rsv4[2];      // Reserved
+		uint16_t rsv4;        // Reserved
 	};
 
 	struct FISDMASetup { // Device to host
 		// DWORD 0
 		FISType type = FISType::DMASetup;
 	
-		uint8_t pmport:4;         // Port multiplier
-		uint8_t rsv0:1;	          // Reserved
+		uint8_t pmport: 4;        // Port multiplier
+		uint8_t rsv0: 1;          // Reserved
 		uint8_t direction: 1;     // Data transfer direction, 1 - device to host
 		uint8_t interrupt: 1;     // Interrupt bit
 		uint8_t autoActivate: 1;  // Auto-activate. Specifies if DMA Activate FIS is needed
 	
-		uint8_t rsv1[2];          // Reserved
+		uint16_t rsv1;            // Reserved
 	
 		// DWORDs 1 & 2
 		uint64_t dmaBufferID;     // DMA Buffer Identifier. Used to identify DMA buffer in host memory.

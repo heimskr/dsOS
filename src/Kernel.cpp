@@ -98,24 +98,24 @@ namespace DsOS {
 
 		IDE::init();
 
-		// PCI::printDevices();
+		PCI::printDevices();
 
 		PCI::findAHCIController();
 
 		if (AHCI::controller) {
 			printf("Found AHCI controller.\n");
-			SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) AHCI::controller->nativeHeader.bar5;
-			printf("cap: %u\n", abar->cap);
-			printf("ghc: %u\n", abar->ghc);
-			printf("is: %u\n", abar->is);
-			printf("pi: %u\n", abar->pi);
-			printf("vs: %u\n", abar->vs);
-			printf("ccc_ctl: %u\n", abar->ccc_ctl);
-			printf("ccc_pts: %u\n", abar->ccc_pts);
-			printf("em_loc: %u\n", abar->em_loc);
-			printf("em_ctl: %u\n", abar->em_ctl);
-			printf("cap2: %u\n", abar->cap2);
-			printf("bohc: %u\n", abar->bohc);
+			// SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) AHCI::controller->nativeHeader.bar5;
+			// printf("cap: %u\n", abar->cap);
+			// printf("ghc: %u\n", abar->ghc);
+			// printf("is: %u\n", abar->is);
+			// printf("pi: %u\n", abar->pi);
+			// printf("vs: %u\n", abar->vs);
+			// printf("ccc_ctl: %u\n", abar->ccc_ctl);
+			// printf("ccc_pts: %u\n", abar->ccc_pts);
+			// printf("em_loc: %u\n", abar->em_loc);
+			// printf("em_ctl: %u\n", abar->em_ctl);
+			// printf("cap2: %u\n", abar->cap2);
+			// printf("bohc: %u\n", abar->bohc);
 		} else {
 			printf("No AHCI controller found.\n");
 		}
