@@ -45,7 +45,7 @@ namespace DsOS::SATA {
 		// DWORD 0
 		FISType type = FISType::RegH2D;
 
-		uint8_t pmPort: 4;   // Port multiplier
+		uint8_t pmport: 4;   // Port multiplier
 		uint8_t rsv0: 3;     // Reserved
 		uint8_t c: 1;        // 1: Command, 0: Control
 
@@ -256,18 +256,18 @@ namespace DsOS::SATA {
 
 	struct HBACommandHeader {
 		// DWORD 0
-		uint8_t  cfl:5;   // Command FIS length in DWORDS, 2 ~ 16
-		uint8_t  a:1;     // ATAPI
-		uint8_t  w:1;     // Write, 1: H2D, 0: D2H
-		uint8_t  p:1;     // Prefetchable
+		uint8_t  cfl: 5;          // Command FIS length in DWORDS, 2 ~ 16
+		uint8_t  atapi: 1;        // ATAPI
+		uint8_t  write: 1;        // Write, 1: H2D, 0: D2H
+		uint8_t  prefetchable: 1; // Prefetchable
 	
-		uint8_t  r:1;     // Reset
-		uint8_t  b:1;     // BIST
-		uint8_t  c:1;     // Clear busy upon R_OK
-		uint8_t  rsv0: 1; // Reserved
-		uint8_t  pmp: 4;  // Port multiplier port
+		uint8_t  reset: 1;     // Reset
+		uint8_t  bist: 1;      // BIST
+		uint8_t  clearBusy: 1; // Clear busy upon R_OK
+		uint8_t  rsv0: 1;      // Reserved
+		uint8_t  pmport: 4;    // Port multiplier port
 	
-		uint16_t prdtl;   // Physical region descriptor table length in entries
+		uint16_t prdtl; // Physical region descriptor table length in entries
 	
 		// DWORD 1
 		volatile uint32_t prdbc; // Physical region descriptor byte count transferred
@@ -303,5 +303,9 @@ namespace DsOS::SATA {
 	
 		// 0x80
 		HBAPRDTEntry prdtEntry[1]; // Physical region descriptor table entries, 0 ~ 65535
+	};
+
+	struct AHCI {
+
 	};
 }

@@ -98,6 +98,11 @@ namespace DsOS {
 
 		PCI::scanDevices();
 
+		std::vector<PCI::BSF> sata_controllers = PCI::getDevices(1, 6);
+		for (const PCI::BSF &bsf: sata_controllers) {
+			printf("Controller: %x:%x:%x\n", bsf.bus, bsf.slot, bsf.function);
+		}
+
 		for (;;) asm("hlt");
 
 		MBR mbr;

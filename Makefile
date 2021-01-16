@@ -11,6 +11,7 @@ ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
 QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -boot d -serial stdio -m 8G
 QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0 # -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12
+# QEMU_EXTRA   ?= disk.img
 
 ASSEMBLED := $(shell find asm/*.S)
 CSRC      := $(shell find src -name \*.c)

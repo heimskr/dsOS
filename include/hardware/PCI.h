@@ -12,6 +12,8 @@
 
 // Some code is from https://github.com/imgits/ShellcodeOS/blob/master/OS/pci/pci.h
 
+#include <vector>
+
 #include "Defs.h"
 
 namespace DsOS::PCI {
@@ -36,7 +38,7 @@ namespace DsOS::PCI {
 	uint8_t getHeaderType(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getBIST(uint32_t bus, uint32_t device, uint32_t function);
 
-	void scanDevices();
+	size_t scanDevices();
 
 	enum class DeviceType {
 		VGA,            // VGA-Compatible Device
@@ -70,6 +72,15 @@ namespace DsOS::PCI {
 		uint32_t subclass;
 		uint32_t progif;
 	};
+
+	struct BSF {
+		uint32_t bus, slot, function;
+
+		BSF() = delete;
+		BSF(uint32_t bus_, uint32_t slot_, uint32_t function_): bus(bus_), slot(slot_), function(function_) {}
+	};
+
+	std::vector<BSF> getDevices(uint32_t base_class, uint32_t subclass);
 
 	using status_t = int32_t;
 
@@ -141,8 +152,6 @@ namespace DsOS::PCI {
 	};
 
 	struct PCIModuleInfo {
-		// bus_manager_info	binfo;
-
 		uint8_t  (*readIO8)  (int mapped_io_addr);
 		void     (*writeIO8) (int mapped_io_addr, uint8_t value);
 		uint16_t (*readIO16) (int mapped_io_addr);
@@ -188,8 +197,6 @@ namespace DsOS::PCI {
 		           const char *driver_name,
 		           void       *cookie);
 	};
-
-	constexpr const char *B_PCI_MODULE_NAME = "bus_managers/pci/v1";
 
 	// Offsets in PCI configuration space to the elements of the predefined header common to all header types
 	constexpr uint8_t VENDOR_ID   = 0x00; // (2 bytes) Vendor ID
