@@ -1,5 +1,6 @@
 // Some code is from https://github.com/imgits/ShellcodeOS/blob/master/OS/pci/pci.cpp
 
+#include "hardware/AHCI.h"
 #include "hardware/PCI.h"
 #include "hardware/PCIIDs.h"
 #include "hardware/Ports.h"
@@ -67,7 +68,7 @@ namespace DsOS::PCI {
 		return readByte(bus, device, function, CLASS_BASE);
 	}
 
-	uint8_t getSubClass(uint32_t bus, uint32_t device, uint32_t function) {
+	uint8_t getSubclass(uint32_t bus, uint32_t device, uint32_t function) {
 		return readByte(bus, device, function, CLASS_SUB);
 	}
 
@@ -95,7 +96,7 @@ namespace DsOS::PCI {
 					const uint32_t vendor = getVendorID(bus, slot, function);
 					if (vendor == INVALID_VENDOR)
 						break;
-					if (getBaseClass(bus, slot, function) == base_class && getSubClass(bus, slot, function) == subclass)
+					if (getBaseClass(bus, slot, function) == base_class && getSubclass(bus, slot, function) == subclass)
 						out.push_back({bus, slot, function});
 				}
 		return out;
@@ -116,23 +117,34 @@ namespace DsOS::PCI {
 		HeaderNative native = readNativeHeader(bsf);
 		if (native.vendorID == INVALID_VENDOR)
 			return nullptr;
-		Device *device = new Device(0, bsf, {});
+		Device *device = new Device(bsf, native);
 		printf("Header type: %d\n", native.headerType);
-		printf("Class:subclass = %d:%d\n", native.classCode, native.subclass);
-		printf("Vendor: 0x%x\n", native.vendorID);
-		printf("command[%d], status[%d]\n", native.command, native.status);
-		printf("Revision[%d], progif[%d], cacheLineSize[%d], latencyTimer[%d]\n", native.revision, native.progif, native.cacheLineSize, native.latencyTimer);
-		printf("bist[%d], bar0[0x%x], bar1[0x%x], bar2[0x%x]\n", native.bist, native.bar0, native.bar1, native.bar2);
+		printf("bar0[0x%x], bar1[0x%x], bar2[0x%x]\n", native.bar0, native.bar1, native.bar2);
 		printf("bar3[0x%x], bar4[0x%x], bar5[0x%x]\n", native.bar3, native.bar4, native.bar5);
-		printf("cardbusCIS[0x%x], subsystemVendorID[0x%x], subsystemID[%d]\n", native.cardbusCISPointer, native.subsystemVendorID, native.subsystemID);
-		printf("expansionROMBaseAddress[0x%x]\n", native.expansionROMBaseAddress);
-		printf("capabilitiesPointer[%d]\n", native.capabilitiesPointer);
-		printf("interruptLine[%d], interruptPIN[%d]\n", native.interruptLine, native.interruptPIN);
-		printf("minGrant[%d], maxLatency[%d]\n", native.minGrant, native.maxLatency);
 		return device;
 	}
 
-	size_t scanDevices() {
+	bool findAHCIController() {
+		for (uint32_t bus = 0; bus < 256; ++bus)
+			for (uint32_t slot = 0; slot < 32; ++slot)
+				for (uint32_t function = 0; function < 8; ++function) {
+					const uint32_t vendor = getVendorID(bus, slot, function);
+
+					if (vendor == INVALID_VENDOR)
+						break;
+
+					const uint32_t baseclass = getBaseClass(bus, slot, function);
+					const uint32_t subclass  = getSubclass(bus, slot, function);
+
+					if (baseclass == 1 && subclass == 6) {
+						AHCI::controller = initDevice({bus, slot, function});
+						return true;
+					}
+				}
+		return false;
+	}
+
+	size_t printDevices() {
 		size_t device_count = 0;
 		for (uint32_t bus = 0; bus < 256; ++bus)
 			for (uint32_t slot = 0; slot < 32; ++slot)
@@ -142,9 +154,9 @@ namespace DsOS::PCI {
 					if (vendor == INVALID_VENDOR)
 						break;
 
-					uint32_t device    = getDeviceID(bus, slot, function);
-					uint32_t baseclass = getBaseClass(bus, slot, function);
-					uint32_t subclass  = getSubClass(bus, slot, function);
+					const uint32_t device    = getDeviceID(bus, slot, function);
+					const uint32_t baseclass = getBaseClass(bus, slot, function);
+					const uint32_t subclass  = getSubclass(bus, slot, function);
 
 					if (ID::IDSet *pci_ids = ID::getDeviceIDs(vendor, device, 0, 0))
 						printf("%lu %x:%x:%x Device: %s (vendor: %x, device: %x, class: %x, subclass: %x)\n",

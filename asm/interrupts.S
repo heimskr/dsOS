@@ -149,7 +149,7 @@ timer_max: .8byte -1
 .type isr_13, @function
 isr_13:
 	cli
-	call _ZN4DsOS6Kernel9backtraceEv
+	// call _ZN4DsOS6Kernel9backtraceEv
 	push %rax
 	push %rbx
 	push %rcx

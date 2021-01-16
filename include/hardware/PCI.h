@@ -12,6 +12,8 @@
 
 // Some code is from https://github.com/imgits/ShellcodeOS/blob/master/OS/pci/pci.h
 
+#pragma once
+
 #include <vector>
 
 #include "Defs.h"
@@ -37,8 +39,6 @@ namespace DsOS::PCI {
 	uint8_t getLatencyTimer(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getHeaderType(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getBIST(uint32_t bus, uint32_t device, uint32_t function);
-
-	size_t scanDevices();
 
 	enum class DeviceType {
 		VGA,            // VGA-Compatible Device
@@ -150,7 +150,6 @@ namespace DsOS::PCI {
 	} __attribute__((packed));
 
 	struct Device {
-		uint32_t type;
 		BSF bsf;
 		HeaderNative nativeHeader;
 	};
@@ -158,6 +157,8 @@ namespace DsOS::PCI {
 	std::vector<BSF> getDevices(uint32_t base_class, uint32_t subclass);
 	HeaderNative readNativeHeader(const BSF &);
 	Device * initDevice(const BSF &);
+	bool findAHCIController();
+	size_t printDevices();
 
 	using status_t = int32_t;
 

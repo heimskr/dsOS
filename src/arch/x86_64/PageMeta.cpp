@@ -55,7 +55,10 @@ namespace x86_64 {
 	void PageMeta4K::clear() {
 		if (pages == -1)
 			return;
+		printf("[%s:%d]\n", __FILE__, __LINE__);
+		printf("memset(0x%lx, 0, %lu);\n", bitmap, DsOS::Util::updiv(pages, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
 		memset(bitmap, 0, DsOS::Util::updiv(pages, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 	}
 
 	int PageMeta4K::findFree() const {

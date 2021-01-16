@@ -15,6 +15,7 @@
 #include "device/IDEDevice.h"
 #include "fs/dsFAT/dsFAT.h"
 #include "fs/Partition.h"
+#include "hardware/AHCI.h"
 #include "hardware/IDE.h"
 #include "hardware/MBR.h"
 #include "hardware/PCI.h"
@@ -73,41 +74,54 @@ namespace DsOS {
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
 
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		pager = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		pager.assignSelf();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		pager.clear();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		x86_64::APIC::init(*this);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		x86_64::PIC::clearIRQ(1);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		x86_64::PIC::clearIRQ(14);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		x86_64::PIC::clearIRQ(15);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		// printf("map size: %lu\n", map.size());
 
 		x86_64::APIC::initTimer(2);
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		x86_64::APIC::disableTimer();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		IDE::init();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
-		PCI::scanDevices();
+		// PCI::printDevices();
 
-		std::vector<PCI::BSF> sata_controllers = PCI::getDevices(1, 6);
-		for (const PCI::BSF &bsf: sata_controllers)
-			printf("Controller: %x:%x:%x\n", bsf.bus, bsf.slot, bsf.function);
+		PCI::findAHCIController();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
-		if (!sata_controllers.empty()) {
-			const PCI::BSF &controller = sata_controllers.front();
-			PCI::Device *device = PCI::initDevice(controller);
+		if (AHCI::controller) {
+			printf("Found AHCI controller.\n");
+		} else {
+			printf("No AHCI controller found.\n");
 		}
 
-		for (;;) asm("hlt");
+		perish();
 
 		MBR mbr;
 		mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
@@ -275,6 +289,11 @@ namespace DsOS {
 	void Kernel::wait(size_t millimoments) {
 		for (size_t i = 0; i < millimoments; ++i)
 			for (size_t j = 0; j < 8000000; ++j);
+	}
+
+	void Kernel::perish() {
+		for (;;)
+			asm("hlt");
 	}
 }
 

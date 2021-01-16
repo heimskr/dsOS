@@ -3,14 +3,14 @@
 CC           := x86_64-elf-gcc
 CPP          := x86_64-elf-g++
 AS           := x86_64-elf-g++
-SHARED_FLAGS := -fno-builtin -O0 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel -fno-pie
+SHARED_FLAGS := -fno-builtin -O1 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel -fno-pie
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++20 -Drestrict=__restrict__
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
-QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -boot d -serial stdio -m 8G
-QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0 # -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12
+QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -boot d -monitor stdio -m 8G
+QEMU_EXTRA   ?= -no-reboot -no-shutdown -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 # -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12
 # QEMU_EXTRA   ?= disk.img
 
 ASSEMBLED := $(shell find asm/*.S)
