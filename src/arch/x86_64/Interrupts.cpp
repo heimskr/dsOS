@@ -13,6 +13,8 @@
 
 #define INTERRUPT 
 
+// #define DEBUG_PAGE_FAULTS
+
 extern bool irqInvoked;
 
 namespace x86_64::IDT {

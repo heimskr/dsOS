@@ -22,6 +22,7 @@ namespace x86_64 {
 			virtual operator bool() const = 0;
 			virtual bool assignAddress(void *virtual_address, void *physical_address);
 			virtual bool identityMap(void *);
+			virtual bool identityMap(volatile void *);
 
 		protected:
 			PageMeta(void *physical_start, void *virtual_start);

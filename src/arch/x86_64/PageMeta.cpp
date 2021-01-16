@@ -27,6 +27,10 @@ namespace x86_64 {
 		return assignAddress(address, address);
 	}
 
+	bool PageMeta::identityMap(volatile void *address) {
+		return identityMap((void *) address);
+	}
+
 	uint64_t PageMeta::addressToEntry(void *address) const {
 		return (((uint64_t) address) & ~0xfff) | MMU_PRESENT | MMU_WRITABLE;
 	}
