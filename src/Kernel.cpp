@@ -20,6 +20,7 @@
 #include "hardware/MBR.h"
 #include "hardware/PCI.h"
 #include "hardware/PS2Keyboard.h"
+#include "hardware/SATA.h"
 #include "hardware/Serial.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
@@ -59,8 +60,8 @@ namespace DsOS {
 				Serial::write(ch);
 		detectMemory();
 		arrangeMemory();
-		initPageDescriptors();
 		x86_64::IDT::init();
+		initPageDescriptors();
 
 		printf("Kernel: 0x%lx\n", (uintptr_t) this);
 
@@ -74,49 +75,47 @@ namespace DsOS {
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
 
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		pager = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		pager.assignSelf();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		pager.clear();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		x86_64::APIC::init(*this);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		x86_64::PIC::clearIRQ(1);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		x86_64::PIC::clearIRQ(14);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		x86_64::PIC::clearIRQ(15);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		timer_addr = &::schedule;
 		timer_max = 4;
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		// printf("map size: %lu\n", map.size());
 
 		x86_64::APIC::initTimer(2);
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 		x86_64::APIC::disableTimer();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		IDE::init();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		// PCI::printDevices();
 
 		PCI::findAHCIController();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		if (AHCI::controller) {
 			printf("Found AHCI controller.\n");
+			SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) AHCI::controller->nativeHeader.bar5;
+			printf("cap: %u\n", abar->cap);
+			printf("ghc: %u\n", abar->ghc);
+			printf("is: %u\n", abar->is);
+			printf("pi: %u\n", abar->pi);
+			printf("vs: %u\n", abar->vs);
+			printf("ccc_ctl: %u\n", abar->ccc_ctl);
+			printf("ccc_pts: %u\n", abar->ccc_pts);
+			printf("em_loc: %u\n", abar->em_loc);
+			printf("em_ctl: %u\n", abar->em_ctl);
+			printf("cap2: %u\n", abar->cap2);
+			printf("bohc: %u\n", abar->bohc);
 		} else {
 			printf("No AHCI controller found.\n");
 		}

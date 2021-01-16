@@ -105,7 +105,7 @@ namespace DsOS::PCI {
 	HeaderNative readNativeHeader(const BSF &bsf) {
 		HeaderNative native;
 		for (uint8_t i = 0; i < 64; i += 16) {
-			((uint32_t *) &native)[i] = readInt(bsf.bus, bsf.slot, bsf.function, i);
+			((uint32_t *) &native)[i]     = readInt(bsf.bus, bsf.slot, bsf.function, i);
 			((uint32_t *) &native)[i + 1] = readInt(bsf.bus, bsf.slot, bsf.function, i + 4);
 			((uint32_t *) &native)[i + 2] = readInt(bsf.bus, bsf.slot, bsf.function, i + 8);
 			((uint32_t *) &native)[i + 3] = readInt(bsf.bus, bsf.slot, bsf.function, i + 12);
