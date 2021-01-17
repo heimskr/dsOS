@@ -288,6 +288,7 @@ namespace std {
 		static constexpr const float_round_style round_style = round_toward_zero;
 	};
 
+	/* floats and doubles aren't supported in the kernel.
 	template <>
 	class __libcpp_numeric_limits<float, true>
 	{
@@ -428,7 +429,7 @@ namespace std {
 		static constexpr const bool traps = false;
 		static constexpr const bool tinyness_before = false;
 		static constexpr const float_round_style round_style = round_to_nearest;
-	};
+	};//*/
 
 	template <class _Tp>
 	class _LIBCPP_TEMPLATE_VIS numeric_limits

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -17,16 +18,22 @@ namespace x86_64 {
 			virtual void * allocateFreePhysicalAddress();
 			virtual void mark(int index, bool used) = 0;
 			virtual uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
-				void *physical_address = nullptr, uint64_t extra_meta = 0) = 0;
+				volatile void *physical_address = nullptr, uint64_t extra_meta = 0) = 0;
 			virtual size_t pagesUsed() const = 0;
 			virtual operator bool() const = 0;
-			virtual bool assignAddress(void *virtual_address, void *physical_address, uint64_t extra_meta = 0);
-			virtual bool identityMap(void *, uint64_t extra_meta = 0);
+			virtual bool assignAddress(volatile void *virtual_address, volatile void *physical_address,
+			                           uint64_t extra_meta = 0);
 			virtual bool identityMap(volatile void *, uint64_t extra_meta = 0);
+			/** Returns true if there was an entry for the given address. */
+			virtual bool modifyEntry(volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier);
+			/** Returns true if there was an entry for the given address. */
+			virtual bool andMeta(volatile void *virtual_address, uint64_t meta);
+			/** Returns true if there was an entry for the given address. */
+			virtual bool orMeta(volatile void *virtual_address, uint64_t meta);
 
 		protected:
 			PageMeta(void *physical_start, void *virtual_start);
-			uint64_t addressToEntry(void *) const;
+			uint64_t addressToEntry(volatile void *) const;
 	} __attribute__((packed));
 
 
@@ -53,7 +60,7 @@ namespace x86_64 {
 		virtual int findFree() const override;
 		virtual void mark(int index, bool used) override;
 		virtual uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
-			void *physical_address = nullptr, uint64_t extra_meta = 0) override;
+			volatile void *physical_address = nullptr, uint64_t extra_meta = 0) override;
 		/** Allocates pages for the bitmap array. */
 		void assignSelf();
 		virtual operator bool() const override;

@@ -17,22 +17,62 @@ namespace x86_64 {
 		return (void *) ((uintptr_t) physicalStart + free_index * pageSize());
 	}
 
-	bool PageMeta::assignAddress(void *virtual_address, void *physical_address, uint64_t extra_meta) {
+	bool PageMeta::assignAddress(volatile void *virtual_address, volatile void *physical_address, uint64_t extra_meta) {
 		using PTW = PageTableWrapper;
 		return assign(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
 		              PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
 		              physical_address, extra_meta);
 	}
 
-	bool PageMeta::identityMap(void *address, uint64_t extra_meta) {
+	bool PageMeta::identityMap(volatile void *address, uint64_t extra_meta) {
 		return assignAddress(address, address, extra_meta);
 	}
 
-	bool PageMeta::identityMap(volatile void *address, uint64_t extra_meta) {
-		return identityMap((void *) address, extra_meta);
+	bool PageMeta::modifyEntry(volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier) {
+		DsOS::Kernel *kernel = DsOS::Kernel::instance;
+		if (!kernel) {
+			printf("Kernel instance is null!\n");
+			for (;;) asm volatile("hlt");
+		}
+
+		using PTW = PageTableWrapper;
+		const uint16_t pml4_index = PTW::getPML4Index(virtual_address);
+		const uint16_t pdpt_index = PTW::getPDPTIndex(virtual_address);
+		const uint16_t pdt_index = PTW::getPDTIndex(virtual_address);
+		const uint16_t pt_index = PTW::getPTIndex(virtual_address);
+		PageTableWrapper &wrapper = kernel->kernelPML4;
+		if (wrapper.entries[pml4_index] == 0)
+			return false;
+
+		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
+		if (pdpt[pdpt_index] == 0)
+			return false;
+
+		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
+		if (pdt[pdt_index] == 0)
+			return false;
+
+		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
+		if (pt[pt_index] == 0)
+			return false;
+
+		pt[pt_index] = modifier(pt[pt_index]);
+		return true;
 	}
 
-	uint64_t PageMeta::addressToEntry(void *address) const {
+	bool PageMeta::andMeta(volatile void *virtual_address, uint64_t meta) {
+		return modifyEntry(virtual_address, [meta](uint64_t entry) {
+			return entry & meta;
+		});
+	}
+
+	bool PageMeta::orMeta(volatile void *virtual_address, uint64_t meta) {
+		return modifyEntry(virtual_address, [meta](uint64_t entry) {
+			return entry | meta;
+		});
+	}
+
+	uint64_t PageMeta::addressToEntry(volatile void *address) const {
 		return (((uint64_t) address) & ~0xfff) | MMU_PRESENT | MMU_WRITABLE;
 	}
 
@@ -83,7 +123,7 @@ namespace x86_64 {
 	}
 
 	uintptr_t PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
-	                             void *physical_address, uint64_t extra_meta) {
+	                             volatile void *physical_address, uint64_t extra_meta) {
 		if (pages == -1) {
 			printf("pages == -1\n");
 			return 0;
@@ -92,7 +132,7 @@ namespace x86_64 {
 		DsOS::Kernel *kernel = DsOS::Kernel::instance;
 		if (!kernel) {
 			printf("Kernel instance is null!\n");
-			for (;;);
+			for (;;) asm volatile("hlt");
 		}
 
 		PageTableWrapper &wrapper = kernel->kernelPML4;
@@ -102,7 +142,7 @@ namespace x86_64 {
 				wrapper.entries[pml4_index] = addressToEntry(free_addr);
 			} else {
 				printf("No free pages!\n");
-				for (;;);
+				for (;;) asm volatile("hlt");
 			}
 		}
 
@@ -113,7 +153,7 @@ namespace x86_64 {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
 			} else {
 				printf("No free pages!\n");
-				for (;;);
+				for (;;) asm volatile("hlt");
 			}
 		}
 
@@ -124,7 +164,7 @@ namespace x86_64 {
 				pdt[pdt_index] = addressToEntry(free_addr);
 			} else {
 				printf("No free pages!\n");
-				for (;;);
+				for (;;) asm volatile("hlt");
 			}
 		}
 
@@ -138,7 +178,7 @@ namespace x86_64 {
 				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
 			} else {
 				printf("No free pages!\n");
-				for (;;);
+				for (;;) asm volatile("hlt");
 			}
 			assigned = pt[pt_index];
 		} else {
