@@ -117,8 +117,10 @@ namespace DsOS {
 			volatile AHCI::HBAMemory *abar = (AHCI::HBAMemory *) (uint64_t) (controller->nativeHeader.bar5 & ~0xfff);
 			pager.identityMap(abar, MMU_CACHE_DISABLED);
 			pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
-			abar->cap = abar->cap | (1 << 31);
-			abar->ghc = abar->ghc | (1 << 31);
+
+			// abar->cap = abar->cap | (1 << 31);
+			// abar->ghc = abar->ghc | (1 << 31);
+			abar->probe();
 			printf("cap: %u\n", abar->cap);
 			printf("ghc: %u\n", abar->ghc);
 			printf("is: %u\n", abar->is);
@@ -134,25 +136,25 @@ namespace DsOS {
 				volatile AHCI::HBAPort &port = abar->ports[i];
 				if (port.clb == 0)
 					continue;
-				printf("--------------------------------\n");
-				printf("Type: %s\n", AHCI::deviceTypes[(int) AHCI::identifyDevice(port)]);
-				printf("%d: clb: %x\n", i, port.clb);
-				printf("%d: clbu: %x\n", i, port.clbu);
-				printf("%d: fb: %u\n", i, port.fb);
-				printf("%d: fbu: %u\n", i, port.fbu);
-				printf("%d: is: %u\n", i, port.is);
-				printf("%d: ie: %u\n", i, port.ie);
-				printf("%d: cmd: %u\n", i, port.cmd);
-				printf("%d: rsv0: %u\n", i, port.rsv0);
-				printf("%d: tfd: %u\n", i, port.tfd);
-				printf("%d: sig: %u\n", i, port.sig);
-				printf("%d: ssts: %u\n", i, port.ssts);
-				printf("%d: sctl: %u\n", i, port.sctl);
-				printf("%d: serr: %u\n", i, port.serr);
-				printf("%d: sact: %u\n", i, port.sact);
-				printf("%d: ci: %u\n", i, port.ci);
-				printf("%d: sntf: %u\n", i, port.sntf);
-				printf("%d: fbs: %u\n", i, port.fbs);
+				// printf("--------------------------------\n");
+				// printf("Type: %s\n", AHCI::deviceTypes[(int) port.identifyDevice()]);
+				// printf("%d: clb: %x\n", i, port.clb);
+				// printf("%d: clbu: %x\n", i, port.clbu);
+				// printf("%d: fb: %u\n", i, port.fb);
+				// printf("%d: fbu: %u\n", i, port.fbu);
+				// printf("%d: is: %u\n", i, port.is);
+				// printf("%d: ie: %u\n", i, port.ie);
+				// printf("%d: cmd: %u\n", i, port.cmd);
+				// printf("%d: rsv0: %u\n", i, port.rsv0);
+				// printf("%d: tfd: %u\n", i, port.tfd);
+				// printf("%d: sig: %u\n", i, port.sig);
+				// printf("%d: ssts: %u\n", i, port.ssts);
+				// printf("%d: sctl: %u\n", i, port.sctl);
+				// printf("%d: serr: %u\n", i, port.serr);
+				// printf("%d: sact: %u\n", i, port.sact);
+				// printf("%d: ci: %u\n", i, port.ci);
+				// printf("%d: sntf: %u\n", i, port.sntf);
+				// printf("%d: fbs: %u\n", i, port.fbs);
 			}
 
 			for (int portID = 0; portID <= 0; ++portID) {
@@ -344,6 +346,15 @@ namespace DsOS {
 	void Kernel::perish() {
 		for (;;)
 			asm("hlt");
+	}
+
+	x86_64::PageMeta4K & Kernel::getPager() {
+		if (!instance) {
+			printf("Kernel instance is null!\n");
+			for (;;) asm("hlt");
+		}
+
+		return instance->pager;
 	}
 }
 

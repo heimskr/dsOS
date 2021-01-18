@@ -72,6 +72,10 @@ namespace x86_64 {
 		});
 	}
 
+	bool PageMeta::freeEntry(volatile void *virtual_address) {
+		return modifyEntry(virtual_address, [](uint64_t) { return 0; });
+	}
+
 	uint64_t PageMeta::addressToEntry(volatile void *address) const {
 		return (((uint64_t) address) & ~0xfff) | MMU_PRESENT | MMU_WRITABLE;
 	}

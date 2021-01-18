@@ -1,4 +1,6 @@
 #include "hardware/AHCI.h"
+#include "Kernel.h"
+#include "lib/printf.h"
 
 namespace DsOS::AHCI {
 	PCI::Device *controller = nullptr;
@@ -6,15 +8,14 @@ namespace DsOS::AHCI {
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};
 
-	DeviceType identifyDevice(volatile HBAPort &port) {
-		const uint32_t ssts = port.ssts;
+	DeviceType HBAPort::identifyDevice() volatile {
 		const uint8_t ipm = (ssts >> 8) & 0x0f;
 		const uint8_t det = ssts & 0x0f;
 
 		if (det != HBA_PORT_DET_PRESENT || ipm != HBA_PORT_IPM_ACTIVE)
 			return DeviceType::Null;
 
-		switch (port.sig) {
+		switch (sig) {
 			case SIG_ATAPI:
 				return DeviceType::SATAPI;
 			case SIG_SEMB:
@@ -26,8 +27,8 @@ namespace DsOS::AHCI {
 		}
 	}
 
-	int getCommandSlot(volatile HBAPort &port) {
-		int slots = port.sact | port.ci;
+	int HBAPort::getCommandSlot() volatile {
+		int slots = sact | ci;
 		const int command_slots = (abar->cap & 0xf00) >> 8;
 		for (int i = 0; i < command_slots; ++i) {
 			if ((slots & 1) == 0)
@@ -36,5 +37,118 @@ namespace DsOS::AHCI {
 		}
 
 		return -1;
+	}
+
+	void HBAPort::rebase(volatile HBAMemory &abar) volatile {
+		abar.ghc = 1 << 31;
+		abar.ghc = 1;
+		abar.ghc = 1 << 31;
+		abar.ghc = 1;
+		stop();
+		// cmd = cmd & ~0x8000;
+		// cmd = cmd & ~0x4000;
+		// cmd = cmd & ~1;
+		// cmd = cmd & ~8;
+		cmd = cmd & ~0xc009;
+		serr = 0xffff;
+		is = 0;
+
+		x86_64::PageMeta4K &pager = Kernel::getPager();
+
+		if (clb || clbu) {
+			printf("Freeing CLB: 0x%lx\n", getCLB());
+			pager.freeEntry(getCLB());
+		}
+		void *addr = pager.allocateFreePhysicalAddress();
+		pager.identityMap(addr);
+		setCLB(addr);
+		memset(addr, 0, 1024);
+
+		if (fb || fbu) {
+			printf("Freeing FB: 0x%lx\n", getFB());
+			pager.freeEntry(getFB());
+		}
+		addr = pager.allocateFreePhysicalAddress();
+		pager.identityMap(addr);
+		setFB(addr);
+		memset(addr, 0, 256);
+
+		HBACommandHeader *header = (HBACommandHeader *) getCLB();
+		addr = pager.allocateFreePhysicalAddress();
+		pager.identityMap(addr);
+		uintptr_t base = (uintptr_t) addr;
+
+		for (int i = 0; i < 16; ++i) {
+			header[i].prdtl = 8;
+			header[i].setCTBA((void *) (base + i * 256));
+			memset(header[i].getCTBA(), 0, 256);
+		}
+
+		addr = pager.allocateFreePhysicalAddress();
+		pager.identityMap(addr);
+		base = (uintptr_t) addr;
+
+		for (int i = 0; i < 16; ++i) {
+			header[i].prdtl = 8;
+			header[i].setCTBA((void *) (base + i * 256));
+			memset(header[i].getCTBA(), 0, 256);
+		}
+
+		start();
+		is = 0;
+		ie = 0;
+	}
+
+	void HBAPort::start() volatile {
+		cmd = cmd | HBA_PxCMD_FRE;
+		cmd = cmd | HBA_PxCMD_ST;
+	}
+
+	void HBAPort::stop() volatile {
+		cmd = cmd & ~HBA_PxCMD_ST;
+		cmd = cmd & ~HBA_PxCMD_FRE;
+		for (;;)
+			if (!(cmd & HBA_PxCMD_FR) && !(cmd & HBA_PxCMD_CR))
+				break;
+		cmd = cmd & ~HBA_PxCMD_FRE;
+	}
+
+	void HBAPort::setCLB(void *address) volatile {
+		clb  = ((uintptr_t) address) & 0xffffffff;
+		clbu = ((uintptr_t) address) >> 32;
+	}
+
+	void * HBAPort::getCLB() const volatile {
+		return (void *) ((uintptr_t) clb | ((uintptr_t) clbu << 32));
+	}
+
+	void HBAPort::setFB(void *address) volatile {
+		fb  = ((uintptr_t) address) & 0xffffffff;
+		fbu = ((uintptr_t) address) >> 32;
+	}
+
+	void * HBAPort::getFB() const volatile {
+		return (void *) ((uintptr_t) fb | ((uintptr_t) fbu << 32));
+	}
+
+	void HBAMemory::probe() volatile {
+		for (int i = 0; i < 32; ++i) {
+			if (pi & (1 << i)) {
+				const DeviceType type = ports[i].identifyDevice();
+				if (type != DeviceType::Null && !(ports[i].cmd & 1))
+					ports[i].cmd = ports[i].cmd | 1;
+				printf("Rebasing %d.\n", i);
+				ports[i].rebase(*this);
+			}
+		}
+	}
+
+	void HBACommandHeader::setCTBA(void *address) volatile {
+		ctba  = ((uintptr_t) address) & 0xffffffff;
+		ctbau = ((uintptr_t) address) >> 32;
+	}
+
+	void * HBACommandHeader::getCTBA() const volatile {
+		return (void *) ((uintptr_t) ctba | ((uintptr_t) ctbau << 32));
 	}
 }

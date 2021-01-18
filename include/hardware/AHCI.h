@@ -19,10 +19,10 @@ namespace DsOS::AHCI {
 
 	constexpr uint32_t AHCI_BASE = 0x400000; // 4M
 
-	constexpr uint16_t HBA_PxCMD_ST  = 0x0001;
-	constexpr uint16_t HBA_PxCMD_FRE = 0x0010;
-	constexpr uint16_t HBA_PxCMD_FR  = 0x4000;
-	constexpr uint16_t HBA_PxCMD_CR  = 0x8000;
+	constexpr uint16_t HBA_PxCMD_ST  = 0x0001; // Start
+	constexpr uint16_t HBA_PxCMD_FRE = 0x0010; // FIS Receive Enable
+	constexpr uint16_t HBA_PxCMD_FR  = 0x4000; // FIS Receive Running
+	constexpr uint16_t HBA_PxCMD_CR  = 0x8000; // Command List Running
 
 	constexpr uint8_t ATA_DEV_BUSY = 0x80;
 	constexpr uint8_t ATA_DEV_DRQ  = 0x08;
@@ -192,26 +192,38 @@ namespace DsOS::AHCI {
 		uint32_t rsv3;            // Reserved
 	};
 
+	struct HBAMemory;
+
 	struct HBAPort {
-		volatile uint32_t clb;       // 0x00, Command list base address, 1 KiB-aligned
-		volatile uint32_t clbu;      // 0x04, Command list base address upper 32 bits
-		volatile uint32_t fb;        // 0x08, FIS base address, 256-byte aligned
-		volatile uint32_t fbu;       // 0x0c, FIS base address upper 32 bits
-		volatile uint32_t is;        // 0x10, Interrupt status
-		volatile uint32_t ie;        // 0x14, Interrupt enable
-		volatile uint32_t cmd;       // 0x18, Command and status
-		volatile uint32_t rsv0;      // 0x1c, Reserved
-		volatile uint32_t tfd;       // 0x20, Task file data
-		volatile uint32_t sig;       // 0x24, Signature
-		volatile uint32_t ssts;      // 0x28, SATA status (SCR0:SStatus)
-		volatile uint32_t sctl;      // 0x2c, SATA control (SCR2:SControl)
-		volatile uint32_t serr;      // 0x30, SATA error (SCR1:SError)
-		volatile uint32_t sact;      // 0x34, SATA active (SCR3:SActive)
-		volatile uint32_t ci;        // 0x38, Command issue
-		volatile uint32_t sntf;      // 0x3c, SATA notification (SCR4:SNotification)
-		volatile uint32_t fbs;       // 0x40, FIS-based switch control
-		volatile uint32_t rsv1[11];  // 0x44 - 0x6f, reserved
-		volatile uint32_t vendor[4]; // 0x70 - 0x7f, vendor specific
+		volatile uint32_t clb;       // 0x00: Command list base address, 1 KiB-aligned
+		volatile uint32_t clbu;      // 0x04: Command list base address upper 32 bits
+		volatile uint32_t fb;        // 0x08: FIS base address, 256-byte aligned
+		volatile uint32_t fbu;       // 0x0c: FIS base address upper 32 bits
+		volatile uint32_t is;        // 0x10: Interrupt status
+		volatile uint32_t ie;        // 0x14: Interrupt enable
+		volatile uint32_t cmd;       // 0x18: Command and status
+		volatile uint32_t rsv0;      // 0x1c: Reserved
+		volatile uint32_t tfd;       // 0x20: Task file data
+		volatile uint32_t sig;       // 0x24: Signature
+		volatile uint32_t ssts;      // 0x28: SATA status (SCR0:SStatus)
+		volatile uint32_t sctl;      // 0x2c: SATA control (SCR2:SControl)
+		volatile uint32_t serr;      // 0x30: SATA error (SCR1:SError)
+		volatile uint32_t sact;      // 0x34: SATA active (SCR3:SActive)
+		volatile uint32_t ci;        // 0x38: Command issue
+		volatile uint32_t sntf;      // 0x3c: SATA notification (SCR4:SNotification)
+		volatile uint32_t fbs;       // 0x40: FIS-based switch control
+		volatile uint32_t rsv1[11];  // 0x44 - 0x6f: reserved
+		volatile uint32_t vendor[4]; // 0x70 - 0x7f: vendor specific
+
+		DeviceType identifyDevice() volatile;
+		int getCommandSlot() volatile;
+		void rebase(volatile HBAMemory &) volatile;
+		void start() volatile;
+		void stop() volatile;
+		void setCLB(void *) volatile;
+		void * getCLB() const volatile;
+		void setFB(void *) volatile;
+		void * getFB() const volatile;
 	};
 
 	struct HBAMemory {
@@ -236,6 +248,8 @@ namespace DsOS::AHCI {
 
 		// 0x100 - 0x10FF, Port control registers
 		HBAPort ports[32]; // 1 ~ 32
+
+		void probe() volatile;
 	};
 
 	struct HBAFIS {
@@ -285,6 +299,9 @@ namespace DsOS::AHCI {
 
 		// DWORDs 4 - 7
 		uint32_t rsv1[4]; // Reserved
+
+		void setCTBA(void *) volatile;
+		void * getCTBA() const volatile;
 	};
 
 	struct HBAPRDTEntry {
@@ -314,7 +331,4 @@ namespace DsOS::AHCI {
 
 	extern PCI::Device *controller;
 	extern HBAMemory *abar;
-
-	DeviceType identifyDevice(volatile HBAPort &);
-	int getCommandSlot(volatile HBAPort &);
 }

@@ -2,11 +2,10 @@
 #include "memory/memset.h"
 
 namespace DsOS::SATA {
-
 	bool issueCommand(volatile AHCI::HBAPort &port, ATA::Command command, bool write, void *buffer, uint16_t prdtl,
 	                  uint32_t byte_count, uint64_t start, uint16_t count) {
 		AHCI::HBACommandHeader *header = (AHCI::HBACommandHeader *) &port.clb;
-		const int slot = AHCI::getCommandSlot(port);
+		const int slot = port.getCommandSlot();
 		if (slot == -1)
 			return false;
 

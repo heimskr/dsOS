@@ -30,6 +30,7 @@ namespace x86_64 {
 			virtual bool andMeta(volatile void *virtual_address, uint64_t meta);
 			/** Returns true if there was an entry for the given address. */
 			virtual bool orMeta(volatile void *virtual_address, uint64_t meta);
+			virtual bool freeEntry(volatile void *virtual_address);
 
 		protected:
 			PageMeta(void *physical_start, void *virtual_start);

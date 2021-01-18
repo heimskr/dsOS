@@ -54,6 +54,7 @@ namespace DsOS {
 			void schedule();
 
 			static void backtrace();
+			static x86_64::PageMeta4K & getPager();
 	};
 }
 
