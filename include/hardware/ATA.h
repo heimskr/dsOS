@@ -20,7 +20,7 @@
 #include <stdint.h>
 
 namespace DsOS::ATA {
-	enum class Command: unsigned char {
+	enum class Command: uint8_t {
 		NOP = 0x00,
 		CFARequestExtendedError = 0x03,
 		DeviceReset = 0x08,
@@ -97,7 +97,7 @@ namespace DsOS::ATA {
 		SetMaxAddress = 0xf9
 	};
 
-	enum class Status: unsigned char {
+	enum class Status: uint8_t {
 		Busy = 0x80,
 		Ready = 0x40,
 		Fault = 0x20,

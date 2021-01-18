@@ -114,11 +114,11 @@ namespace DsOS {
 			header.command |= PCI::COMMAND_MEMORY;
 			PCI::writeWord(controller->bsf, PCI::COMMAND, header.command);
 
-			volatile SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) (controller->nativeHeader.bar5 & ~0xfff);
+			volatile AHCI::HBAMemory *abar = (AHCI::HBAMemory *) (uint64_t) (controller->nativeHeader.bar5 & ~0xfff);
 			pager.identityMap(abar, MMU_CACHE_DISABLED);
 			pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
-			// abar->cap = abar->cap | (1 << 31);
-			// abar->ghc = abar->ghc | (1 << 31);
+			abar->cap = abar->cap | (1 << 31);
+			abar->ghc = abar->ghc | (1 << 31);
 			printf("cap: %u\n", abar->cap);
 			printf("ghc: %u\n", abar->ghc);
 			printf("is: %u\n", abar->is);
@@ -131,11 +131,11 @@ namespace DsOS {
 			printf("cap2: %u\n", abar->cap2);
 			printf("bohc: %u\n", abar->bohc);
 			for (int i = 0; i < 32; ++i) {
-				volatile SATA::HBAPort &port = abar->ports[i];
+				volatile AHCI::HBAPort &port = abar->ports[i];
 				if (port.clb == 0)
 					continue;
 				printf("--------------------------------\n");
-				printf("Type: %s\n", SATA::deviceTypes[(int) SATA::identifyDevice(port)]);
+				printf("Type: %s\n", AHCI::deviceTypes[(int) AHCI::identifyDevice(port)]);
 				printf("%d: clb: %x\n", i, port.clb);
 				printf("%d: clbu: %x\n", i, port.clbu);
 				printf("%d: fb: %u\n", i, port.fb);
@@ -154,9 +154,22 @@ namespace DsOS {
 				printf("%d: sntf: %u\n", i, port.sntf);
 				printf("%d: fbs: %u\n", i, port.fbs);
 			}
+
+			for (int portID = 0; portID <= 0; ++portID) {
+				volatile AHCI::HBAPort &port = abar->ports[portID];
+				char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+				printf("Port %d:\n", portID);
+				printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::ReadSectors, false, buffer, 4, 512, 0, 1));
+				for (int i = 0; i < 512; ++i)
+					printf("%c", buffer[i]);
+				printf("\n");
+			}
 		} else {
 			printf("No AHCI controller found.\n");
 		}
+
+
+
 
 		perish();
 

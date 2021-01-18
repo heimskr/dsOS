@@ -158,6 +158,7 @@ namespace DsOS::PCI {
 
 					if (baseclass == 1 && subclass == 6) {
 						AHCI::controller = initDevice({bus, slot, function});
+						AHCI::abar = (AHCI::HBAMemory *) (uint64_t) (AHCI::controller->nativeHeader.bar5 & ~0xfff);
 						return true;
 					}
 				}
