@@ -135,6 +135,7 @@ namespace DsOS {
 				if (port.clb == 0)
 					continue;
 				printf("--------------------------------\n");
+				printf("Type: %s\n", SATA::deviceTypes[(int) SATA::identifyDevice(port)]);
 				printf("%d: clb: %x\n", i, port.clb);
 				printf("%d: clbu: %x\n", i, port.clbu);
 				printf("%d: fb: %u\n", i, port.fb);
