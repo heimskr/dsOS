@@ -152,7 +152,6 @@ page_table_loop:
 
 	lgdt gdt_ptr
 
-
 	ljmp $(KERNEL_GDT_ENTRY * GDT_ENTRY_SIZE), $_start64
 
 	cli
@@ -170,6 +169,8 @@ _start64:
 	movw %ax, %fs
 	movw %ax, %gs
 	movw %ax, %ss
+
+	mov $0xffffffff80e00000, %rsp
 
 	call kernel_main
 

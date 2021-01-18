@@ -51,7 +51,7 @@ namespace DsOS {
 	}
 
 	void Kernel::main() {
-		// kernelPML4.print(false);
+		kernelPML4.print(false);
 
 		Terminal::clear();
 		Terminal::write("Hello, kernel World!\n");
@@ -63,22 +63,24 @@ namespace DsOS {
 		x86_64::IDT::init();
 		initPageDescriptors();
 
-		printf("Kernel: 0x%lx\n", (uintptr_t) this);
-
 		// printf("CR0: %x, CR2: %x, CR3: %x, CR4: %x\n", x86_64::getCR0(), x86_64::getCR2(), x86_64::getCR3(), x86_64::getCR4());
 		// char model[13];
 		// x86_64::getModel(model);
 		// printf("Model: %s\n", model);
 		// printf("APIC: %s\n", x86_64::checkAPIC()? "yes" : "no");
-		printf("Memory: 0x%x through 0x%x\n", memoryLow, memoryHigh);
+		printf("Memory: 0x%lx through 0x%lx\n", memoryLow, memoryHigh);
 		// printf("Core count: %d\n", x86_64::coreCount());
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
+		// These three lines are incredibly janky. Fixing them is important.
+		uintptr_t bitmap_base = 0xa00000UL;
+		uintptr_t physical_start = bitmap_base + 1'000'000UL; // 1 MB is enough to map over 30 GB.
+		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
 
-
-		pager = x86_64::PageMeta4K((void *) 0x800000UL, (void *) 0xffff80800000UL, (void *) 0x600000UL, (memoryHigh - 0x800000UL) / 4096);
 		pager.assignSelf();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 		pager.clear();
+		printf("[%s:%d]\n", __FILE__, __LINE__);
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
 
@@ -102,11 +104,17 @@ namespace DsOS {
 
 		PCI::findAHCIController();
 
-		if (AHCI::controller) {
+		if (PCI::Device *controller = AHCI::controller) {
 			printf("Found AHCI controller.\n");
-			printf("Interrupt line: %d\n", AHCI::controller->nativeHeader.interruptLine);
-			printf("Interrupt PIN:  %d\n", AHCI::controller->nativeHeader.interruptPIN);
-			volatile SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) (AHCI::controller->nativeHeader.bar5 & ~0xfff);
+			printf("Interrupt line: %d\n", controller->nativeHeader.interruptLine);
+			printf("Interrupt PIN:  %d\n", controller->nativeHeader.interruptPIN);
+			printf("Command: %x\n", controller->nativeHeader.command);
+			PCI::HeaderNative &header = controller->nativeHeader;
+			header.command &= ~PCI::COMMAND_INT_DISABLE;
+			header.command |= PCI::COMMAND_MEMORY;
+			PCI::writeWord(controller->bsf, PCI::COMMAND, header.command);
+
+			volatile SATA::HBAMemory *abar = (SATA::HBAMemory *) (uint64_t) (controller->nativeHeader.bar5 & ~0xfff);
 			pager.identityMap(abar, MMU_CACHE_DISABLED);
 			pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
 			// abar->cap = abar->cap | (1 << 31);
@@ -124,9 +132,11 @@ namespace DsOS {
 			printf("bohc: %u\n", abar->bohc);
 			for (int i = 0; i < 32; ++i) {
 				volatile SATA::HBAPort &port = abar->ports[i];
+				if (port.clb == 0)
+					continue;
 				printf("--------------------------------\n");
-				printf("%d: clb: %u\n", i, port.clb);
-				printf("%d: clbu: %u\n", i, port.clbu);
+				printf("%d: clb: %x\n", i, port.clb);
+				printf("%d: clbu: %x\n", i, port.clbu);
 				printf("%d: fb: %u\n", i, port.fb);
 				printf("%d: fbu: %u\n", i, port.fbu);
 				printf("%d: is: %u\n", i, port.is);

@@ -81,6 +81,7 @@ namespace x86_64 {
 	PageMeta4K::PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_):
 	PageMeta(physical_start, virtual_start), pages(pages_) {
 		bitmap = new (bitmap_address) bitmap_t[DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t))];
+		printf("Bitmap size: %lu bytes\n", DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
 	}
 
 	size_t PageMeta4K::bitmapSize() const {
