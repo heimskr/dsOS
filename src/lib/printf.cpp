@@ -4,13 +4,14 @@
 #include <cstring>
 #include <cstdint>
 
-enum class Status {Scan, Decide, D, U, S, X};
+enum class Status {Scan, Decide, D, U, S, X, B};
 
 bool printf_putc = true;
 
 // static void signed_to_dec(char *out, char *&optr, const size_t max, long long int n);
 static void unsigned_to_dec(char *out, char *&optr, const size_t max, long long unsigned int n);
 static void num_to_hex(char *out, char *&optr, const size_t max, long long unsigned int n);
+static void num_to_bin(char *out, char *&optr, const size_t max, long long unsigned int n);
 static bool mappend(char *out, char *&optr, const size_t max, const char ch);
 
 template <typename T>
@@ -132,6 +133,8 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 					status = Status::S;
 				} else if (next == 'x') {
 					status = Status::X;
+				} else if (next == 'b') {
+					status = Status::B;
 				} else if (next == 'c') {
 					APPEND(va_arg(list, int));
 					status = Status::Scan;
@@ -162,6 +165,13 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 				num_to_hex(out, optr, max, va_arg(list, long long unsigned int));
 			else
 				num_to_hex(out, optr, max, va_arg(list, unsigned int));
+			status = Status::Scan;
+			is_long = false;
+		} else if (status == Status::B) {
+			if (is_long)
+				num_to_bin(out, optr, max, va_arg(list, long long unsigned int));
+			else
+				num_to_bin(out, optr, max, va_arg(list, unsigned int));
 			status = Status::Scan;
 			is_long = false;
 		} else if (status == Status::S) {
@@ -211,9 +221,32 @@ static void num_to_hex(char *out, char *&optr, const size_t max, long long unsig
 	int i = 0;
 
 	while (0 < n) {
-		char byte = n & 0xf;
-		buffer[i++] = byte < 10? '0' + byte : ('a' + byte - 0xa);
+		char bits = n & 0xf;
+		buffer[i++] = bits < 10? '0' + bits : ('a' + bits - 0xa);
 		n >>= 4;
+	}
+
+	for (int j = i - 1; 0 <= j; --j) {
+		if (!mappend(out, optr, max, buffer[j]))
+			return;
+	}
+}
+
+static void num_to_bin(char *out, char *&optr, const size_t max, long long unsigned int n) {
+	if (out != nullptr && max <= static_cast<size_t>(optr - out))
+		return;
+
+	if (n == 0) {
+		mappend(out, optr, max, '0');
+		return;
+	}
+
+	char buffer[64] = {0};
+	int i = 0;
+
+	while (0 < n) {
+		buffer[i++] = (n & 1)? '1' : '0';
+		n >>= 1;
 	}
 
 	for (int j = i - 1; 0 <= j; --j) {
