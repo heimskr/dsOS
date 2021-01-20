@@ -51,7 +51,7 @@ namespace DsOS {
 	}
 
 	void Kernel::main() {
-		kernelPML4.print(false);
+		// kernelPML4.print(false);
 
 		Terminal::clear();
 		Terminal::write("Hello, kernel World!\n");
@@ -74,7 +74,7 @@ namespace DsOS {
 
 		// These three lines are incredibly janky. Fixing them is important.
 		uintptr_t bitmap_base = 0xa00000UL;
-		uintptr_t physical_start = bitmap_base + 1'000'000UL; // 1 MB is enough to map over 30 GB.
+		uintptr_t physical_start = (bitmap_base + 1'000'000UL) & ~0xfff; // 1 MB is enough to map over 30 GB.
 		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
 
 		pager.assignSelf();
@@ -115,12 +115,13 @@ namespace DsOS {
 			PCI::writeWord(controller->bsf, PCI::COMMAND, header.command);
 
 			volatile AHCI::HBAMemory *abar = (AHCI::HBAMemory *) (uint64_t) (controller->nativeHeader.bar5 & ~0xfff);
+			printf("abar: 0x%lx\n", abar);
 			pager.identityMap(abar, MMU_CACHE_DISABLED);
 			pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
 
-			// abar->cap = abar->cap | (1 << 31);
-			// abar->ghc = abar->ghc | (1 << 31);
 			abar->probe();
+			abar->cap = abar->cap | (1 << 31);
+			abar->ghc = abar->ghc | (1 << 31);
 			printf("cap: %u\n", abar->cap);
 			printf("ghc: %u\n", abar->ghc);
 			printf("is: %u\n", abar->is);
@@ -136,32 +137,34 @@ namespace DsOS {
 				volatile AHCI::HBAPort &port = abar->ports[i];
 				if (port.clb == 0)
 					continue;
-				// printf("--------------------------------\n");
-				// printf("Type: %s\n", AHCI::deviceTypes[(int) port.identifyDevice()]);
-				// printf("%d: clb: %x\n", i, port.clb);
-				// printf("%d: clbu: %x\n", i, port.clbu);
-				// printf("%d: fb: %u\n", i, port.fb);
-				// printf("%d: fbu: %u\n", i, port.fbu);
-				// printf("%d: is: %u\n", i, port.is);
-				// printf("%d: ie: %u\n", i, port.ie);
-				// printf("%d: cmd: %u\n", i, port.cmd);
-				// printf("%d: rsv0: %u\n", i, port.rsv0);
-				// printf("%d: tfd: %u\n", i, port.tfd);
-				// printf("%d: sig: %u\n", i, port.sig);
-				// printf("%d: ssts: %u\n", i, port.ssts);
-				// printf("%d: sctl: %u\n", i, port.sctl);
-				// printf("%d: serr: %u\n", i, port.serr);
-				// printf("%d: sact: %u\n", i, port.sact);
-				// printf("%d: ci: %u\n", i, port.ci);
-				// printf("%d: sntf: %u\n", i, port.sntf);
-				// printf("%d: fbs: %u\n", i, port.fbs);
+				printf("--------------------------------\n");
+				printf("Type: %s\n", AHCI::deviceTypes[(int) port.identifyDevice()]);
+				printf("%d: clb: %x / %b\n", i, port.clb, port.clb);
+				printf("%d: clbu: %x / %b\n", i, port.clbu, port.clbu);
+				printf("%d: fb: %u / %b\n", i, port.fb, port.fb);
+				printf("%d: fbu: %u / %b\n", i, port.fbu, port.fbu);
+				printf("%d: is: %u / %b\n", i, port.is, port.is);
+				printf("%d: ie: %u / %b\n", i, port.ie, port.ie);
+				printf("%d: cmd: %u / %b\n", i, port.cmd, port.cmd);
+				printf("%d: rsv0: %u / %b\n", i, port.rsv0, port.rsv0);
+				printf("%d: tfd: %u / %b\n", i, port.tfd, port.tfd);
+				printf("%d: sig: %u / %b\n", i, port.sig, port.sig);
+				printf("%d: ssts: %u / %b\n", i, port.ssts, port.ssts);
+				printf("%d: sctl: %u / %b\n", i, port.sctl, port.sctl);
+				printf("%d: serr: %u / %b\n", i, port.serr, port.serr);
+				printf("%d: sact: %u / %b\n", i, port.sact, port.sact);
+				printf("%d: ci: %u / %b\n", i, port.ci, port.ci);
+				printf("%d: sntf: %u / %b\n", i, port.sntf, port.sntf);
+				printf("%d: fbs: %u / %b\n", i, port.fbs, port.fbs);
 			}
 
 			for (int portID = 0; portID <= 0; ++portID) {
 				volatile AHCI::HBAPort &port = abar->ports[portID];
 				char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 				printf("Port %d:\n", portID);
-				printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::ReadSectors, false, buffer, 4, 512, 0, 1));
+				printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::IdentifyDevice, false, buffer, 1, 512, 0, 0));
+				// printf("Result: %d\n", SATA::read(port, 0, 1, buffer));
+				// printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::ReadSectors, false, buffer, 4, 512, 0, 1));
 				for (int i = 0; i < 512; ++i)
 					printf("%c", buffer[i]);
 				printf("\n");

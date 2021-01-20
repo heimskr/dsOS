@@ -43,7 +43,7 @@ namespace x86_64::IDT {
 		add(39, &isr_39);
 		add(46, &isr_46);
 		add(47, &isr_47);
-		asm volatile("lidt (%0)" :: "r" (&idt_header));
+		asm volatile("lidt %0" :: "m"(idt_header));
 	}
 }
 

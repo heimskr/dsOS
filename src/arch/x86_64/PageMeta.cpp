@@ -35,25 +35,26 @@ namespace x86_64 {
 			for (;;) asm volatile("hlt");
 		}
 
+		// printf("\e[31mModifying\e[0m 0x%lx\n", virtual_address);
 		using PTW = PageTableWrapper;
 		const uint16_t pml4_index = PTW::getPML4Index(virtual_address);
 		const uint16_t pdpt_index = PTW::getPDPTIndex(virtual_address);
 		const uint16_t pdt_index = PTW::getPDTIndex(virtual_address);
 		const uint16_t pt_index = PTW::getPTIndex(virtual_address);
 		PageTableWrapper &wrapper = kernel->kernelPML4;
-		if (wrapper.entries[pml4_index] == 0)
+		if (!isPresent(wrapper.entries[pml4_index]))
 			return false;
 
 		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
-		if (pdpt[pdpt_index] == 0)
+		if (!isPresent(pdpt[pdpt_index]))
 			return false;
 
 		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
-		if (pdt[pdt_index] == 0)
+		if (!isPresent(pdt[pdt_index]))
 			return false;
 
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
-		if (pt[pt_index] == 0)
+		if (!isPresent(pt[pt_index]))
 			return false;
 
 		pt[pt_index] = modifier(pt[pt_index]);
@@ -73,6 +74,7 @@ namespace x86_64 {
 	}
 
 	bool PageMeta::freeEntry(volatile void *virtual_address) {
+		// printf("\e[31mfreeEntry\e[0m 0x%lx\n", virtual_address);
 		return modifyEntry(virtual_address, [](uint64_t) { return 0; });
 	}
 
@@ -85,7 +87,7 @@ namespace x86_64 {
 	PageMeta4K::PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_):
 	PageMeta(physical_start, virtual_start), pages(pages_) {
 		bitmap = new (bitmap_address) bitmap_t[DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t))];
-		printf("Bitmap size: %lu bytes\n", DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
+		// printf("Bitmap size: %lu bytes\n", DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
 	}
 
 	size_t PageMeta4K::bitmapSize() const {
@@ -129,6 +131,7 @@ namespace x86_64 {
 
 	uintptr_t PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
 	                             volatile void *physical_address, uint64_t extra_meta) {
+		// printf("\e[32massign\e[0m %u, %u, %u, %u, 0x%lx, 0x%lx\n", pml4_index, pdpt_index, pdt_index, pt_index, physical_address, extra_meta);
 		if (pages == -1) {
 			printf("pages == -1\n");
 			return 0;
@@ -141,7 +144,7 @@ namespace x86_64 {
 		}
 
 		PageTableWrapper &wrapper = kernel->kernelPML4;
-		if (wrapper.entries[pml4_index] == 0) {
+		if (!isPresent(wrapper.entries[pml4_index])) {
 			// Allocate a page for a new PDPT if the PML4E is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				wrapper.entries[pml4_index] = addressToEntry(free_addr);
@@ -152,7 +155,7 @@ namespace x86_64 {
 		}
 
 		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
-		if (pdpt[pdpt_index] == 0) {
+		if (!isPresent(pdpt[pdpt_index])) {
 			// Allocate a page for a new PDT if the PDPE is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
@@ -163,7 +166,7 @@ namespace x86_64 {
 		}
 
 		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
-		if (pdt[pdt_index] == 0) {
+		if (!isPresent(pdt[pdt_index])) {
 			// Allocate a page for a new PT if the PDE is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdt[pdt_index] = addressToEntry(free_addr);
@@ -175,7 +178,7 @@ namespace x86_64 {
 
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
 		uintptr_t assigned = 0;
-		if (pt[pt_index] == 0) {
+		if (!isPresent(pt[pt_index])) {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {
 				pt[pt_index] = addressToEntry(physical_address);

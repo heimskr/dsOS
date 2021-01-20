@@ -43,13 +43,13 @@ namespace DsOS::AHCI {
 		abar.ghc = 1 << 31;
 		abar.ghc = 1;
 		abar.ghc = 1 << 31;
-		abar.ghc = 1;
+		abar.ghc = 2;
 		stop();
-		// cmd = cmd & ~0x8000;
-		// cmd = cmd & ~0x4000;
-		// cmd = cmd & ~1;
-		// cmd = cmd & ~8;
-		cmd = cmd & ~0xc009;
+		cmd = cmd & ~HBA_PxCMD_CR;
+		cmd = cmd & ~HBA_PxCMD_FR;
+		cmd = cmd & ~HBA_PxCMD_ST;
+		cmd = cmd & ~HBA_PxCMD_FRE;
+		// cmd = cmd & ~0xc009;
 		serr = 0xffff;
 		is = 0;
 
@@ -61,8 +61,10 @@ namespace DsOS::AHCI {
 		}
 		void *addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr);
+		pager.orMeta(addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
 		memset(addr, 0, 1024);
+		printf("clb[0x%lx,0x%lx]\n", addr, getCLB());
 
 		if (fb || fbu) {
 			printf("Freeing FB: 0x%lx\n", getFB());
@@ -70,12 +72,15 @@ namespace DsOS::AHCI {
 		}
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr);
+		pager.orMeta(addr, MMU_CACHE_DISABLED);
 		setFB(addr);
 		memset(addr, 0, 256);
+		printf("fb[0x%lx,0x%lx]\n", addr, getFB());
 
 		HBACommandHeader *header = (HBACommandHeader *) getCLB();
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr);
+		pager.orMeta(addr, MMU_CACHE_DISABLED);
 		uintptr_t base = (uintptr_t) addr;
 
 		for (int i = 0; i < 16; ++i) {
@@ -86,7 +91,9 @@ namespace DsOS::AHCI {
 
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr);
+		pager.orMeta(addr, MMU_CACHE_DISABLED);
 		base = (uintptr_t) addr;
+		printf("CTBA base: 0x%lx\n", base);
 
 		for (int i = 0; i < 16; ++i) {
 			header[i].prdtl = 8;
@@ -102,6 +109,7 @@ namespace DsOS::AHCI {
 	void HBAPort::start() volatile {
 		cmd = cmd | HBA_PxCMD_FRE;
 		cmd = cmd | HBA_PxCMD_ST;
+		is = 0; // ?
 	}
 
 	void HBAPort::stop() volatile {
@@ -137,7 +145,7 @@ namespace DsOS::AHCI {
 				const DeviceType type = ports[i].identifyDevice();
 				if (type != DeviceType::Null && !(ports[i].cmd & 1))
 					ports[i].cmd = ports[i].cmd | 1;
-				printf("Rebasing %d.\n", i);
+				printf("Rebasing %d (type: %d).\n", i, type);
 				ports[i].rebase(*this);
 			}
 		}

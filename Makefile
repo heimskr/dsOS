@@ -10,7 +10,7 @@ CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
 QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -boot d -serial stdio -m 8G
-QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 # -no-shutdown -d cpu_reset -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12
+QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none,format=raw -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 # -no-shutdown -d cpu_reset -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12
 # QEMU_EXTRA   ?= disk.img
 
 ASSEMBLED := $(shell find asm/*.S)
@@ -48,7 +48,7 @@ src/arch/x86_64/Interrupts.o: src/arch/x86_64/Interrupts.cpp include/arch/x86_64
 	$(CPP) $(CPPFLAGS) -mgeneral-regs-only -DARCHX86_64 -c $< -o $@
 
 kernel: $(OBJS) kernel.ld Makefile $(LIBS)
-	$(CPP) -z max-page-size=0x1000 $(CPPFLAGS) -no-pie -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS) $(LIBS)
+	$(CPP) -z max-page-size=0x1000 $(CPPFLAGS) -no-pie -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS) $(LIBS) -lgcc
 
 musl/lib/libc.a:
 	$(MAKE) -C musl

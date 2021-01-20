@@ -35,6 +35,9 @@ namespace x86_64 {
 		protected:
 			PageMeta(void *physical_start, void *virtual_start);
 			uint64_t addressToEntry(volatile void *) const;
+			inline bool isPresent(uint64_t entry) {
+				return entry & MMU_PRESENT;
+			}
 	} __attribute__((packed));
 
 

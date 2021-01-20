@@ -125,6 +125,14 @@ rcxfmt: .asciz "%%rcx: 0x%lx\n"
 rdxfmt: .asciz "%%rdx: 0x%lx\n"
 rdifmt: .asciz "%%rdi: 0x%lx\n"
 rsifmt: .asciz "%%rsi: 0x%lx\n"
+r8fmt: .asciz "%%r8: 0x%lx\n"
+r9fmt: .asciz "%%r9: 0x%lx\n"
+r10fmt: .asciz "%%r10: 0x%lx\n"
+r11fmt: .asciz "%%r11: 0x%lx\n"
+r12fmt: .asciz "%%r12: 0x%lx\n"
+r13fmt: .asciz "%%r13: 0x%lx\n"
+r14fmt: .asciz "%%r14: 0x%lx\n"
+r15fmt: .asciz "%%r15: 0x%lx\n"
 addrfmt: .asciz "addr: 0x%lx\n"
 gpffmt: .asciz "General protection fault!\n"
 
@@ -156,14 +164,38 @@ isr_13:
 	push %rdx
 	push %rdi
 	push %rsi
+	push %r8
+	push %r9
+	push %r10
+	push %r11
+	push %r12
+	push %r13
+	push %r14
+	push %r15
 	print0 $gpffmt
-	print1 $addrfmt, 56(%rsp)
-	print1 $raxfmt, 48(%rsp)
-	print1 $rbxfmt, 40(%rsp)
-	print1 $rcxfmt, 32(%rsp)
-	print1 $rdxfmt, 24(%rsp)
-	print1 $rdifmt, 16(%rsp)
-	print1 $rsifmt, 8(%rsp)
+	print1 $addrfmt, 120(%rsp)
+	print1 $raxfmt, 112(%rsp)
+	print1 $rbxfmt, 104(%rsp)
+	print1 $rcxfmt, 96(%rsp)
+	print1 $rdxfmt, 88(%rsp)
+	print1 $rdifmt, 80(%rsp)
+	print1 $rsifmt, 72(%rsp)
+	print1 $r8fmt, 64(%rsp)
+	print1 $r9fmt, 56(%rsp)
+	print1 $r10fmt, 48(%rsp)
+	print1 $r11fmt, 40(%rsp)
+	print1 $r12fmt, 32(%rsp)
+	print1 $r13fmt, 24(%rsp)
+	print1 $r14fmt, 16(%rsp)
+	print1 $r15fmt, 8(%rsp)
+	pop %r15
+	pop %r14
+	pop %r13
+	pop %r12
+	pop %r11
+	pop %r10
+	pop %r9
+	pop %r8
 	pop %rsi
 	pop %rdi
 	pop %rdx
