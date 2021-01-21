@@ -91,7 +91,7 @@ namespace DsOS::PCI {
 		uint8_t reserved0[3];
 		uint32_t reserved1;
 		uint8_t interruptLine;
-		uint8_t interruptPIN;
+		uint8_t interruptPin;
 		uint8_t minGrant;
 		uint8_t maxLatency;
 	} __attribute__((packed));
@@ -130,7 +130,7 @@ namespace DsOS::PCI {
 		uint8_t reserved0[3];
 		uint32_t expansionROMBaseAddress;
 		uint8_t interruptLine;
-		uint8_t interruptPIN;
+		uint8_t interruptPin;
 		uint16_t bridgeControl;
 	} __attribute__((packed));
 

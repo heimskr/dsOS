@@ -55,27 +55,21 @@ namespace DsOS::AHCI {
 
 		x86_64::PageMeta4K &pager = Kernel::getPager();
 
-		if (clb || clbu) {
-			printf("Freeing CLB: 0x%lx\n", getCLB());
-			pager.freeEntry(getCLB());
-		}
+		if (clb || clbu)
+			printf("Freeing CLB: 0x%lx -> %d\n", getCLB(), pager.freeEntry(getCLB()));
 		void *addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr);
 		pager.orMeta(addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
 		memset(addr, 0, 1024);
-		printf("clb[0x%lx,0x%lx]\n", addr, getCLB());
 
-		if (fb || fbu) {
-			printf("Freeing FB: 0x%lx\n", getFB());
-			pager.freeEntry(getFB());
-		}
+		if (fb || fbu)
+			printf("Freeing FB: 0x%lx -> %d\n", getFB(), pager.freeEntry(getFB()));
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr);
 		pager.orMeta(addr, MMU_CACHE_DISABLED);
 		setFB(addr);
 		memset(addr, 0, 256);
-		printf("fb[0x%lx,0x%lx]\n", addr, getFB());
 
 		HBACommandHeader *header = (HBACommandHeader *) getCLB();
 		addr = pager.allocateFreePhysicalAddress();
@@ -140,7 +134,7 @@ namespace DsOS::AHCI {
 	}
 
 	void HBAMemory::probe() volatile {
-		for (int i = 0; i < 32; ++i) {
+		for (int i = 0; i < 32; ++i)
 			if (pi & (1 << i)) {
 				const DeviceType type = ports[i].identifyDevice();
 				if (type != DeviceType::Null && !(ports[i].cmd & 1))
@@ -148,7 +142,6 @@ namespace DsOS::AHCI {
 				printf("Rebasing %d (type: %d).\n", i, type);
 				ports[i].rebase(*this);
 			}
-		}
 	}
 
 	void HBACommandHeader::setCTBA(void *address) volatile {

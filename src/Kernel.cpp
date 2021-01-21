@@ -106,9 +106,7 @@ namespace DsOS {
 
 		if (PCI::Device *controller = AHCI::controller) {
 			printf("Found AHCI controller.\n");
-			printf("Interrupt line: %d\n", controller->nativeHeader.interruptLine);
-			printf("Interrupt PIN:  %d\n", controller->nativeHeader.interruptPIN);
-			printf("Command: %x\n", controller->nativeHeader.command);
+			printf("Command: %x / %b\n", controller->nativeHeader.command, controller->nativeHeader.command);
 			PCI::HeaderNative &header = controller->nativeHeader;
 			header.command &= ~PCI::COMMAND_INT_DISABLE;
 			header.command |= PCI::COMMAND_MEMORY;
@@ -122,6 +120,8 @@ namespace DsOS {
 			abar->probe();
 			abar->cap = abar->cap | (1 << 31);
 			abar->ghc = abar->ghc | (1 << 31);
+			printf("Interrupt line: %d\n", controller->nativeHeader.interruptLine);
+			printf("Interrupt pin:  %d\n", controller->nativeHeader.interruptPin);
 			printf("cap: %u\n", abar->cap);
 			printf("ghc: %u\n", abar->ghc);
 			printf("is: %u\n", abar->is);
