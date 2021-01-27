@@ -44,18 +44,22 @@ static void signed_to_dec(char *out, char *&optr, const size_t max, T n) {
 			return;
 }
 
+static bool printf_warned = false;
+
 static bool mappend(char *out, char *&optr, const size_t max, const char ch) {
 	if (out == nullptr) {
-		if (printf_putc)
-			DsOS::Terminal::putChar(ch);
 		if (!DsOS::Serial::init()) {
-			DsOS::Terminal::write("Serial failed to initialize.\n");
-			for (;;);
-		}
-		if (ch == '\0')
+			if (!printf_warned) {
+				DsOS::Terminal::write("Serial failed to initialize.\n");
+				printf_warned = true;
+				// for (;;) asm("hlt");
+			}
+		} else if (ch == '\0')
 			DsOS::Serial::write("\e[1m\\0\e[22m");
 		else
 			DsOS::Serial::write(ch);
+		if (printf_putc)
+			DsOS::Terminal::putChar(ch);
 		return true;
 	}
 

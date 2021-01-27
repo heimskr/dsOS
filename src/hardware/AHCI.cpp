@@ -4,7 +4,7 @@
 
 namespace DsOS::AHCI {
 	PCI::Device *controller = nullptr;
-	HBAMemory *abar = nullptr;
+	volatile HBAMemory *abar = nullptr;
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};
 
@@ -27,9 +27,9 @@ namespace DsOS::AHCI {
 		}
 	}
 
-	int HBAPort::getCommandSlot() volatile {
+	int HBAPort::getCommandSlot(volatile HBAMemory &abar) volatile {
 		int slots = sact | ci;
-		const int command_slots = (abar->cap & 0xf00) >> 8;
+		const int command_slots = (abar.cap & 0xf00) >> 8;
 		for (int i = 0; i < command_slots; ++i) {
 			if ((slots & 1) == 0)
 				return i;
@@ -40,41 +40,50 @@ namespace DsOS::AHCI {
 	}
 
 	void HBAPort::rebase(volatile HBAMemory &abar) volatile {
+		printf("initial tfd: %u / %b\n", tfd, tfd);
 		abar.ghc = 1 << 31;
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		abar.ghc = 1;
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		abar.ghc = 1 << 31;
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		abar.ghc = 2;
+		// printf("tfd before stop: %u / %b\n", tfd, tfd);
 		stop();
+		// printf("tfd after stop:  %u / %b\n", tfd, tfd);
 		cmd = cmd & ~HBA_PxCMD_CR;
 		cmd = cmd & ~HBA_PxCMD_FR;
 		cmd = cmd & ~HBA_PxCMD_ST;
 		cmd = cmd & ~HBA_PxCMD_FRE;
+		// printf("tfd after cmds:  %u / %b\n", tfd, tfd);
 		// cmd = cmd & ~0xc009;
 		serr = 0xffff;
 		is = 0;
 
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		x86_64::PageMeta4K &pager = Kernel::getPager();
 
 		if (clb || clbu)
-			printf("Freeing CLB: 0x%lx -> %d\n", getCLB(), pager.freeEntry(getCLB()));
+			printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(getCLB()));
 		void *addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr);
-		pager.orMeta(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
 		memset(addr, 0, 1024);
 
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+
 		if (fb || fbu)
-			printf("Freeing FB: 0x%lx -> %d\n", getFB(), pager.freeEntry(getFB()));
+			printf("Freeing FB: 0x%lx :: %d\n", getFB(), pager.freeEntry(getFB()));
 		addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr);
-		pager.orMeta(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		setFB(addr);
 		memset(addr, 0, 256);
 
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+
 		HBACommandHeader *header = (HBACommandHeader *) getCLB();
 		addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr);
-		pager.orMeta(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		uintptr_t base = (uintptr_t) addr;
 
 		for (int i = 0; i < 16; ++i) {
@@ -83,9 +92,10 @@ namespace DsOS::AHCI {
 			memset(header[i].getCTBA(), 0, 256);
 		}
 
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+
 		addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr);
-		pager.orMeta(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		base = (uintptr_t) addr;
 		printf("CTBA base: 0x%lx\n", base);
 
@@ -95,9 +105,12 @@ namespace DsOS::AHCI {
 			memset(header[i].getCTBA(), 0, 256);
 		}
 
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		start();
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		is = 0;
 		ie = 0;
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 	}
 
 	void HBAPort::start() volatile {
@@ -137,8 +150,8 @@ namespace DsOS::AHCI {
 		for (int i = 0; i < 32; ++i)
 			if (pi & (1 << i)) {
 				const DeviceType type = ports[i].identifyDevice();
-				if (type != DeviceType::Null && !(ports[i].cmd & 1))
-					ports[i].cmd = ports[i].cmd | 1;
+				// if (type != DeviceType::Null && !(ports[i].cmd & 1))
+				// 	ports[i].cmd = ports[i].cmd | 1;
 				printf("Rebasing %d (type: %d).\n", i, type);
 				ports[i].rebase(*this);
 			}

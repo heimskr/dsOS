@@ -85,11 +85,11 @@ namespace DsOS::AHCI {
 
 	struct FISRegD2H { // Device to host
 		// DWORD 0
-		FISType type = FISType::RegD2H;
+		FISType type/*  = FISType::RegD2H */;
 
 		uint8_t pmport: 4;    // Port multiplier
 		uint8_t rsv0: 2;      // Reserved
-		bool interrupt: 1; // Interrupt bit
+		bool interrupt: 1;    // Interrupt bit
 		uint8_t rsv1: 1;      // Reserved
 
 		uint8_t status;       // Status register
@@ -214,11 +214,11 @@ namespace DsOS::AHCI {
 		volatile uint32_t ci;        // 0x38: Command issue
 		volatile uint32_t sntf;      // 0x3c: SATA notification (SCR4:SNotification)
 		volatile uint32_t fbs;       // 0x40: FIS-based switch control
-		volatile uint32_t rsv1[11];  // 0x44 - 0x6f: reserved
-		volatile uint32_t vendor[4]; // 0x70 - 0x7f: vendor specific
+		volatile uint32_t devslp;    // 0x44–0x6f: Device sleep
+		volatile uint32_t vendor[4]; // 0x70–0x7f: vendor specific
 
 		DeviceType identifyDevice() volatile;
-		int getCommandSlot() volatile;
+		int getCommandSlot(volatile HBAMemory &) volatile;
 		void rebase(volatile HBAMemory &) volatile;
 		void start() volatile;
 		void stop() volatile;
@@ -228,53 +228,53 @@ namespace DsOS::AHCI {
 		void * getFB() const volatile;
 	};
 
+	struct HBAFIS {
+		// 0x00
+		FISDMASetup dsfis; // DMA Setup FIS
+		uint8_t pad0[4];
+
+		// 0x20
+		FISPIOSetup psfis; // PIO Setup FIS
+		uint8_t pad1[12];
+
+		// 0x40
+		FISRegD2H rfis; // Register – Device to Host FIS
+		uint8_t pad2[4];
+
+		// 0x58
+		uint64_t sdbfis; // Set Device Bit FIS
+
+		// 0x60
+		uint8_t ufis[64];
+
+		// 0xa0
+		uint8_t reserved[0x100 - 0xa0];
+	};
+
 	struct HBAMemory {
 		// 0x00 - 0x2B, Generic Host Control
-		uint32_t cap;     // 0x00, Host capability
-		uint32_t ghc;     // 0x04, Global host control
-		uint32_t is;      // 0x08, Interrupt status
-		uint32_t pi;      // 0x0c, Port implemented
-		uint32_t vs;      // 0x10, Version
-		uint32_t ccc_ctl; // 0x14, Command completion coalescing control
-		uint32_t ccc_pts; // 0x18, Command completion coalescing ports
-		uint32_t em_loc;  // 0x1c, Enclosure management location
-		uint32_t em_ctl;  // 0x20, Enclosure management control
-		uint32_t cap2;    // 0x24, Host capabilities extended
-		uint32_t bohc;    // 0x28, BIOS/OS handoff control and status
+		uint32_t cap;     // 0x00: Host capability
+		uint32_t ghc;     // 0x04: Global host control
+		uint32_t is;      // 0x08: Interrupt status
+		uint32_t pi;      // 0x0c: Port implemented
+		uint32_t vs;      // 0x10: Version
+		uint32_t ccc_ctl; // 0x14: Command completion coalescing control
+		uint32_t ccc_pts; // 0x18: Command completion coalescing ports
+		uint32_t em_loc;  // 0x1c: Enclosure management location
+		uint32_t em_ctl;  // 0x20: Enclosure management control
+		uint32_t cap2;    // 0x24: Host capabilities extended
+		uint32_t bohc;    // 0x28: BIOS/OS handoff control and status
 
-		// 0x2c - 0x9f: Reserved
-		uint8_t rsv[0xa0 - 0x2c];
+		// 0x2c–0x9f: Reserved
+		uint8_t rsv0[0xa0 - 0x2c];
 
-		// 0xa0 - 0xff: Vendor specific registers
+		// 0xa0–0xff: Vendor specific registers
 		uint8_t vendor[0x100 - 0xa0];
 
-		// 0x100 - 0x10ff: Port control registers
+		// 0x100–0x10ff: Port control registers
 		HBAPort ports[32];
 
 		void probe() volatile;
-	};
-
-	struct HBAFIS {
-		// 0x00
-		volatile FISDMASetup dsfis; // DMA Setup FIS
-		volatile uint8_t pad0[4];
-
-		// 0x20
-		volatile FISPIOSetup psfis; // PIO Setup FIS
-		volatile uint8_t pad1[12];
-
-		// 0x40
-		volatile FISRegD2H rfis; // Register – Device to Host FIS
-		volatile uint8_t pad2[4];
-
-		// 0x58
-		volatile uint64_t sdbfis; // Set Device Bit FIS
-
-		// 0x60
-		volatile uint8_t ufis[64];
-
-		// 0xa0
-		volatile uint8_t reserved[0x100 - 0xa0];
 	};
 
 	struct HBACommandHeader {
@@ -318,19 +318,19 @@ namespace DsOS::AHCI {
 	};
 
 	struct HBACommandTable {
-		// 0x00
-		uint8_t cfis[64]; // Command FIS
+		// 0x00: Command FIS
+		uint8_t cfis[64];
 
-		// 0x40
-		uint8_t atapiCommand[16]; // ATAPI command, 12 or 16 bytes
+		// 0x40: ATAPI command, 12 or 16 bytes
+		uint8_t atapiCommand[16];
 
-		// 0x50
-		uint8_t rsv[48]; // Reserved
+		// 0x50: Reserved
+		uint8_t rsv[48];
 
-		// 0x80
-		HBAPRDTEntry prdtEntry[1]; // Physical region descriptor table entries, 0 ~ 65535
+		// 0x80: Physical region descriptor table entries, 0 ~ 65535
+		HBAPRDTEntry prdtEntry[1];
 	};
 
 	extern PCI::Device *controller;
-	extern HBAMemory *abar;
+	extern volatile HBAMemory *abar;
 }

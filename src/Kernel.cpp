@@ -39,6 +39,21 @@ extern void *tmp_stack;
 
 void schedule();
 
+static bool waiting = true;
+
+void wait(uint64_t seconds) {
+	waiting = true;
+	ticks = 0;
+	timer_max = seconds;
+	timer_addr = +[] { waiting = false; };
+	x86_64::APIC::initTimer(1);
+	for (;;)
+		if (waiting)
+			asm("hlt");
+		else
+			break;
+}
+
 namespace DsOS {
 	Kernel * Kernel::instance = nullptr;
 
@@ -69,6 +84,7 @@ namespace DsOS {
 		// printf("Model: %s\n", model);
 		// printf("APIC: %s\n", x86_64::checkAPIC()? "yes" : "no");
 		printf("Memory: 0x%lx through 0x%lx\n", memoryLow, memoryHigh);
+
 		// printf("Core count: %d\n", x86_64::coreCount());
 		// printf("ARAT: %s\n", x86_64::arat()? "true" : "false");
 
@@ -78,52 +94,61 @@ namespace DsOS {
 		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
 
 		pager.assignSelf();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
+		// printf("[%s:%d]\n", __FILE__, __LINE__);
 		pager.clear();
-		printf("[%s:%d]\n", __FILE__, __LINE__);
+		// printf("[%s:%d]\n", __FILE__, __LINE__);
+		x86_64::APIC::init(*this);
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
-
-		x86_64::APIC::init(*this);
+		// wait(5);
 
 		x86_64::PIC::clearIRQ(1);
 		x86_64::PIC::clearIRQ(14);
 		x86_64::PIC::clearIRQ(15);
 
-		timer_addr = &::schedule;
-		timer_max = 4;
+		// timer_addr = &::schedule;
+		// timer_max = 4;
 
 		// printf("map size: %lu\n", map.size());
 
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
 
-		IDE::init();
+		// IDE::init();
 
-		// PCI::printDevices();
+		PCI::printDevices();
 
-		PCI::findAHCIController();
+		PCI::scan();
 
-		if (PCI::Device *controller = AHCI::controller) {
+		perish();
+
+		wait(5);
+
+		PCI::Device *controller = AHCI::controller;
+		if (controller) {
+		// if (false) {
 			printf("Found AHCI controller.\n");
 			printf("Command: %x / %b\n", controller->nativeHeader.command, controller->nativeHeader.command);
 			PCI::HeaderNative &header = controller->nativeHeader;
 			header.command &= ~PCI::COMMAND_INT_DISABLE;
 			header.command |= PCI::COMMAND_MEMORY;
-			PCI::writeWord(controller->bsf, PCI::COMMAND, header.command);
+			PCI::writeWord(controller->bdf, PCI::COMMAND, header.command);
 
 			volatile AHCI::HBAMemory *abar = (AHCI::HBAMemory *) (uint64_t) (controller->nativeHeader.bar5 & ~0xfff);
+			AHCI::abar = abar;
 			printf("abar: 0x%lx\n", abar);
 			pager.identityMap(abar, MMU_CACHE_DISABLED);
 			pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
 
+			wait(5);
 			abar->probe();
 			abar->cap = abar->cap | (1 << 31);
 			abar->ghc = abar->ghc | (1 << 31);
+			wait(5);
 			printf("Interrupt line: %d\n", controller->nativeHeader.interruptLine);
 			printf("Interrupt pin:  %d\n", controller->nativeHeader.interruptPin);
-			printf("cap: %u\n", abar->cap);
-			printf("ghc: %u\n", abar->ghc);
+			printf("cap: %u / %b\n", abar->cap, abar->cap);
+			printf("ghc: %u / %b\n", abar->ghc, abar->ghc);
 			printf("is: %u\n", abar->is);
 			printf("pi: %u\n", abar->pi);
 			printf("vs: %u\n", abar->vs);
@@ -133,10 +158,12 @@ namespace DsOS {
 			printf("em_ctl: %u\n", abar->em_ctl);
 			printf("cap2: %u\n", abar->cap2);
 			printf("bohc: %u\n", abar->bohc);
+			wait(5);
 			for (int i = 0; i < 32; ++i) {
 				volatile AHCI::HBAPort &port = abar->ports[i];
 				if (port.clb == 0)
 					continue;
+				wait(5);
 				printf("--------------------------------\n");
 				printf("Type: %s\n", AHCI::deviceTypes[(int) port.identifyDevice()]);
 				printf("%d: clb: %x / %b\n", i, port.clb, port.clb);
@@ -156,13 +183,18 @@ namespace DsOS {
 				printf("%d: ci: %u / %b\n", i, port.ci, port.ci);
 				printf("%d: sntf: %u / %b\n", i, port.sntf, port.sntf);
 				printf("%d: fbs: %u / %b\n", i, port.fbs, port.fbs);
+				printf("%d: devslp: %u / %b\n", i, port.devslp, port.devslp);
 			}
 
 			for (int portID = 0; portID <= 0; ++portID) {
 				volatile AHCI::HBAPort &port = abar->ports[portID];
 				char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 				printf("Port %d:\n", portID);
-				printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::IdentifyDevice, false, buffer, 1, 512, 0, 0));
+				volatile AHCI::HBAFIS &fis = *(AHCI::HBAFIS *) port.getFB();
+				printf("interrupt: %d\n", fis.rfis.interrupt);
+				printf("status: %d\n", fis.rfis.status);
+				printf("error: %d\n", fis.rfis.error);
+				printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::IdentifyDevice, false, buffer, 1, 512, 0, 512));
 				// printf("Result: %d\n", SATA::read(port, 0, 1, buffer));
 				// printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::ReadSectors, false, buffer, 4, 512, 0, 1));
 				for (int i = 0; i < 512; ++i)
@@ -173,11 +205,10 @@ namespace DsOS {
 			printf("No AHCI controller found.\n");
 		}
 
-
-
-
+		PCI::printDevices();
 		perish();
 
+/*
 		MBR mbr;
 		mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
 		IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
@@ -222,6 +253,7 @@ namespace DsOS {
 		printf("offsetof(  DirEntry::      type) = 0x%lx = %lu\n", offsetof(DirEntry, type), offsetof(DirEntry, type));
 		printf("offsetof(  DirEntry::     modes) = 0x%lx = %lu\n", offsetof(DirEntry, modes), offsetof(DirEntry, modes));
 		printf("offsetof(  DirEntry::   padding) = 0x%lx = %lu\n", offsetof(DirEntry, padding), offsetof(DirEntry, padding));
+//*/
 
 		for (;;) {
 			if (last_scancode == (0x2c | 0x80)) { // z
@@ -341,7 +373,7 @@ namespace DsOS {
 		memset(pageDescriptors, 0, pageDescriptorsLength);
 	}
 
-	void Kernel::wait(size_t millimoments) {
+	void Kernel::waitm(size_t millimoments) {
 		for (size_t i = 0; i < millimoments; ++i)
 			for (size_t j = 0; j < 8000000; ++j);
 	}

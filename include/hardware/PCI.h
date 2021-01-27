@@ -19,23 +19,23 @@
 #include "Defs.h"
 
 namespace DsOS::PCI {
-	struct BSF {
-		uint32_t bus, slot, function;
-		BSF(uint32_t bus_, uint32_t slot_, uint32_t function_): bus(bus_), slot(slot_), function(function_) {}
+	struct BDF {
+		uint32_t bus, device, function;
+		BDF(uint32_t bus_, uint32_t device_, uint32_t function_): bus(bus_), device(device_), function(function_) {}
 	};
 
-	uint8_t  readByte(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
-	uint16_t readWord(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
-	uint32_t readInt (uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset);
-	void writeByte(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint8_t  val);
-	void writeWord(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint16_t val);
-	void writeInt (uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint32_t val);
-	uint8_t  readByte(const BSF &, uint32_t offset);
-	uint16_t readWord(const BSF &, uint32_t offset);
-	uint32_t readInt (const BSF &, uint32_t offset);
-	void writeByte(const BSF &, uint32_t offset, uint8_t  val);
-	void writeWord(const BSF &, uint32_t offset, uint16_t val);
-	void writeInt (const BSF &, uint32_t offset, uint32_t val);
+	uint8_t  readByte(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset);
+	uint16_t readWord(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset);
+	uint32_t readInt (uint32_t bus, uint32_t device, uint32_t function, uint32_t offset);
+	void writeByte(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint8_t  val);
+	void writeWord(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint16_t val);
+	void writeInt (uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint32_t val);
+	uint8_t  readByte(const BDF &, uint32_t offset);
+	uint16_t readWord(const BDF &, uint32_t offset);
+	uint32_t readInt (const BDF &, uint32_t offset);
+	void writeByte(const BDF &, uint32_t offset, uint8_t  val);
+	void writeWord(const BDF &, uint32_t offset, uint16_t val);
+	void writeInt (const BDF &, uint32_t offset, uint32_t val);
 
 	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
 	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
@@ -135,14 +135,14 @@ namespace DsOS::PCI {
 	} __attribute__((packed));
 
 	struct Device {
-		BSF bsf;
+		BDF bdf;
 		HeaderNative nativeHeader;
 	};
 
-	std::vector<BSF> getDevices(uint32_t base_class, uint32_t subclass);
-	HeaderNative readNativeHeader(const BSF &);
-	Device * initDevice(const BSF &);
-	bool findAHCIController();
+	std::vector<BDF> getDevices(uint32_t base_class, uint32_t subclass);
+	HeaderNative readNativeHeader(const BDF &);
+	Device * initDevice(const BDF &);
+	void scan();
 	size_t printDevices();
 
 	using status_t = int32_t;

@@ -48,7 +48,7 @@ namespace DsOS {
 
 			void main();
 
-			static void wait(size_t millimoments = 1000);
+			static void waitm(size_t millimoments = 1000);
 			void perish();
 
 			void schedule();

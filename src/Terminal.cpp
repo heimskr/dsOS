@@ -17,8 +17,8 @@ namespace DsOS {
 		row = column = 0;
 	}
 
-	void Terminal::setColor(uint8_t color) {
-		color = color;
+	void Terminal::setColor(uint8_t color_) {
+		color = color_;
 	}
 
 	void Terminal::putEntryAt(char c, uint8_t color, size_t x, size_t y) {

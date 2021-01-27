@@ -6,7 +6,7 @@ namespace DsOS::SATA {
 	                  uint32_t byte_count, uint64_t start, uint16_t count) {
 		AHCI::HBACommandHeader *header = (AHCI::HBACommandHeader *) ((uintptr_t) port.clb | ((uintptr_t) port.clbu << 32));
 		printf("header: 0x%lx\n", header);
-		const int slot = port.getCommandSlot();
+		const int slot = port.getCommandSlot(*AHCI::abar);
 		if (slot == -1)
 			return false;
 
@@ -60,7 +60,11 @@ namespace DsOS::SATA {
 		fis->countLow  = (uint8_t) (count & 0xff);
 		fis->countHigh = (uint8_t) (count >> 8) & 0xff;
 
+		printf("tfd = 0x%lx / %b\n", port.tfd, port.tfd);
+
 		port.ci = port.ci | (1 << slot);
+		port.sact = port.sact | (1 << slot); // ???
+		// port.cmd = port.cmd | AHCI::HBA_PxCMD_ST; // ???
 		for (;;) {
 			if ((port.ci & (1 << slot)) == 0)
 				return !(port.is & AHCI::HBA_PxIS_TFES);
@@ -69,13 +73,14 @@ namespace DsOS::SATA {
 				return false;
 		}
 
+
 		return false;
 	}
 
 	bool read(volatile AHCI::HBAPort &port, uint64_t start, uint32_t count, void *buffer) {
 		port.is = -1;
 		int spin = 0; // Spin lock timeout counter
-		int slot = port.getCommandSlot();
+		int slot = port.getCommandSlot(*AHCI::abar);
 		if (slot == -1)
 			return false;
 
@@ -129,11 +134,13 @@ namespace DsOS::SATA {
 			spin++;
 
 		if (spin == 1000000) {
-			printf("Port is hung\n");
+			printf("Port is hung. tfd = 0x%x / %b\n", port.tfd, port.tfd);
 			return false;
 		}
 
-		port.ci = 1 << slot; // Issue command
+		port.sact = port.sact | (1 << slot);
+		port.ci = port.ci | (1 << slot); // Issue command
+		// port.cmd = port.cmd | AHCI::HBA_PxCMD_ST; // ???
 
 		// Wait for completion
 		for (;;) {
