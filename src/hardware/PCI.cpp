@@ -179,7 +179,7 @@ namespace DsOS::PCI {
 						printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function, header.bar0, header.bar1, header.bar2, header.bar3, header.bar4, header.bar5);
 						// printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function);
 					} else {
-						printf("%x:%x:%x\n", baseclass, subclass, interface);
+						printf("%x,%x,%x at %x:%x:%x\n", baseclass, subclass, interface, bus, device, function);
 					}
 				}
 		// This is also needed to prevent a general protection fault.
