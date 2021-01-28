@@ -137,6 +137,7 @@ namespace DsOS::PCI {
 	struct Device {
 		BDF bdf;
 		HeaderNative nativeHeader;
+		Device(const BDF &bdf_, const HeaderNative &native_header): bdf(bdf_), nativeHeader(native_header) {}
 	};
 
 	std::vector<BDF> getDevices(uint32_t base_class, uint32_t subclass);

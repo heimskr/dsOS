@@ -152,10 +152,13 @@ namespace DsOS::PCI {
 	}
 
 	void scan() {
+		// HeaderNative header;
 		for (uint32_t bus = 0; bus < 256; ++bus)
 			for (uint32_t device = 0; device < 32; ++device)
 				for (uint32_t function = 0; function < 8; ++function) {
 					const uint32_t vendor = getVendorID(bus, device, function);
+
+					// printf("[%x:%x:%x]: %x\n", bus, device, function, vendor);
 
 					if (vendor == INVALID_VENDOR)
 						continue;
@@ -167,15 +170,21 @@ namespace DsOS::PCI {
 					if (baseclass == 1 && subclass == 6) {
 						AHCI::controller = initDevice({bus, device, function});
 						AHCI::abar = (AHCI::HBAMemory *) (uintptr_t) (AHCI::controller->nativeHeader.bar5 & ~0xfff);
+						printf("Found AHCI controller at %x:%x:%x.\n", bus, device, function);
 					} else if (baseclass == 12 && subclass == 3 && interface == 0) {
 						// Bizarrely, this prevents a general protection fault caused by a return to an invalid address.
-						Util::getReturnAddress();
+						// Util::getReturnAddress();
 						HeaderNative header = readNativeHeader({bus, device, function});
+						// readNativeHeader({bus, device, function}, header);
 						printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function, header.bar0, header.bar1, header.bar2, header.bar3, header.bar4, header.bar5);
+						// printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function);
+					} else {
+						printf("%x:%x:%x\n", baseclass, subclass, interface);
 					}
 				}
 		// This is also needed to prevent a general protection fault.
-		Util::getReturnAddress();
+		// Util::getReturnAddress();
+		printf("\n");
 	}
 
 	size_t printDevices() {

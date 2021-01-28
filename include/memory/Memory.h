@@ -18,7 +18,7 @@ namespace DsOS {
 			};
 
 		private:
-			size_t align;
+			// size_t align;
 			size_t allocated = 0;
 			char *start, *high, *end;
 			BlockMeta *base = nullptr;
@@ -58,6 +58,18 @@ extern "C" {
 extern DsOS::Memory *global_memory;
 
 #define MEMORY_OPERATORS_SET
+#ifdef __clang__
+void * operator new(size_t size);
+void * operator new[](size_t size);
+void * operator new(size_t, void *ptr);
+void * operator new[](size_t, void *ptr);
+void operator delete(void *ptr)   noexcept;
+void operator delete[](void *ptr) noexcept;
+void operator delete(void *, void *)   noexcept;
+void operator delete[](void *, void *) noexcept;
+void operator delete(void *, unsigned long)   noexcept;
+void operator delete[](void *, unsigned long) noexcept;
+#else
 #ifndef __cpp_exceptions
 inline void * operator new(size_t size)   throw() { return malloc(size); }
 inline void * operator new[](size_t size) throw() { return malloc(size); }
@@ -81,4 +93,6 @@ inline void operator delete[](void *, void *) noexcept {}
 inline void operator delete(void *, unsigned long)   noexcept {}
 inline void operator delete[](void *, unsigned long) noexcept {}
 #endif
+#endif
+
 #endif

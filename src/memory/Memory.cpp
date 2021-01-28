@@ -203,3 +203,16 @@ extern "C" int posix_memalign(void ** /* memptr */, size_t alignment, size_t /* 
 		return 22; // EINVAL
 	return 0;
 }
+
+#ifdef __clang__
+void * operator new(size_t size)   { return malloc(size); }
+void * operator new[](size_t size) { return malloc(size); }
+void * operator new(size_t, void *ptr)   { return ptr; }
+void * operator new[](size_t, void *ptr) { return ptr; }
+void operator delete(void *ptr)   noexcept { free(ptr); }
+void operator delete[](void *ptr) noexcept { free(ptr); }
+void operator delete(void *, void *)   noexcept {}
+void operator delete[](void *, void *) noexcept {}
+void operator delete(void *, unsigned long)   noexcept {}
+void operator delete[](void *, unsigned long) noexcept {}
+#endif

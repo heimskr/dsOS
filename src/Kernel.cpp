@@ -120,9 +120,9 @@ namespace DsOS {
 
 		printf("Scanned.\n");
 
-		perish();
+		// perish();
 
-		wait(5);
+		// wait(5);
 
 		PCI::Device *controller = AHCI::controller;
 		if (controller) {
@@ -205,7 +205,7 @@ namespace DsOS {
 			printf("No AHCI controller found.\n");
 		}
 
-		PCI::printDevices();
+		// PCI::printDevices();
 		perish();
 
 /*

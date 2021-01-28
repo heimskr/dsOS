@@ -30,9 +30,12 @@ namespace DsOS::FS::DsFAT {
 	} __attribute__((packed));
 
 	struct Times {
-		time_t created;
-		time_t modified;
-		time_t accessed;
+		time_t created  = 0;
+		time_t modified = 0;
+		time_t accessed = 0;
+		Times() = default;
+		Times(time_t created_, time_t modified_, time_t accessed_):
+			created(created_), modified(modified_), accessed(accessed_) {}
 	};
 
 	union Filename {
@@ -43,7 +46,7 @@ namespace DsOS::FS::DsFAT {
 	enum class FileType: int {File, Directory};
 
 	struct DirEntry {
-		Filename name = {0};
+		Filename name = {{0}};
 		Times times;
 		/** Length of the directory entry in bytes. For directories, 0 -> free. */
 		size_t length = 0;

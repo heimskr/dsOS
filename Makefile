@@ -1,12 +1,12 @@
 # Based on code by Ring Zero and Lower: http://ringzeroandlower.com/2017/08/08/x86-64-kernel-boot.html
 
-CC           := x86_64-elf-gcc
-CPP          := x86_64-elf-g++
+CC           := clang -target x86_64-elf
+CPP          := clang++ -target x86_64-elf
 AS           := x86_64-elf-g++
-SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel -fno-pie
+SHARED_FLAGS := -fno-builtin -O0 -nostdlib -ffreestanding -fno-pie -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
-CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++20 -Drestrict=__restrict__
+CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++2a -Drestrict=__restrict__
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
 QEMU_MAIN    ?= -s -cdrom $(ISO_FILE) -boot d -serial stdio -m 8G
@@ -54,7 +54,7 @@ src/arch/x86_64/Interrupts.o: src/arch/x86_64/Interrupts.cpp include/arch/x86_64
 	$(CPP) $(CPPFLAGS) -mgeneral-regs-only -DARCHX86_64 -c $< -o $@
 
 kernel: $(OBJS) kernel.ld $(LIBS)
-	$(CPP) -z max-page-size=0x1000 $(CPPFLAGS) -no-pie -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS) $(LIBS) -lgcc
+	x86_64-elf-g++ -z max-page-size=0x1000 $(CPPFLAGS) -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS) $(LIBS)
 
 musl/lib/libc.a:
 	$(MAKE) -C musl

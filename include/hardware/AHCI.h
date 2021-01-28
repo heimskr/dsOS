@@ -116,7 +116,7 @@ namespace DsOS::AHCI {
 		uint32_t rsv4;        // Reserved
 	};
 
-	class FISData { // Bidirectional
+	struct FISData { // Bidirectional
 		// DWORD 0
 		FISType type = FISType::Data;
 
