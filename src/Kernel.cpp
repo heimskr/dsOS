@@ -68,14 +68,9 @@ namespace DsOS {
 	void Kernel::main() {
 		Terminal::clear();
 		Terminal::write("Hello, kernel world!\n");
-		printf("pml4: 0x%lx\n", &pml4);
-		printf("low_pdpt: 0x%lx\n", &low_pdpt);
-		printf("high_pdpt: 0x%lx\n", &high_pdpt);
-		printf("low_page_directory_table: 0x%lx\n", &low_page_directory_table);
-		printf("high_page_directory_table: 0x%lx\n", &high_page_directory_table);
 		if (Serial::init())
 			Serial::write("\n\n\n");
-		kernelPML4.print(false);
+		// kernelPML4.print(false);
 		detectMemory();
 		arrangeMemory();
 		x86_64::IDT::init();
