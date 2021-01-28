@@ -7,6 +7,7 @@
 #include "hardware/Serial.h"
 #include "lib/printf.h"
 #include "memory/Memory.h"
+#include "DsUtil.h"
 #include "Terminal.h"
 
 namespace DsOS::PCI {
@@ -130,6 +131,11 @@ namespace DsOS::PCI {
 
 	HeaderNative readNativeHeader(const BDF &bdf) {
 		HeaderNative native;
+		readNativeHeader(bdf, native);
+		return native;
+	}
+
+	void readNativeHeader(const BDF &bdf, HeaderNative &native) {
 		const uint32_t bar5 = readInt(bdf, BAR5);
 		for (uint8_t i = 0; i < 64; i += 16) {
 			((uint32_t *) &native)[i]     = readInt(bdf, i);
@@ -138,7 +144,6 @@ namespace DsOS::PCI {
 			((uint32_t *) &native)[i + 3] = readInt(bdf, i + 12);
 		}
 		native.bar5 = bar5;
-		return native;
 	}
 
 	Device * initDevice(const BDF &bdf) {
@@ -163,9 +168,14 @@ namespace DsOS::PCI {
 						AHCI::controller = initDevice({bus, device, function});
 						AHCI::abar = (AHCI::HBAMemory *) (uintptr_t) (AHCI::controller->nativeHeader.bar5 & ~0xfff);
 					} else if (baseclass == 12 && subclass == 3 && interface == 0) {
-						printf("Found UHCI controller at %x:%x:%x\n", bus, device, function);
+						// Bizarrely, this prevents a general protection fault caused by a return to an invalid address.
+						Util::getReturnAddress();
+						HeaderNative header = readNativeHeader({bus, device, function});
+						printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function, header.bar0, header.bar1, header.bar2, header.bar3, header.bar4, header.bar5);
 					}
 				}
+		// This is also needed to prevent a general protection fault.
+		Util::getReturnAddress();
 	}
 
 	size_t printDevices() {

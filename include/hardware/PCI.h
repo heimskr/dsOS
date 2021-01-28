@@ -141,6 +141,7 @@ namespace DsOS::PCI {
 
 	std::vector<BDF> getDevices(uint32_t base_class, uint32_t subclass);
 	HeaderNative readNativeHeader(const BDF &);
+	void readNativeHeader(const BDF &, HeaderNative &);
 	Device * initDevice(const BDF &);
 	void scan();
 	size_t printDevices();

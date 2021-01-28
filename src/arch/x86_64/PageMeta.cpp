@@ -178,6 +178,10 @@ namespace x86_64 {
 
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
 		uintptr_t assigned = 0;
+		if ((uintptr_t) pt > 0xffffffff) {
+			kernel->kernelPML4.print(false);
+			printf("pt=0x%lx, pt_index=0x%x\n", pt, pt_index);
+		}
 		if (!isPresent(pt[pt_index])) {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {

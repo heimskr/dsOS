@@ -13,7 +13,7 @@
 
 #define INTERRUPT 
 
-// #define DEBUG_PAGE_FAULTS
+#define DEBUG_PAGE_FAULTS
 
 extern bool irqInvoked;
 
