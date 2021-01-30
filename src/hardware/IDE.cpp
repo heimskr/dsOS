@@ -11,7 +11,7 @@
 using DsOS::Ports::inb;
 using DsOS::Ports::outb;
 
-bool irqInvoked = false;
+volatile bool irqInvoked = false;
 
 namespace DsOS::IDE {
 	Device devices[4];
@@ -429,8 +429,8 @@ namespace DsOS::IDE {
 			err = 8;
 		}
 		printf("- [%s %s] %s\n",
-			(const char *[]) {"Primary", "Secondary"}[devices[drive].channel], // Use the channel as an index into the array
-			(const char *[]) {"Master", "Slave"}[devices[drive].drive], // Same as above, using the drive
+			devices[drive].channel == 0? "Primary" : "Secondary",
+			devices[drive].drive   == 0? "Master" : "Slave",
 			devices[drive].model);
 
 		return err;

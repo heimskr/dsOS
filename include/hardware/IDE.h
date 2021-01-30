@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-extern bool irqInvoked;
+extern volatile bool irqInvoked;
 
 namespace DsOS::IDE {
 	constexpr size_t SECTOR_SIZE = 512;

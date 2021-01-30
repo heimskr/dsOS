@@ -19,7 +19,7 @@ namespace x86_64 {
 		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i) {
 			const uint64_t &pml4e = entries[i];
 			if (pml4e) {
-				printf("%d (0x%lx): 0x%lx (PML4E)", i, &pml4e, pml4e & ~0xfff);
+				printf("%d (0x%lx): 0x%lx (PML4E)", i, &pml4e, pml4e & ~0xfffL);
 				printMeta(pml4e);
 				size_t i_shift = (size_t) i << 39;
 				printf(" 0x%lx\n", i_shift);
@@ -34,9 +34,9 @@ namespace x86_64 {
 
 	void PageTableWrapper::printPDPT(size_t i_shift, uint64_t pml4e, bool show_pdt, PTDisplay pt_display) {
 		for (int j = 0; j < PDPT_SIZE / PDPT_ENTRY_SIZE; ++j) {
-			const uint64_t &pdpe = ((uint64_t *) (pml4e & ~0xfff))[j];
+			const uint64_t &pdpe = ((uint64_t *) (pml4e & ~0xfffL))[j];
 			if (pdpe) {
-				printf("  %d (0x%lx): 0x%lx (PDPE)", j, &pdpe, pdpe & ~0xfff);
+				printf("  %d (0x%lx): 0x%lx (PDPE)", j, &pdpe, pdpe & ~0xfffL);
 				printMeta(pdpe);
 				size_t j_shift = i_shift | ((size_t) j << 30);
 				printf(" 0x%lx\n", j_shift);
@@ -50,9 +50,9 @@ namespace x86_64 {
 
 	void PageTableWrapper::printPDT(size_t j_shift, uint64_t pdpe, PTDisplay pt_display) {
 		for (int k = 0; k < PAGE_DIRECTORY_SIZE / PAGE_DIRECTORY_ENTRY_SIZE; ++k) {
-			const uint64_t &pde = ((uint64_t *) (pdpe & ~0xfff))[k];
+			const uint64_t &pde = ((uint64_t *) (pdpe & ~0xfffL))[k];
 			if (pde) {
-				printf("    %d (0x%lx): 0x%lx (PDE)", k, &pde, pde & ~0xfff);
+				printf("    %d (0x%lx): 0x%lx (PDE)", k, &pde, pde & ~0xfffL);
 				printMeta(pde);
 				size_t k_shift = j_shift | ((size_t) k << 21);
 				printf(" 0x%lx\n", k_shift);
@@ -71,7 +71,7 @@ namespace x86_64 {
 		for (int l = 0; l < PAGE_TABLE_SIZE / PAGE_TABLE_ENTRY_SIZE; ++l) {
 			const uint64_t &pte = ((uint64_t *) (pde & ~0xfff))[l];
 			if (pte) {
-				printf("      %d (0x%lx): 0x%lx", l, &pte, pte & ~0xfff);
+				printf("      %d (0x%lx): 0x%lx", l, &pte, pte & ~0xfffL);
 				printMeta(pte);
 				printf(" 0x%lx\n", k_shift | ((size_t) l << 12));
 			}
@@ -86,7 +86,7 @@ namespace x86_64 {
 		int first = -1, last = -1;
 		constexpr int max = PAGE_TABLE_SIZE / PAGE_TABLE_ENTRY_SIZE;
 		for (int i = 0; i < max; ++i) {
-			const uint64_t pte = ((uint64_t *) (pde & ~0xfff))[i];
+			const uint64_t pte = ((uint64_t *) (pde & ~0xfffL))[i];
 			if (pte) {
 				if (first == -1)
 					first = i;
@@ -97,20 +97,20 @@ namespace x86_64 {
 		if (first == -1) {
 			printf("      %d empty\n", max);
 		} else {
-			uint64_t first_pte = ((uint64_t *) (pde & ~0xfff))[first];
-			printf("      %d: 0x%lx (PTE)", first, first_pte & ~0xfff);
+			uint64_t first_pte = ((uint64_t *) (pde & ~0xfffL))[first];
+			printf("      %d: 0x%lx (PTE)", first, first_pte & ~0xfffL);
 			printMeta(first_pte);
 			printf(" 0x%lx\n", k_shift | ((size_t) first << 12));
 			if (first < last) {
 				if (first != last - 1) {
 					int nonempty = 0;
 					for (int i = first + 1; i < last; ++i)
-						if (((uint64_t *) (pde & ~0xfff))[i])
+						if (((uint64_t *) (pde & ~0xfffL))[i])
 							++nonempty;
 					printf("      ... %d nonempty\n", nonempty);
 				}
-				uint64_t last_pte = ((uint64_t *) (pde & ~0xfff))[last];
-				printf("      %d: 0x%lx (PTE)", last, last_pte & ~0xfff);
+				uint64_t last_pte = ((uint64_t *) (pde & ~0xfffL))[last];
+				printf("      %d: 0x%lx (PTE)", last, last_pte & ~0xfffL);
 				printMeta(last_pte);
 				printf(" 0x%lx\n", k_shift | ((size_t) last << 12));
 			}

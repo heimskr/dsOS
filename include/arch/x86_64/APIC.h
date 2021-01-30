@@ -48,6 +48,15 @@ namespace x86_64::APIC {
 	constexpr uint32_t TIMER_NUM_CALIBRATIONS = 5;
 	constexpr uint32_t TIMER_SELECT_DIVIDER = 3;
 
+	constexpr uint16_t ICR_MESSAGE_TYPE_FIXED = 0;
+	constexpr uint16_t ICR_MESSAGE_TYPE_LOW_PRIORITY = 1 << 8;
+	constexpr uint16_t ICR_MESSAGE_TYPE_SMI = 2 << 8;
+	constexpr uint16_t ICR_MESSAGE_TYPE_REMOTE_READ = 3 << 8;
+	constexpr uint16_t ICR_MESSAGE_TYPE_NMI = 4 << 8;
+	constexpr uint16_t ICR_MESSAGE_TYPE_INIT = 5 << 8;
+	constexpr uint16_t ICR_MESSAGE_TYPE_STARTUP = 6 << 8;
+	constexpr uint16_t ICR_MESSAGE_TYPE_EXTERNAL = 7 << 8;
+
 	void init(DsOS::Kernel &);
 	void initTimer(uint32_t frequency);
 	uint32_t calibrateTimer();

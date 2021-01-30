@@ -162,10 +162,9 @@ namespace DsOS {
 #ifdef DEBUG_ALLOCATION
 		printf("setBounds(0x%lx, 0x%lx)\n", new_start, new_high);
 #endif
-		start = new_start;
+		start = (char *) realign((uintptr_t) new_start);
 		high = new_high;
 		end = new_start;
-		realign((uintptr_t) start);
 	}
 
 	size_t Memory::getAllocated() const {
@@ -188,7 +187,8 @@ extern "C" void * malloc(size_t size) {
 
 extern "C" void * calloc(size_t count, size_t size) {
 	void *chunk = malloc(count * size);
-	memset(chunk, 0, count * size);
+	if (chunk)
+		memset(chunk, 0, count * size);
 	return chunk;
 }
 

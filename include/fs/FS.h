@@ -56,7 +56,7 @@ namespace DsOS::FS {
 	class Driver {
 		public:
 			Partition *partition;
-			virtual ~Driver() { cleanup(); }
+			virtual ~Driver() {}
 			virtual int rename(const char *path, const char *newpath) = 0;
 			virtual int release(const char *path) = 0;
 			virtual int statfs(const char *, DriverStats &) = 0;
@@ -72,7 +72,7 @@ namespace DsOS::FS {
 			virtual int read(const char *path, char *buffer, size_t size, off_t offset) = 0;
 			virtual int readdir(const char *path, DirFiller filler) = 0;
 			virtual int getattr(const char *path, FileStats &) = 0;
-			virtual void cleanup() {}
+			virtual void cleanup() = 0;
 
 		protected:
 			Driver() = delete;

@@ -1,5 +1,7 @@
 #pragma once
 
+// Some code is from https://github.com/fido2020/Lemon-OS/blob/master/Kernel/include/arch/x86_64/cpu.h
+
 #include <stdint.h>
 
 namespace x86_64 {
@@ -25,5 +27,38 @@ namespace x86_64 {
 
 	inline void disableInterrupts() {
 		asm volatile("cli");
+	}
+
+	inline bool checkInterrupts() {
+		unsigned long flags;
+		asm volatile("pushf; pop %%rax" : "=a"(flags) :: "cc");
+		return flags & 0x200;
+	}
+
+	struct GDTPointer {
+		uint16_t limit;
+		uint64_t base;
+	} __attribute__((packed));
+
+	struct CPU {
+		CPU *self;
+		uint64_t id; // APIC/CPU id
+		void *gdt;
+		GDTPointer gdtPointer;
+		// thread_t* currentThread = nullptr;
+		// process* idleProcess = nullptr;
+		// volatile int runQueueLock = 0;
+		// FastList<thread_t*>* runQueue;
+		// tss_t tss __attribute__((aligned(16)));
+	};
+
+	__attribute__((always_inline)) inline CPU * getCPULocal() {
+		CPU *out;
+		bool interrupts = checkInterrupts();
+		asm("cli");
+		asm volatile("swapgs; movq %%gs:0, %0; swapgs" : "=r"(out));
+		if (interrupts)
+			asm("sti");
+		return out;
 	}
 }

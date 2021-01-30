@@ -11,6 +11,7 @@
 *******************************************************************************/
 
 // Some code is from https://github.com/imgits/ShellcodeOS/blob/master/OS/pci/pci.h
+// Some code is from https://github.com/fido2020/Lemon-OS/blob/master/Kernel/include/arch/x86_64/pci.h
 
 #pragma once
 
@@ -19,6 +20,9 @@
 #include "Defs.h"
 
 namespace DsOS::PCI {
+	constexpr uint8_t MSI_CONTROL_64 = 1 << 7;
+	constexpr uint32_t MSI_ADDRESS_BASE = 0xfee00000;
+
 	struct BDF {
 		uint32_t bus, device, function;
 		BDF(uint32_t bus_, uint32_t device_, uint32_t function_): bus(bus_), device(device_), function(function_) {}
@@ -30,12 +34,12 @@ namespace DsOS::PCI {
 	void writeByte(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint8_t  val);
 	void writeWord(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint16_t val);
 	void writeInt (uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint32_t val);
-	uint8_t  readByte(const BDF &, uint32_t offset);
-	uint16_t readWord(const BDF &, uint32_t offset);
-	uint32_t readInt (const BDF &, uint32_t offset);
-	void writeByte(const BDF &, uint32_t offset, uint8_t  val);
-	void writeWord(const BDF &, uint32_t offset, uint16_t val);
-	void writeInt (const BDF &, uint32_t offset, uint32_t val);
+	uint8_t  readByte(const volatile BDF &, uint32_t offset);
+	uint16_t readWord(const volatile BDF &, uint32_t offset);
+	uint32_t readInt (const volatile BDF &, uint32_t offset);
+	void writeByte(const volatile BDF &, uint32_t offset, uint8_t  val);
+	void writeWord(const volatile BDF &, uint32_t offset, uint16_t val);
+	void writeInt (const volatile BDF &, uint32_t offset, uint32_t val);
 
 	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
 	uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function);
@@ -45,7 +49,7 @@ namespace DsOS::PCI {
 	uint8_t getRevisionID(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getProgIF(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getBaseClass(uint32_t bus, uint32_t device, uint32_t function);
-	uint8_t getSubClass(uint32_t bus, uint32_t device, uint32_t function);
+	uint8_t getSubclass(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getCacheLineSize(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getLatencyTimer(uint32_t bus, uint32_t device, uint32_t function);
 	uint8_t getHeaderType(uint32_t bus, uint32_t device, uint32_t function);
@@ -134,10 +138,75 @@ namespace DsOS::PCI {
 		uint16_t bridgeControl;
 	} __attribute__((packed));
 
+	enum class Vector: uint8_t {
+		Legacy = 1, // Legacy IRQ
+		APIC   = 2, // I/O APIC
+		MSI    = 4, // Message Signaled Interrupt
+		Any    = 7, // (Legacy | APIC | MSI)
+	};
+
+	struct MSICapability {
+		union {
+			struct {
+				uint32_t capID: 8;
+				uint32_t nextCap: 8;     // Next capability
+				uint32_t msiControl: 16; // MSI control register
+			} __attribute__((packed));
+			uint32_t register0;
+		};
+
+		union {
+			uint32_t addressLow; // Interrupt Message Address Low
+			uint32_t register1;
+		};
+
+		union {
+			uint32_t data;        // MSI data
+			uint32_t addressHigh; // Interrupt Message Address High (64-bit only)
+			uint32_t register2;
+		};
+
+		union {
+			uint32_t data64;    // MSI data when 64-bit capable
+			uint32_t register3;
+		};
+
+		inline void setData(uint32_t data_) {
+			if (msiControl & MSI_CONTROL_64)
+				data64 = data_;
+			else
+				data = data_;
+		}
+
+		inline uint32_t getData() {
+			return (msiControl & MSI_CONTROL_64)? data64 : data;
+		}
+
+		inline void setAddress(uint32_t cpu) {
+			addressLow = MSI_ADDRESS_BASE | (cpu << 12);
+			if (msiControl & MSI_CONTROL_64)
+				addressHigh = 0;
+		}
+	} __attribute__((packed));
+
 	struct Device {
 		BDF bdf;
-		HeaderNative nativeHeader;
-		Device(const BDF &bdf_, const HeaderNative &native_header): bdf(bdf_), nativeHeader(native_header) {}
+		uint8_t msiPointer = 0;
+		bool msiCapable = false;
+		MSICapability msiCapability;
+		std::vector<uint8_t> capabilities;
+
+		Device(const BDF &);
+
+		void init();
+		uint16_t readStatus();
+		uintptr_t getBAR(uint8_t);
+		uint16_t getCommand();
+		void setCommand(uint16_t);
+		uint8_t getInterruptLine();
+		uint8_t getInterruptPin();
+		uint8_t allocateVector(Vector);
+		uint8_t allocateVector(uint8_t);
 	};
 
 	std::vector<BDF> getDevices(uint32_t base_class, uint32_t subclass);
@@ -511,4 +580,7 @@ namespace DsOS::PCI {
 	constexpr uint8_t  PM_STATE_D3 = 0x03;
 
 	constexpr uint16_t INVALID_VENDOR = 0xffff;
+	constexpr uint8_t MSI_CONTROL_MME_MASK = 7 << 4;
+	constexpr uint16_t MSI_CONTROL_VECTOR_MASKING = 1 << 8;
+	#define PCI_MSI_CONTROL_SET_MME(x) ((x & 0x7) << 4)
 }

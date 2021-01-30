@@ -22,6 +22,7 @@ namespace x86_64::IDT {
 
 	void add(int index, void (*fn)());
 	void init();
+	uint8_t reserveUnusedInterrupt();
 }
 
 struct interrupt_frame {

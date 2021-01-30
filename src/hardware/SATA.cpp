@@ -2,11 +2,11 @@
 #include "memory/memset.h"
 
 namespace DsOS::SATA {
-	bool issueCommand(volatile AHCI::HBAPort &port, ATA::Command command, bool write, void *buffer, uint16_t prdtl,
-	                  uint32_t byte_count, uint64_t start, uint16_t count) {
+	bool issueCommand(AHCI::Controller &controller, volatile AHCI::HBAPort &port, ATA::Command command, bool write,
+	                  void *buffer, uint16_t prdtl, uint32_t byte_count, uint64_t start, uint16_t count) {
 		AHCI::HBACommandHeader *header = (AHCI::HBACommandHeader *) ((uintptr_t) port.clb | ((uintptr_t) port.clbu << 32));
 		printf("header: 0x%lx\n", header);
-		const int slot = port.getCommandSlot(*AHCI::abar);
+		const int slot = port.getCommandSlot(*controller.abar);
 		if (slot == -1)
 			return false;
 
@@ -77,10 +77,11 @@ namespace DsOS::SATA {
 		return false;
 	}
 
-	bool read(volatile AHCI::HBAPort &port, uint64_t start, uint32_t count, void *buffer) {
+	bool read(AHCI::Controller &controller, volatile AHCI::HBAPort &port, uint64_t start, uint32_t count,
+	          void *buffer) {
 		port.is = -1;
 		int spin = 0; // Spin lock timeout counter
-		int slot = port.getCommandSlot(*AHCI::abar);
+		int slot = port.getCommandSlot(*controller.abar);
 		if (slot == -1)
 			return false;
 

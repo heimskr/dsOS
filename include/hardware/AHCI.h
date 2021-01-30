@@ -4,9 +4,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "hardware/ATA.h"
 #include "hardware/PCI.h"
+
+namespace DsOS {
+	class Kernel;
+}
 
 namespace DsOS::AHCI {
 	constexpr uint32_t SIG_ATA   = 0x00000101; // SATA drive
@@ -331,6 +336,15 @@ namespace DsOS::AHCI {
 		HBAPRDTEntry prdtEntry[1];
 	};
 
-	extern PCI::Device *controller;
-	extern volatile HBAMemory *abar;
+	class Controller {
+		public:
+			PCI::Device *device;
+			volatile HBAMemory *abar;
+
+			Controller(PCI::Device *);
+
+			void init(Kernel &);
+	};
+
+	extern std::vector<Controller> *controllers;
 }

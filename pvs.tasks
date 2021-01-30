@@ -1,0 +1,86 @@
+www.viva64.com/en/w	1	err	Help: The documentation for all analyzer warnings is available here: https://www.viva64.com/en/w/.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	52	warn	V677 Custom declaration of a standard 'size_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	62	warn	V677 Custom declaration of a standard 'ptrdiff_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	57	warn	V677 Custom declaration of a standard 'uintptr_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	72	warn	V677 Custom declaration of a standard 'intptr_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	98	warn	V677 Custom declaration of a standard 'int8_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	103	warn	V677 Custom declaration of a standard 'int16_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	108	warn	V677 Custom declaration of a standard 'int32_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	113	warn	V677 Custom declaration of a standard 'int64_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	123	warn	V677 Custom declaration of a standard 'uint8_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	128	warn	V677 Custom declaration of a standard 'uint16_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	133	warn	V677 Custom declaration of a standard 'uint32_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	138	warn	V677 Custom declaration of a standard 'uint64_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/include/lib/libcxx/__nullptr	54	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/lib/libcxx/cstddef	85	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	328	warn	V677 Custom declaration of a standard 'va_list' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/src/arch/x86_64/PIC.cpp	1	err	V1042 This file is marked with copyleft license, which requires you to open the derived source code.
+/home/kai/src/dsOS/include/lib/libcxx/limits	115	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	200	warn	V677 Custom declaration of a standard 'wint_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	205	warn	V677 Custom declaration of a standard 'wctype_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	322	warn	V677 Custom declaration of a standard 'FILE' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	339	warn	V677 Custom declaration of a standard 'mbstate_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/src/memory/memset.cpp	12	err	V1042 This file is marked with copyleft license, which requires you to open the derived source code.
+/home/kai/src/dsOS/musl/include/stdlib.h	64	warn	V677 Custom declaration of a standard 'div_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/include/stdlib.h	65	warn	V677 Custom declaration of a standard 'ldiv_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/src/memory/Memory.cpp	190	warn	V575 The potential null pointer is passed into 'memset' function. Inspect the first argument. Check lines: 190, 189.
+/home/kai/src/dsOS/include/lib/libcxx/exception	95	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/lib/libcxx/new	120	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/lib/libcxx/typeinfo	77	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/lib/libcxx/initializer_list	52	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/lib/libcxx/stdexcept	73	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/lib/libcxx/memory	1567	warn	V794 The assignment operator should be protected from the case of 'this == &__u'.
+/home/kai/src/dsOS/include/lib/libcxx/memory	2932	err	V530 The return value of function 'release' is required to be utilized.
+/home/kai/src/dsOS/src/lib/libcxx/support/runtime/new_handler_fallback.ipp	10	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/src/lib/libcxx/new.cpp	29	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/lib/libcxx/functional	1773	err	V730 Not all members of a class are initialized inside the constructor. Consider inspecting: __buf_.
+/home/kai/src/dsOS/include/lib/libcxx/functional	2115	err	V730 Not all members of a class are initialized inside the constructor. Consider inspecting: __buf_.
+/home/kai/src/dsOS/src/arch/x86_64/APIC.cpp	1	err	V1042 This file is marked with copyleft license, which requires you to open the derived source code.
+/home/kai/src/dsOS/src/arch/x86_64/PageTableWrapper.cpp	22	err	V576 Incorrect format. Consider checking the fourth actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/arch/x86_64/PageTableWrapper.cpp	39	err	V576 Incorrect format. Consider checking the fourth actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/arch/x86_64/PageTableWrapper.cpp	55	err	V576 Incorrect format. Consider checking the fourth actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/arch/x86_64/PageTableWrapper.cpp	74	err	V576 Incorrect format. Consider checking the fourth actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/arch/x86_64/PageTableWrapper.cpp	101	err	V576 Incorrect format. Consider checking the third actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/arch/x86_64/PageTableWrapper.cpp	113	err	V576 Incorrect format. Consider checking the third actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/arch/x86_64/PageMeta.cpp	118	err	V610 Undefined behavior. Check the shift operator '<<'. The right operand ('j' = [0..63]) is greater than or equal to the length in bits of the promoted left operand.
+/home/kai/src/dsOS/src/hardware/IDE.cpp	205	warn	V1032 The pointer 'ideBuffer' is cast to a more strictly aligned pointer type.
+/home/kai/src/dsOS/src/hardware/IDE.cpp	316	err	V547 Expression 'dma == 0' is always true.
+/home/kai/src/dsOS/src/hardware/IDE.cpp	332	err	V547 Expression 'dma == 0' is always true.
+/home/kai/src/dsOS/src/hardware/IDE.cpp	350	warn	V547 Expression 'dma' is always false.
+/home/kai/src/dsOS/include/lib/libcxx/algorithm	3945	err	V530 The return value of function 'release' is required to be utilized.
+/home/kai/src/dsOS/include/lib/libcxx/algorithm	4633	err	V530 The return value of function 'release' is required to be utilized.
+/home/kai/src/dsOS/include/lib/libcxx/algorithm	4640	err	V530 The return value of function 'release' is required to be utilized.
+/home/kai/src/dsOS/include/lib/libcxx/algorithm	4724	err	V530 The return value of function 'release' is required to be utilized.
+/home/kai/src/dsOS/include/lib/libcxx/__hash_table	653	warn	V730 Not all members of a class are initialized inside the constructor. Consider inspecting: __bucket_, __bucket_count_.
+/home/kai/src/dsOS/include/lib/libcxx/__hash_table	519	warn	V730 Not all members of a class are initialized inside the constructor. Consider inspecting: __bucket_, __bucket_count_.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	164	warn	V677 Custom declaration of a standard 'off_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/include/stdio.h	60	warn	V677 Custom declaration of a standard 'fpos_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/include/wctype.h	20	warn	V677 Custom declaration of a standard 'wctrans_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/include/lib/libcxx/string_view	301	err	V521 Such expressions using the ',' operator are dangerous. Make sure the expression '((void) 0), __data[__pos]' is correct.
+/home/kai/src/dsOS/include/lib/libcxx/string_view	301	err	V685 Consider inspecting the return statement. The expression contains a comma.
+/home/kai/src/dsOS/include/lib/libcxx/string_view	315	err	V521 Such expressions using the ',' operator are dangerous. Make sure the expression '((void) 0), __data[0]' is correct.
+/home/kai/src/dsOS/include/lib/libcxx/string_view	315	err	V685 Consider inspecting the return statement. The expression contains a comma.
+/home/kai/src/dsOS/include/lib/libcxx/string_view	321	err	V521 Such expressions using the ',' operator are dangerous. Make sure the expression '((void) 0), __data[__size - 1]' is correct.
+/home/kai/src/dsOS/include/lib/libcxx/string_view	321	err	V685 Consider inspecting the return statement. The expression contains a comma.
+/home/kai/src/dsOS/include/lib/libcxx/string	3986	warn	V547 Expression 'data() == nullptr' is always false.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	87	warn	V677 Custom declaration of a standard 'time_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/musl/obj/include/bits/alltypes.h	221	warn	V677 Custom declaration of a standard 'clock_t' type. The declaration from system header files should be used instead.
+/home/kai/src/dsOS/include/lib/libcxx/__split_buffer	395	warn	V794 The assignment operator should be protected from the case of 'this == &__c'.
+/home/kai/src/dsOS/src/hardware/SATA.cpp	114	warn	V641 The size of the '& table->cfis' buffer is not a multiple of the element size of the type 'AHCI::FISRegH2D'.
+/home/kai/src/dsOS/include/hardware/AHCI.h	119	warn	V730 Not all members of a class are initialized inside the compiler generated constructor. Consider inspecting: pmport, rsv0, rsv1, data.
+/home/kai/src/dsOS/include/lib/libcxx/optional	169	warn	V1061 Extending the 'std' namespace may result in undefined behavior.
+/home/kai/src/dsOS/include/fs/dsFAT/FDCache.h	24	warn	V730 Not all members of a class are initialized inside the constructor. Consider inspecting: entries.
+/home/kai/src/dsOS/src/fs/dsFAT/dsFAT.cpp	292	err	V547 Expression 'status != 0' is always false.
+/home/kai/src/dsOS/src/fs/dsFAT/dsFAT.cpp	441	err	V576 Incorrect format. Consider checking the fourth actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/fs/dsFAT/dsFAT.cpp	442	err	V576 Incorrect format. Consider checking the second actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/fs/dsFAT/dsFAT.cpp	687	err	V576 Incorrect format. Consider checking the second actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/fs/dsFAT/dsFAT.cpp	693	err	V576 Incorrect format. Consider checking the second actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/fs/dsFAT/dsFAT.cpp	1295	warn	V547 Expression 'block_size < sizeof (Superblock)' is always false.
+/home/kai/src/dsOS/src/Kernel.cpp	300	err	V576 Incorrect format. Consider checking the second actual argument of the 'printf' function. The memsize type argument is expected.
+/home/kai/src/dsOS/src/hardware/PCI.cpp	141	warn	V557 Array overrun is possible. The value of 'i' index could reach 63.
+/home/kai/src/dsOS/src/hardware/PCI.cpp	180	warn	V576 Incorrect format. Consider checking the fifth actual argument of the 'printf' function. The integer argument of 64-bit size is expected.
+/home/kai/src/dsOS/src/hardware/PCI.cpp	180	warn	V576 Incorrect format. Consider checking the sixth actual argument of the 'printf' function. The integer argument of 64-bit size is expected.
+/home/kai/src/dsOS/src/hardware/PCI.cpp	180	warn	V576 Incorrect format. Consider checking the seventh actual argument of the 'printf' function. The integer argument of 64-bit size is expected.
+/home/kai/src/dsOS/src/hardware/PCI.cpp	180	warn	V576 Incorrect format. Consider checking the eighth actual argument of the 'printf' function. The integer argument of 64-bit size is expected.
+/home/kai/src/dsOS/src/hardware/PCI.cpp	180	warn	V576 Incorrect format. Consider checking the ninth actual argument of the 'printf' function. The integer argument of 64-bit size is expected.
+/home/kai/src/dsOS/src/hardware/PCI.cpp	180	warn	V576 Incorrect format. Consider checking the tenth actual argument of the 'printf' function. The integer argument of 64-bit size is expected.

@@ -33,6 +33,7 @@ namespace x86_64::IDT {
 	void init() {
 		idt_header.size = SIZE * sizeof(Descriptor) - 1;
 		idt_header.start = (uint32_t) (((uintptr_t) &idt) & 0xffffffff);
+		memset(idt, 0, sizeof(idt));
 
 		add(0, &isr_0);
 		add(8, &isr_8);
@@ -44,6 +45,15 @@ namespace x86_64::IDT {
 		add(46, &isr_46);
 		add(47, &isr_47);
 		asm volatile("lidt %0" :: "m"(idt_header));
+	}
+
+	uint8_t reserveUnusedInterrupt() {
+		for (uint8_t i = 48; i < 255; ++i)
+			if (idt[i].type_attr == 0) {
+				add(i, +[] { printf("Invalid interrupt handler called!\n"); });
+				return i;
+			}
+		return 0xff;
 	}
 }
 

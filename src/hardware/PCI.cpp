@@ -1,5 +1,9 @@
 // Some code is from https://github.com/imgits/ShellcodeOS/blob/master/OS/pci/pci.cpp
+// Some code is from https://github.com/fido2020/Lemon-OS/blob/master/Kernel/include/arch/x86_64/pci.h
 
+#include "arch/x86_64/APIC.h"
+#include "arch/x86_64/CPU.h"
+#include "arch/x86_64/Interrupts.h"
 #include "hardware/AHCI.h"
 #include "hardware/PCI.h"
 #include "hardware/PCIIDs.h"
@@ -43,27 +47,27 @@ namespace DsOS::PCI {
 		outl(0xcfc, val);
 	}
 
-	uint8_t readByte(const BDF &bdf, uint32_t offset) {
+	uint8_t readByte(const volatile BDF &bdf, uint32_t offset) {
 		return readByte(bdf.bus, bdf.device, bdf.function, offset);
 	}
 
-	uint16_t readWord(const BDF &bdf, uint32_t offset) {
+	uint16_t readWord(const volatile BDF &bdf, uint32_t offset) {
 		return readWord(bdf.bus, bdf.device, bdf.function, offset);
 	}
 
-	uint32_t readInt(const BDF &bdf, uint32_t offset) {
+	uint32_t readInt(const volatile BDF &bdf, uint32_t offset) {
 		return readInt(bdf.bus, bdf.device, bdf.function, offset);
 	}
 
-	void writeByte(const BDF &bdf, uint32_t offset, uint8_t val) {
+	void writeByte(const volatile BDF &bdf, uint32_t offset, uint8_t val) {
 		writeByte(bdf.bus, bdf.device, bdf.function, offset, val);
 	}
 
-	void writeWord(const BDF &bdf, uint32_t offset, uint16_t val) {
+	void writeWord(const volatile BDF &bdf, uint32_t offset, uint16_t val) {
 		writeWord(bdf.bus, bdf.device, bdf.function, offset, val);
 	}
 
-	void writeInt(const BDF &bdf, uint32_t offset, uint32_t val) {
+	void writeInt(const volatile BDF &bdf, uint32_t offset, uint32_t val) {
 		writeInt(bdf.bus, bdf.device, bdf.function, offset, val);
 	}
 
@@ -136,23 +140,143 @@ namespace DsOS::PCI {
 	}
 
 	void readNativeHeader(const BDF &bdf, HeaderNative &native) {
-		const uint32_t bar5 = readInt(bdf, BAR5);
-		for (uint8_t i = 0; i < 64; i += 16) {
-			((uint32_t *) &native)[i]     = readInt(bdf, i);
-			((uint32_t *) &native)[i + 1] = readInt(bdf, i + 4);
-			((uint32_t *) &native)[i + 2] = readInt(bdf, i + 8);
-			((uint32_t *) &native)[i + 3] = readInt(bdf, i + 12);
-		}
-		native.bar5 = bar5;
+		native.vendorID                = readWord(bdf, VENDOR_ID);
+		native.deviceID                = readWord(bdf, DEVICE_ID);
+		native.command                 = readWord(bdf, COMMAND);
+		native.status                  = readWord(bdf, STATUS);
+		native.revision                = readByte(bdf, REVISION);
+		native.progif                  = readByte(bdf, CLASS_API);
+		native.subclass                = readByte(bdf, CLASS_SUB);
+		native.classCode               = readByte(bdf, CLASS_BASE);
+		native.cacheLineSize           = readByte(bdf, LINE_SIZE);
+		native.latencyTimer            = readByte(bdf, LATENCY);
+		native.headerType              = readByte(bdf, HEADER_TYPE);
+		native.bist                    = readByte(bdf, BIST);
+		native.bar0                    = readInt(bdf, BAR0);
+		native.bar1                    = readInt(bdf, BAR1);
+		native.bar2                    = readInt(bdf, BAR2);
+		native.bar3                    = readInt(bdf, BAR3);
+		native.bar4                    = readInt(bdf, BAR4);
+		native.bar5                    = readInt(bdf, BAR5);
+		native.cardbusCISPointer       = readInt(bdf, CARDBUS_CIS);
+		native.subsystemVendorID       = readWord(bdf, SUBSYSTEM_VENDOR_ID);
+		native.subsystemID             = readWord(bdf, SUBSYSTEM_ID);
+		native.expansionROMBaseAddress = readInt(bdf, ROM_BASE);
+		native.capabilitiesPointer     = readByte(bdf, CAPABILITIES_PTR);
+		native.interruptLine           = readByte(bdf, INTERRUPT_LINE);
+		native.interruptPin            = readByte(bdf, INTERRUPT_PIN);
+		native.minGrant                = readByte(bdf, MIN_GRANT);
+		native.maxLatency              = readByte(bdf, MAX_LATENCY);
 	}
 
 	Device * initDevice(const BDF &bdf) {
-		const HeaderNative native = readNativeHeader(bdf);
-		return native.vendorID == INVALID_VENDOR? nullptr : new Device(bdf, native);
+		Device *device = new Device(bdf);
+		device->init();
+		return device;
+	}
+
+	Device::Device(const BDF &bdf_): bdf(bdf_) {}
+
+	void Device::init() {
+		if (readStatus() & STATUS_CAPABILITIES) {
+			uint8_t ptr = readWord(bdf, CAPABILITIES_PTR);
+			uint16_t cap = readWord(bdf, ptr);
+			do {
+				if ((cap & 0xff) == CAP_ID_MSI) {
+					msiPointer = ptr;
+					msiCapable = true;
+					msiCapability.register0 = readInt(bdf, ptr);
+					msiCapability.register1 = readInt(bdf, ptr + sizeof(uint32_t));
+					msiCapability.register2 = readInt(bdf, ptr + sizeof(uint32_t) * 2);
+					if (msiCapability.msiControl & MSI_CONTROL_64)
+						msiCapability.data64 = readInt(bdf, ptr + sizeof(uint32_t) * 3);
+				}
+
+				ptr = cap >> 8;
+				cap = readWord(bdf, ptr);
+				capabilities.push_back(cap & 0xff);
+			} while (cap >> 8);
+		}
+	}
+
+	uint16_t Device::readStatus() {
+		return readWord(bdf, STATUS);
+	}
+
+	uintptr_t Device::getBAR(uint8_t index) {
+		uintptr_t bar = readInt(bdf, BAR0 + index * sizeof(uint32_t));
+		if (!(bar & 1) && (bar & 4) && index < 5)
+			bar |= static_cast<uintptr_t>(readInt(bdf, BAR0 + (bar + 1) * sizeof(uint32_t))) << 32;
+		return bar & ((bar & 1)? 0xfffffffffffffffc : 0xfffffffffffffff0);
+	}
+
+	uint16_t Device::getCommand() {
+		return readWord(bdf, COMMAND);
+	}
+
+	void Device::setCommand(uint16_t command) {
+		writeWord(bdf, COMMAND, command);
+	}
+
+	uint8_t Device::getInterruptLine() {
+		return readByte(bdf, INTERRUPT_LINE);
+	}
+
+	uint8_t Device::getInterruptPin() {
+		return readByte(bdf, INTERRUPT_PIN);
+	}
+
+	uint8_t Device::allocateVector(Vector vector) {
+		return allocateVector(static_cast<uint8_t>(vector));
+	}
+
+	uint8_t Device::allocateVector(uint8_t vector) {
+		if (vector & static_cast<uint8_t>(Vector::MSI)) {
+			if (!msiCapable) {
+				printf("[PCI::Device::allocateVector] Device isn't MSI capable.\n");
+			} else {
+				uint8_t interrupt = x86_64::IDT::reserveUnusedInterrupt();
+				if (interrupt == 0xff) {
+					printf("[PCI::Device::allocateVector] Device isn't MSI capable.\n");
+					return interrupt;
+				}
+
+				msiCapability.msiControl = (msiCapability.msiControl &
+					~(MSI_CONTROL_MME_MASK | MSI_CONTROL_VECTOR_MASKING)) | PCI_MSI_CONTROL_SET_MME(0);
+				msiCapability.msiControl |= 1; // Enable MSIs
+
+				msiCapability.setData((interrupt & 0xff) | x86_64::APIC::ICR_MESSAGE_TYPE_FIXED);
+				msiCapability.setAddress(x86_64::getCPULocal()->id);
+
+				if (msiCapability.msiControl & MSI_CONTROL_64)
+					writeInt(bdf, msiPointer + sizeof(uint32_t) * 3, msiCapability.register3);
+				writeInt(bdf, msiPointer + sizeof(uint32_t) * 2, msiCapability.register2);
+				writeInt(bdf, msiPointer + sizeof(uint32_t), msiCapability.register1);
+				writeInt(bdf, msiPointer + sizeof(uint16_t), msiCapability.msiControl);
+
+				return interrupt;
+			}
+		}
+
+		if (vector & static_cast<uint8_t>(Vector::Legacy)) {
+			const uint8_t irq = getInterruptLine();
+			if (irq == 0xff) { 
+				printf("[PCI::Device::allocateVector] Legacy interrupts aren't supported by device.\n");
+				return 0xff;
+			} else {
+				// TODO
+				// APIC::IO::MapLegacyIRQ(irq);
+			}
+
+			return 32 | irq;
+		}
+
+		return 0xff;
 	}
 
 	void scan() {
 		// HeaderNative header;
+		printf("Scanning.\n");
 		for (uint32_t bus = 0; bus < 256; ++bus)
 			for (uint32_t device = 0; device < 32; ++device)
 				for (uint32_t function = 0; function < 8; ++function) {
@@ -160,7 +284,7 @@ namespace DsOS::PCI {
 
 					// printf("[%x:%x:%x]: %x\n", bus, device, function, vendor);
 
-					if (vendor == INVALID_VENDOR)
+					if (vendor == INVALID_VENDOR || vendor == 0)
 						continue;
 
 					const uint32_t baseclass = getBaseClass(bus, device, function);
@@ -168,15 +292,14 @@ namespace DsOS::PCI {
 					const uint32_t interface = getProgIF(bus, device, function);
 
 					if (baseclass == 1 && subclass == 6) {
-						AHCI::controller = initDevice({bus, device, function});
-						AHCI::abar = (AHCI::HBAMemory *) (uintptr_t) (AHCI::controller->nativeHeader.bar5 & ~0xfff);
+						AHCI::controllers->push_back(AHCI::Controller(initDevice({bus, device, function})));
 						printf("Found AHCI controller at %x:%x:%x.\n", bus, device, function);
 					} else if (baseclass == 12 && subclass == 3 && interface == 0) {
 						// Bizarrely, this prevents a general protection fault caused by a return to an invalid address.
 						// Util::getReturnAddress();
 						HeaderNative header = readNativeHeader({bus, device, function});
 						// readNativeHeader({bus, device, function}, header);
-						printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function, header.bar0, header.bar1, header.bar2, header.bar3, header.bar4, header.bar5);
+						printf("Found UHCI controller at %x:%x:%x [0=0x%llx, 1=0x%llx, 2=0x%llx, 3=0x%llx, 4=0x%llx, 5=0x%llx]\n", bus, device, function, header.bar0, header.bar1, header.bar2, header.bar3, header.bar4, header.bar5);
 						// printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function);
 					} else {
 						printf("%x,%x,%x at %x:%x:%x\n", baseclass, subclass, interface, bus, device, function);
@@ -184,7 +307,6 @@ namespace DsOS::PCI {
 				}
 		// This is also needed to prevent a general protection fault.
 		// Util::getReturnAddress();
-		printf("\n");
 	}
 
 	size_t printDevices() {

@@ -124,9 +124,9 @@ namespace x86_64 {
 		if (pages == -1)
 			return;
 		if (used)
-			bitmap[index / (8 * sizeof(bitmap_t))] |=   1 << (index % (8 * sizeof(bitmap_t)));
+			bitmap[index / (8 * sizeof(bitmap_t))] |=   1L << (index % (8 * sizeof(bitmap_t)));
 		else
-			bitmap[index / (8 * sizeof(bitmap_t))] &= ~(1 << (index % (8 * sizeof(bitmap_t))));
+			bitmap[index / (8 * sizeof(bitmap_t))] &= ~(1L << (index % (8 * sizeof(bitmap_t))));
 	}
 
 	uintptr_t PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,

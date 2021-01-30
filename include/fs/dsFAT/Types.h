@@ -52,7 +52,7 @@ namespace DsOS::FS::DsFAT {
 		size_t length = 0;
 		/** 0 if free, -1 if invalid. */
 		block_t startBlock = {-1};
-		FileType type;
+		FileType type = FileType::File;
 		mode_t modes = 0;
 		char padding[16] = {0}; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
 

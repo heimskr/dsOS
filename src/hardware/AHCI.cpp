@@ -1,12 +1,33 @@
+// Some code is from https://github.com/fido2020/Lemon-OS/blob/master/Kernel/src/arch/x86_64/pci.cpp
+
 #include "hardware/AHCI.h"
 #include "Kernel.h"
 #include "lib/printf.h"
 
 namespace DsOS::AHCI {
-	PCI::Device *controller = nullptr;
-	volatile HBAMemory *abar = nullptr;
+	std::vector<Controller> *controllers;
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};
+
+	Controller::Controller(PCI::Device *device_): device(device_) {}
+
+	void Controller::init(Kernel &kernel) {
+		uint16_t command = device->getCommand();
+		command = (command & ~PCI::COMMAND_INT_DISABLE) | PCI::COMMAND_MEMORY | PCI::COMMAND_MASTER;
+		device->setCommand(command);
+		abar = (HBAMemory *) (uintptr_t) (device->getBAR(5) & ~0xf);
+		printf("abar: 0x%lx\n", abar);
+		kernel.pager.identityMap(abar, MMU_CACHE_DISABLED);
+		kernel.pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
+		printf("cap=%b", abar->cap);
+		printf(" caps=");
+		for (uint8_t capability: device->capabilities)
+			printf("0x%x ", capability);
+		printf("\n");
+		abar->probe();
+		abar->cap = abar->cap | (1 << 31);
+		abar->ghc = abar->ghc | (1 << 31);
+	}
 
 	DeviceType HBAPort::identifyDevice() volatile {
 		const uint8_t ipm = (ssts >> 8) & 0x0f;
@@ -40,11 +61,11 @@ namespace DsOS::AHCI {
 	}
 
 	void HBAPort::rebase(volatile HBAMemory &abar) volatile {
-		printf("initial tfd: %u / %b\n", tfd, tfd);
+		// printf("initial tfd: %u / %b\n", tfd, tfd);
 		abar.ghc = 1 << 31;
 		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		abar.ghc = 1;
-		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		abar.ghc = 1 << 31;
 		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 		abar.ghc = 2;
@@ -64,7 +85,8 @@ namespace DsOS::AHCI {
 		x86_64::PageMeta4K &pager = Kernel::getPager();
 
 		if (clb || clbu)
-			printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(getCLB()));
+			// printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(getCLB()));
+			pager.freeEntry(getCLB());
 		void *addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
@@ -73,7 +95,8 @@ namespace DsOS::AHCI {
 		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
 
 		if (fb || fbu)
-			printf("Freeing FB: 0x%lx :: %d\n", getFB(), pager.freeEntry(getFB()));
+			// printf("Freeing FB: 0x%lx :: %d\n", getFB(), pager.freeEntry(getFB()));
+			pager.freeEntry(getFB());
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		setFB(addr);
@@ -97,7 +120,7 @@ namespace DsOS::AHCI {
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		base = (uintptr_t) addr;
-		printf("CTBA base: 0x%lx\n", base);
+		// printf("CTBA base: 0x%lx\n", base);
 
 		for (int i = 0; i < 16; ++i) {
 			header[i].prdtl = 8;
@@ -149,10 +172,10 @@ namespace DsOS::AHCI {
 	void HBAMemory::probe() volatile {
 		for (int i = 0; i < 32; ++i)
 			if (pi & (1 << i)) {
-				const DeviceType type = ports[i].identifyDevice();
+				// const DeviceType type = ports[i].identifyDevice();
 				// if (type != DeviceType::Null && !(ports[i].cmd & 1))
 				// 	ports[i].cmd = ports[i].cmd | 1;
-				printf("Rebasing %d (type: %d).\n", i, type);
+				// printf("Rebasing %d (type: %d).\n", i, type);
 				ports[i].rebase(*this);
 			}
 	}
