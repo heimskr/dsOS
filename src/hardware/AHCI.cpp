@@ -79,7 +79,7 @@ namespace DsOS::AHCI {
 		}
 	}
 
-	void Port::identify() {
+	void Port::identify(ATA::DeviceInfo &out) {
 		registers->ie = 0xffffffff;
 		registers->is = 0;
 		registers->tfd = 0;
@@ -162,6 +162,8 @@ namespace DsOS::AHCI {
 		if (registers->is & HBA_PxIS_TFES) {
 			printf("[Port::identify] Disk error 2 (serr: %x)\n", registers->serr);
 			stop();
+		} else {
+			memcpy(&out, physicalBuffers[0], sizeof(out));
 		}
 	}
 

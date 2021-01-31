@@ -348,7 +348,7 @@ namespace DsOS::AHCI {
 
 		inline bool valid() const { return registers && abar; }
 		DeviceType identifyDevice();
-		void identify();
+		void identify(ATA::DeviceInfo &);
 		int getCommandSlot();
 		void rebase();
 		void start();

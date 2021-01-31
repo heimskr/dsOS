@@ -116,7 +116,7 @@ namespace DsOS::ATA {
 		ATA8 = 1 << 8,
 	};
 
-	struct Identify {
+	struct DeviceInfo {
 		uint16_t config;
 		uint16_t word1;
 		uint16_t specificConfig;
@@ -195,5 +195,8 @@ namespace DsOS::ATA {
 		uint16_t max512sPerDnldMicro;
 		uint16_t word236_254[19];
 		uint16_t integrity;
+
+		/** The destination string should have a capacity of at least 41 bytes. */
+		void copyModel(char *);
 	};
 }
