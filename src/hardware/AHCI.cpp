@@ -60,6 +60,10 @@ namespace DsOS::AHCI {
 		}
 	}
 
+	void Port::init() {
+		type = identifyDevice();
+	}
+
 	DeviceType Port::identifyDevice() {
 		const uint8_t ipm = (registers->ssts >> 8) & 0x0f;
 		const uint8_t det = registers->ssts & 0x0f;
@@ -131,7 +135,7 @@ namespace DsOS::AHCI {
 		cfis->control = 0;
 
 		spin = 100;
-		while (spin-- && (registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
+		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 			Kernel::wait(1, 1000);
 
 		if (1'000'000 <= spin) {
@@ -156,7 +160,7 @@ namespace DsOS::AHCI {
 		stop();
 
 		spin = 100;
-		while (spin-- && (registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
+		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 			Kernel::wait(1, 1000);
 
 		if (registers->is & HBA_PxIS_TFES) {
@@ -227,7 +231,7 @@ namespace DsOS::AHCI {
 
 		{
 			int spin = 1000;
-			while (spin-- && (registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)))
+			while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 				Kernel::wait(1, 1000);
 
 			if (spin <= 0) {
@@ -241,7 +245,7 @@ namespace DsOS::AHCI {
 			Kernel::wait(1, 100);
 
 			spin = 200;
-			while (spin-- && (registers->ssts & HBA_PxSSTS_DET_PRESENT) != HBA_PxSSTS_DET_PRESENT)
+			while ((registers->ssts & HBA_PxSSTS_DET_PRESENT) != HBA_PxSSTS_DET_PRESENT && spin--)
 				Kernel::wait(1, 1000);
 
 			if ((registers->tfd & 0xff) == 0xff)
@@ -251,7 +255,7 @@ namespace DsOS::AHCI {
 			registers->is = 0;
 
 			spin = 1000;
-			while (spin-- && registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ))
+			while (registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ) && spin--)
 				Kernel::wait(1, 1000);
 
 			if (spin <= 0)
@@ -399,7 +403,7 @@ namespace DsOS::AHCI {
 	Port::AccessStatus Port::access(uint64_t lba, uint32_t count, void *buffer, bool write) {
 		registers->ie = 0xffffffff;
 		registers->is = 0;
-		int spin = 0;
+
 		int slot = getCommandSlot();
 		if (slot == -1) {
 			printf("[HBAPort::access] Invalid slot.\n");
@@ -409,18 +413,86 @@ namespace DsOS::AHCI {
 		registers->serr = 0;
 		registers->tfd = 0;
 
+		HBACommandHeader &header = commandList[slot];
+		header.cfl = sizeof(FISRegH2D) / sizeof(uint32_t);
+
+		header.atapi = type == DeviceType::SATAPI;
+		header.write = write;
+		header.clearBusy = false;
+		header.prefetchable = false;
+		header.prdbc = 0;
+		header.pmport = 0;
+
+		HBACommandTable &table = *commandTables[slot];
+		memset(&table, 0, sizeof(table));
+
+		table.prdtEntry[0].dba = (uintptr_t) buffer & 0xffffffff;
+		table.prdtEntry[0].dbaUpper = ((uintptr_t) buffer >> 32) & 0xffffffff;
+		table.prdtEntry[0].dbc = BLOCKSIZE * count - 1;
+		table.prdtEntry[0].interrupt = true;
+
+		FISRegH2D &fis = (FISRegH2D &) table.cfis;
+		memset(&fis, 0, sizeof(fis));
+
+		fis.type = FISType::RegH2D;
+		fis.c = true;
+		fis.pmport = 0;
+		fis.command = write? ATA::Command::WriteDMAExt : ATA::Command::ReadDMAExt;
+		fis.lba0 = lba & 0xff;
+		fis.lba1 = (lba >> 8) & 0xff;
+		fis.lba2 = (lba >> 16) & 0xff;
+		fis.device = 1 << 6;
+		fis.lba3 = (lba >> 24) & 0xff;
+		fis.lba4 = (lba >> 32) & 0xff;
+		fis.lba5 = (lba >> 40) & 0xff;
+		fis.countLow = count & 0xff;
+		fis.countHigh = (count >> 8) & 0xff;
+		fis.control = 8;
+
+		int spin = 100;
+		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
+			Kernel::wait(1, 1000);
+
+		if (spin <= 0) {
+			printf("[Port::access] Port is hung\n");
+			return AccessStatus::Hung;
+		}
+
+		registers->ie = 0xffffffff;
+		registers->is = 0xffffffff;
+
+		start();
+		registers->ci = registers->ci | (1 << slot);
+
+		while(registers->ci & (1 << slot)) {
+			if (registers->is & HBA_PxIS_TFES) {
+				printf("[Port::access] Disk error (serr: %x)\n", registers->serr);
+				stop();
+				return AccessStatus::DiskError;
+			}
+		}
+
+		spin = 100;
+		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
+			Kernel::wait(1, 1000);
+
+		stop();
+
+		if (spin <= 0) {
+			printf("[Port::access] Port hung\n");
+			return AccessStatus::Hung;
+		}
+
+		if (registers->is & HBA_PxIS_TFES) {
+			printf("[Port::access] Disk error 2 (serr: %x)\n", registers->serr);
+			return AccessStatus::DiskError;
+		}
+
 		return AccessStatus::Success;
 	}
 
-	// void HBAMemory::probe() volatile {
-	// 	for (int i = 0; i < 32; ++i)
-	// 		if (pi & (1 << i)) {
-	// 			// const DeviceType type = ports[i].identifyDevice();
-	// 			// if (type != DeviceType::Null && !(ports[i].cmd & 1))
-	// 			// 	ports[i].cmd = ports[i].cmd | 1;
-	// 			// printf("Rebasing %d (type: %d).\n", i, type);
-	// 			ports[i].rebase(*this);
-	// 		}
+	// Port::AccessStatus Port::read(uint64_t lba, uint32_t count, void *buffer_) {
+	// 	const uint64_t block_count = (count + BLOCKSIZE - 1) / BLOCKSIZE;
 	// }
 
 	void HBACommandHeader::setCTBA(void *address) volatile {

@@ -155,6 +155,7 @@ namespace DsOS {
 							continue;
 
 						controller.ports[i] = new AHCI::Port(&port, abar);
+						controller.ports[i]->init();
 						ATA::DeviceInfo info;
 						controller.ports[i]->identify(info);
 						// wait(5);
@@ -162,12 +163,6 @@ namespace DsOS {
 						char model[41];
 						info.copyModel(model);
 						printf("Model: \"%s\"\n", model);
-
-						// printf("Salutations. 0x%lx\n", controller.ports[i]->physicalBuffers[0]);
-						// char *pbuf = (char *) controller.ports[i]->physicalBuffers[0];
-						// for (int j = 0; j < 512; ++j)
-						// 	printf("%c", pbuf[j]);
-						// printf("\n");
 
 						// char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 						// if (port.sig == AHCI::SIG_ATAPI)
