@@ -491,9 +491,53 @@ namespace DsOS::AHCI {
 		return AccessStatus::Success;
 	}
 
-	// Port::AccessStatus Port::read(uint64_t lba, uint32_t count, void *buffer_) {
-	// 	const uint64_t block_count = (count + BLOCKSIZE - 1) / BLOCKSIZE;
-	// }
+	Port::AccessStatus Port::read(uint64_t lba, uint32_t count, void *buffer) {
+		uint64_t block_count = (count + BLOCKSIZE - 1) / BLOCKSIZE;
+		char *cbuffer = (char *) buffer;
+		// TODO: synchronization
+		unsigned buffer_index = 1;
+
+		while (8 <= block_count && count) {
+			unsigned size = BLOCKSIZE * 8;
+			if (count < size)
+				size = count;
+			if (access(lba, 8, physicalBuffers[buffer_index], false) != AccessStatus::Success)
+				return AccessStatus::DiskError;
+			memcpy(cbuffer, physicalBuffers[buffer_index], size);
+			cbuffer += size;
+			lba += 8;
+			block_count -= 8;
+			count -= size;
+		}
+
+		while (2 <= block_count && count) {
+			unsigned size = BLOCKSIZE * 2;
+			if (count < size)
+				size = count;
+			if (access(lba, 2, physicalBuffers[buffer_index], false) != AccessStatus::Success)
+				return AccessStatus::DiskError;
+			memcpy(cbuffer, physicalBuffers[buffer_index], size);
+			cbuffer += size;
+			lba += 2;
+			block_count -= 2;
+			count -= size;
+		}
+
+		while (block_count && count) {
+			unsigned size = BLOCKSIZE;
+			if (count < size)
+				size = count;
+			if (access(lba, 1, physicalBuffers[buffer_index], false) != AccessStatus::Success)
+				return AccessStatus::DiskError;
+			memcpy(cbuffer, physicalBuffers[buffer_index], size);
+			cbuffer += size;
+			++lba;
+			--block_count;
+			count -= size;
+		}
+
+		return AccessStatus::Success;
+	}
 
 	void HBACommandHeader::setCTBA(void *address) volatile {
 		ctba  = ((uintptr_t) address) & 0xffffffff;
