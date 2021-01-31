@@ -110,11 +110,16 @@ namespace DsOS::AHCI {
 		FISRegH2D *cfis = (FISRegH2D *) table->cfis;
 		memset(cfis, 0, sizeof(FISRegH2D));
 
+		printf("[Port::identify] Type: %s\n", deviceTypes[(int) identifyDevice()]);
+
 		// A lot of these are probably redundant because of the memset.
 		cfis->type = FISType::RegH2D;
 		cfis->c = true;
 		cfis->pmport = 0;
-		cfis->command = ATA::Command::IdentifyDevice;
+		if (identifyDevice() == DeviceType::SATAPI)
+			cfis->command = ATA::Command::IdentifyPacketDevice;
+		else
+			cfis->command = ATA::Command::IdentifyDevice;
 		cfis->lba0 = 0;
 		cfis->lba1 = 0;
 		cfis->lba2 = 0;
@@ -143,7 +148,7 @@ namespace DsOS::AHCI {
 
 		while (registers->ci & (1 << slot))
 			if (registers->is & HBA_PxIS_TFES) {  // Task file error
-				printf("[Port::identify] Disk error (serr: %x)\n", registers->serr);
+				printf("[Port::identify] Disk error 1 (serr: %x)\n", registers->serr);
 				stop();
 				return;
 			}
@@ -155,7 +160,7 @@ namespace DsOS::AHCI {
 			Kernel::wait(1, 1000);
 
 		if (registers->is & HBA_PxIS_TFES) {
-			printf("[Port::identify] Disk error (serr: %x)\n", registers->serr);
+			printf("[Port::identify] Disk error 2 (serr: %x)\n", registers->serr);
 			stop();
 		}
 	}
@@ -399,7 +404,8 @@ namespace DsOS::AHCI {
 			return AccessStatus::BadSlot;
 		}
 
-		registers->serr = registers->tfd = 0;
+		registers->serr = 0;
+		registers->tfd = 0;
 
 		return AccessStatus::Success;
 	}
