@@ -142,6 +142,26 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 				} else if (next == 'c') {
 					APPEND(va_arg(list, int));
 					status = Status::Scan;
+				} else if (next == 'y') {
+					if (va_arg(list, int)) {
+						APPEND('y');
+						APPEND('e');
+						APPEND('s');
+					} else {
+						APPEND('n');
+						APPEND('o');
+					}
+					status = Status::Scan;
+				} else if (next == 'Y') {
+					if (va_arg(list, int)) {
+						APPEND('Y');
+						APPEND('e');
+						APPEND('s');
+					} else {
+						APPEND('N');
+						APPEND('o');
+					}
+					status = Status::Scan;
 				} else if (next == '%') {
 					APPEND('%');
 					status = Status::Scan;
@@ -180,7 +200,7 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 			is_long = false;
 		} else if (status == Status::S) {
 			const char *str_arg = va_arg(list, const char *);
-			for (int i = 0; str_arg[i]; ++i)
+			for (size_t i = 0; str_arg[i]; ++i)
 				APPEND(str_arg[i]);
 			status = Status::Scan;
 		}

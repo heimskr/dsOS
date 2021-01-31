@@ -48,6 +48,7 @@ namespace DsOS {
 
 			void main();
 
+			static void wait(size_t num_ticks, uint32_t frequency = 1);
 			static void waitm(size_t millimoments = 1000);
 			void perish();
 

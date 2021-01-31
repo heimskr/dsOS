@@ -9,12 +9,29 @@ namespace x86_64 {
 	PageMeta::PageMeta(void *physical_start, void *virtual_start):
 		physicalStart(physical_start), virtualStart(virtual_start) {}
 
-	void * PageMeta::allocateFreePhysicalAddress() {
-		int free_index = findFree();
-		if (free_index == -1)
+	void * PageMeta::allocateFreePhysicalAddress(size_t consecutive_count) {
+		if (consecutive_count == 0)
 			return nullptr;
-		mark(free_index, true);
-		return (void *) ((uintptr_t) physicalStart + free_index * pageSize());
+
+		if (consecutive_count == 1) {
+			int free_index = findFree();
+			if (free_index == -1)
+				return nullptr;
+			mark(free_index, true);
+			return (void *) ((uintptr_t) physicalStart + free_index * pageSize());
+		}
+
+		int index = -1;
+		for (;;) {
+			index = findFree(index + 1);
+			for (size_t i = 1; i < consecutive_count; ++i)
+				if (!isFree(index + i))
+					goto nope; // sorry
+			mark(index, true);
+			return (void *) ((uintptr_t) physicalStart + index * pageSize());
+			nope:
+			continue;
+		}
 	}
 
 	bool PageMeta::assignAddress(volatile void *virtual_address, volatile void *physical_address, uint64_t extra_meta) {
@@ -110,9 +127,9 @@ namespace x86_64 {
 		memset(bitmap, 0, DsOS::Util::updiv(pages, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
 	}
 
-	int PageMeta4K::findFree() const {
+	int PageMeta4K::findFree(size_t start) const {
 		if (pages != -1)
-			for (unsigned int i = 0; i < pages / (8 * sizeof(bitmap_t)); ++i)
+			for (size_t i = start; i < pages / (8 * sizeof(bitmap_t)); ++i)
 				if (bitmap[i] != -1L)
 					for (unsigned int j = 0; j < 8 * sizeof(bitmap_t); ++j)
 						if ((bitmap[i] & (1 << j)) == 0)
@@ -245,5 +262,10 @@ namespace x86_64 {
 			out += popcnt;
 		}
 		return out;
+	}
+
+	bool PageMeta4K::isFree(size_t index) const {
+		// NB: Change the math here if bitmap_t changes in size.
+		return (bitmap[index >> 6] & (1 << (index & 63))) != 0;
 	}
 }

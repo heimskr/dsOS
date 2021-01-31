@@ -246,7 +246,7 @@ namespace DsOS::PCI {
 				msiCapability.msiControl |= 1; // Enable MSIs
 
 				msiCapability.setData((interrupt & 0xff) | x86_64::APIC::ICR_MESSAGE_TYPE_FIXED);
-				msiCapability.setAddress(x86_64::getCPULocal()->id);
+				// msiCapability.setAddress(x86_64::getCPULocal()->id);
 
 				if (msiCapability.msiControl & MSI_CONTROL_64)
 					writeInt(bdf, msiPointer + sizeof(uint32_t) * 3, msiCapability.register3);
@@ -271,6 +271,7 @@ namespace DsOS::PCI {
 			return 32 | irq;
 		}
 
+		printf("[PCI::Device::allocateVector] Could not allocate interrupt (type %d)!", static_cast<int>(vector));
 		return 0xff;
 	}
 

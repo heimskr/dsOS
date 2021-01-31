@@ -41,19 +41,6 @@ void schedule();
 
 static bool waiting = true;
 
-void wait(uint64_t seconds) {
-	waiting = true;
-	ticks = 0;
-	timer_max = seconds;
-	timer_addr = +[] { waiting = false; };
-	x86_64::APIC::initTimer(1);
-	for (;;)
-		if (waiting)
-			asm("hlt");
-		else
-			break;
-}
-
 namespace DsOS {
 	Kernel * Kernel::instance = nullptr;
 
@@ -63,6 +50,19 @@ namespace DsOS {
 			for (;;);
 		} else
 			Kernel::instance = this;
+	}
+
+	void Kernel::wait(size_t num_ticks, uint32_t frequency) {
+		waiting = true;
+		ticks = 0;
+		timer_max = num_ticks;
+		timer_addr = +[] { waiting = false; };
+		x86_64::APIC::initTimer(frequency);
+		for (;;)
+			if (waiting)
+				asm("hlt");
+			else
+				break;
 	}
 
 	void Kernel::main() {
@@ -153,13 +153,27 @@ namespace DsOS {
 						volatile AHCI::HBAPort &port = abar->ports[i];
 						if (port.clb == 0)
 							continue;
+
+						controller.ports[i] = new AHCI::Port(&port, abar);
 						// wait(5);
 
-						char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-						printf("Result for port %d: %d\n", i, SATA::issueCommand(controller, port, ATA::Command::IdentifyDevice, false, buffer, 1, 512, 0, 1));
-						for (int i = 0; i < 512; ++i)
-							printf("%c", buffer[i]);
+						printf("Salutations. 0x%lx\n", controller.ports[i]->physicalBuffers[0]);
+						char *pbuf = (char *) controller.ports[i]->physicalBuffers[0];
+						for (int j = 0; j < 512; ++j)
+							printf("%c", pbuf[j]);
 						printf("\n");
+
+						// char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+						// if (port.sig == AHCI::SIG_ATAPI)
+						// 	printf("Result for port %d: %d\n", i, SATA::issueCommand(controller, port, ATA::Command::IdentifyPacketDevice, false, buffer, 1, 512, 0));
+						// else if (port.sig == AHCI::SIG_ATA)
+						// 	printf("Result for port %d: %d\n", i, SATA::issueCommand(controller, port, ATA::Command::IdentifyDevice, false, buffer, 1, 512, 0));
+						// else
+							// continue;
+						// for (int i = 0; i < 512; ++i)
+						// for (int i = 0; i < 80; ++i)
+						// 	printf("%c", buffer[i]);
+						// printf("\n");
 
 						// printf("%d:%c ", i, AHCI::deviceTypes[(int) port.identifyDevice()][0]);
 					}

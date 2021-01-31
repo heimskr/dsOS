@@ -4,7 +4,7 @@
 #include "hardware/ATA.h"
 
 namespace DsOS::SATA {
-	bool issueCommand(AHCI::Controller &, volatile AHCI::HBAPort &, ATA::Command, bool write, void *buffer,
-	                  uint16_t prdtl, uint32_t byte_count, uint64_t start, uint16_t count);
-	bool read(AHCI::Controller &, volatile AHCI::HBAPort &, uint64_t start, uint32_t count, void *buffer);
+	bool issueCommand(AHCI::Controller &, AHCI::Port &, ATA::Command, bool write, void *buffer, uint16_t prdtl,
+	                  uint32_t byte_count, uint64_t start);
+	bool read(AHCI::Controller &, AHCI::Port &, uint64_t start, uint32_t count, void *buffer);
 }

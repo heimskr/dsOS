@@ -1,6 +1,6 @@
 #pragma once
 
-// Credit goes to https://wiki.osdev.org/AHCI
+// Credit goes to https://wiki.osdev.org/AHCI and https://github.com/fido2020/Lemon-OS
 
 #include <cstddef>
 #include <cstdint>
@@ -24,15 +24,41 @@ namespace DsOS::AHCI {
 
 	constexpr uint32_t AHCI_BASE = 0x400000; // 4M
 
-	constexpr uint16_t HBA_PxCMD_ST  = 0x0001; // Start
-	constexpr uint16_t HBA_PxCMD_FRE = 0x0010; // FIS Receive Enable
-	constexpr uint16_t HBA_PxCMD_FR  = 0x4000; // FIS Receive Running
-	constexpr uint16_t HBA_PxCMD_CR  = 0x8000; // Command List Running
+	constexpr uint32_t HBA_PxCMD_ST  = 0x0001; // Start
+	constexpr uint32_t HBA_PxCMD_SUD = 0x0002;
+	constexpr uint32_t HBA_PxCMD_POD = 0x0004;
+	constexpr uint32_t HBA_PxCMD_FRE = 0x0010; // FIS Receive Enable
+	constexpr uint32_t HBA_PxCMD_FR  = 0x4000; // FIS Receive Running
+	constexpr uint32_t HBA_PxCMD_CR  = 0x8000; // Command List Running
+	constexpr uint32_t HBA_PxCMD_ASP = 0x4000000; // Aggressive Slumber/Partial
+	constexpr uint32_t HBA_PxCMD_ICC = 0xf << 28;
+	constexpr uint32_t HBA_PxCMD_ICC_ACTIVE = 1 << 28;
 
 	constexpr uint32_t HBA_PxIS_TFES = 1 << 30;
 
+	constexpr uint8_t HBA_PxSSTS_DET = 0xfULL;
+	constexpr uint8_t HBA_PxSSTS_DET_PRESENT = 3;
+
 	constexpr uint8_t ATA_DEV_BUSY = 0x80;
 	constexpr uint8_t ATA_DEV_DRQ  = 0x08;
+
+	constexpr uint32_t GHC_ENABLE = 1 << 31;
+	constexpr uint32_t GHC_IE = 1 << 1; // Interrupts Enable
+
+	constexpr uint32_t CAP_S64A = 1 << 31; // 64-bit addressing
+	constexpr uint32_t CAP_NCQ  = 1 << 30; // Support for Native Command Queueing
+	constexpr uint32_t CAP_SSS  = 1 << 27; // Supports staggered spin-up
+	constexpr uint32_t CAP_FBSS = 1 << 16; // FIS-based switching supported
+	constexpr uint32_t CAP_SSC  = 1 << 14; // Slumber state capable
+	constexpr uint32_t CAP_PSC  = 1 << 13; // Partial state capable
+	constexpr uint32_t CAP_SALP = 1 << 26; // Supports aggressive link power management
+
+	enum {
+		SCTL_PORT_DET_INIT 	 = 0x1,
+		SCTL_PORT_IPM_NOPART = 0x100, // No partial state
+		SCTL_PORT_IPM_NOSLUM = 0x200, // No slumber state
+		SCTL_PORT_IPM_NODSLP = 0x400, // No devslp state
+	};
 
 	enum class FISType: unsigned char {
 		RegH2D      = 0x27, // Register FIS - host to device
@@ -53,6 +79,12 @@ namespace DsOS::AHCI {
 		SATAPI         = 4
 	};
 
+	enum class Status {
+		Uninitialized,
+		Error,
+		Active,
+	};
+
 	extern const char *deviceTypes[5];
 
 	struct FISRegH2D { // Host to device
@@ -61,7 +93,7 @@ namespace DsOS::AHCI {
 
 		uint8_t pmport: 4;   // Port multiplier
 		uint8_t rsv0: 3;     // Reserved
-		uint8_t c: 1;        // 1: Command, 0: Control
+		bool c: 1;        // 1: Command, 0: Control
 
 		ATA::Command command;     // Command register
 		uint8_t featureLow;  // Feature register, 7:0
@@ -199,8 +231,6 @@ namespace DsOS::AHCI {
 		uint32_t rsv3;            // Reserved
 	};
 
-	struct HBAMemory;
-
 	struct HBAPort {
 		volatile uint32_t clb;       // 0x00: Command list base address, 1 KiB-aligned
 		volatile uint32_t clbu;      // 0x04: Command list base address upper 32 bits
@@ -221,65 +251,6 @@ namespace DsOS::AHCI {
 		volatile uint32_t fbs;       // 0x40: FIS-based switch control
 		volatile uint32_t devslp;    // 0x44–0x6f: Device sleep
 		volatile uint32_t vendor[4]; // 0x70–0x7f: vendor specific
-
-		DeviceType identifyDevice() volatile;
-		int getCommandSlot(volatile HBAMemory &) volatile;
-		void rebase(volatile HBAMemory &) volatile;
-		void start() volatile;
-		void stop() volatile;
-		void setCLB(void *) volatile;
-		void * getCLB() const volatile;
-		void setFB(void *) volatile;
-		void * getFB() const volatile;
-	};
-
-	struct HBAFIS {
-		// 0x00
-		FISDMASetup dsfis; // DMA Setup FIS
-		uint8_t pad0[4];
-
-		// 0x20
-		FISPIOSetup psfis; // PIO Setup FIS
-		uint8_t pad1[12];
-
-		// 0x40
-		FISRegD2H rfis; // Register – Device to Host FIS
-		uint8_t pad2[4];
-
-		// 0x58
-		uint64_t sdbfis; // Set Device Bit FIS
-
-		// 0x60
-		uint8_t ufis[64];
-
-		// 0xa0
-		uint8_t reserved[0x100 - 0xa0];
-	};
-
-	struct HBAMemory {
-		// 0x00 - 0x2B, Generic Host Control
-		uint32_t cap;     // 0x00: Host capability
-		uint32_t ghc;     // 0x04: Global host control
-		uint32_t is;      // 0x08: Interrupt status
-		uint32_t pi;      // 0x0c: Port implemented
-		uint32_t vs;      // 0x10: Version
-		uint32_t ccc_ctl; // 0x14: Command completion coalescing control
-		uint32_t ccc_pts; // 0x18: Command completion coalescing ports
-		uint32_t em_loc;  // 0x1c: Enclosure management location
-		uint32_t em_ctl;  // 0x20: Enclosure management control
-		uint32_t cap2;    // 0x24: Host capabilities extended
-		uint32_t bohc;    // 0x28: BIOS/OS handoff control and status
-
-		// 0x2c–0x9f: Reserved
-		uint8_t rsv0[0xa0 - 0x2c];
-
-		// 0xa0–0xff: Vendor specific registers
-		uint8_t vendor[0x100 - 0xa0];
-
-		// 0x100–0x10ff: Port control registers
-		HBAPort ports[32];
-
-		void probe() volatile;
 	};
 
 	struct HBACommandHeader {
@@ -311,6 +282,29 @@ namespace DsOS::AHCI {
 		void * getCTBA() const volatile;
 	};
 
+	struct HBAFIS {
+		// 0x00
+		FISDMASetup dsfis; // DMA Setup FIS
+		uint8_t pad0[4];
+
+		// 0x20
+		FISPIOSetup psfis; // PIO Setup FIS
+		uint8_t pad1[12];
+
+		// 0x40
+		FISRegD2H rfis; // Register – Device to Host FIS
+		uint8_t pad2[4];
+
+		// 0x58
+		uint8_t sdbfis[8]; // Set Device Bit FIS
+
+		// 0x60
+		uint8_t ufis[64];
+
+		// 0xa0
+		uint8_t reserved[0x100 - 0xa0];
+	};
+
 	struct HBAPRDTEntry {
 		uint32_t dba;      // Data base address
 		uint32_t dbaUpper; // Data base address upper 32 bits
@@ -336,10 +330,67 @@ namespace DsOS::AHCI {
 		HBAPRDTEntry prdtEntry[1];
 	};
 
+	struct HBAMemory;
+
+	struct Port {
+		static constexpr size_t BLOCKSIZE = 512;
+		volatile HBAPort *registers = nullptr;
+		volatile HBAMemory *abar = nullptr;
+		HBACommandHeader *commandList = nullptr;
+		HBAFIS *fis = nullptr;
+		HBACommandTable *commandTables[8];
+		Status status = Status::Uninitialized;
+		void *physicalBuffers[8];
+
+		Port(volatile HBAPort *, volatile HBAMemory *);
+
+		enum class AccessStatus: uint8_t {Success = 0, DiskError = 1, BadSlot = 2, Hung = 3};
+
+		inline bool valid() const { return registers && abar; }
+		DeviceType identifyDevice();
+		void identify();
+		int getCommandSlot();
+		void rebase();
+		void start();
+		void stop();
+		void setCLB(void *);
+		void * getCLB() const;
+		void setFB(void *);
+		void * getFB() const;
+		AccessStatus access(uint64_t lba, uint32_t count, void *buffer, bool write);
+	};
+
+	struct HBAMemory {
+		// 0x00 - 0x2B, Generic Host Control
+		uint32_t cap;     // 0x00: Host capability
+		uint32_t ghc;     // 0x04: Global host control
+		uint32_t is;      // 0x08: Interrupt status
+		uint32_t pi;      // 0x0c: Port implemented
+		uint32_t vs;      // 0x10: Version
+		uint32_t ccc_ctl; // 0x14: Command completion coalescing control
+		uint32_t ccc_pts; // 0x18: Command completion coalescing ports
+		uint32_t em_loc;  // 0x1c: Enclosure management location
+		uint32_t em_ctl;  // 0x20: Enclosure management control
+		uint32_t cap2;    // 0x24: Host capabilities extended
+		uint32_t bohc;    // 0x28: BIOS/OS handoff control and status
+
+		// 0x2c–0x9f: Reserved
+		uint8_t rsv0[0xa0 - 0x2c];
+
+		// 0xa0–0xff: Vendor specific registers
+		uint8_t vendor[0x100 - 0xa0];
+
+		// 0x100–0x10ff: Port control registers
+		HBAPort ports[32];
+
+		// void probe() volatile;
+	};
+
 	class Controller {
 		public:
 			PCI::Device *device;
 			volatile HBAMemory *abar;
+			Port *ports[32];
 
 			Controller(PCI::Device *);
 

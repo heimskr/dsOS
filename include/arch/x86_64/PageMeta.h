@@ -14,12 +14,13 @@ namespace x86_64 {
 			virtual size_t pageCount() const = 0;
 			virtual size_t pageSize() const = 0;
 			virtual void clear() = 0;
-			virtual int findFree() const = 0;
-			virtual void * allocateFreePhysicalAddress();
+			virtual int findFree(size_t start = 0) const = 0;
+			virtual void * allocateFreePhysicalAddress(size_t consecutive_count = 1);
 			virtual void mark(int index, bool used) = 0;
 			virtual uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
 			                         volatile void *physical_address = nullptr, uint64_t extra_meta = 0) = 0;
 			virtual size_t pagesUsed() const = 0;
+			virtual bool isFree(size_t index) const = 0;
 			virtual operator bool() const = 0;
 			virtual bool assignAddress(volatile void *virtual_address, volatile void *physical_address,
 			                           uint64_t extra_meta = 0);
@@ -61,7 +62,7 @@ namespace x86_64 {
 		virtual size_t pageCount() const override;
 		virtual size_t pageSize() const override;
 		virtual void clear() override;
-		virtual int findFree() const override;
+		virtual int findFree(size_t start = 0) const override;
 		virtual void mark(int index, bool used) override;
 		virtual uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
 		                         volatile void *physical_address = nullptr, uint64_t extra_meta = 0) override;
@@ -69,5 +70,6 @@ namespace x86_64 {
 		void assignSelf();
 		virtual operator bool() const override;
 		virtual size_t pagesUsed() const override;
+		virtual bool isFree(size_t index) const override;
 	} __attribute__((packed));
 }

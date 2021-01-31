@@ -89,7 +89,7 @@ namespace DsOS::ATA {
 		SetFeatures = 0xef,
 		SecuritySetPassword = 0xf1,
 		SecurityUnlock = 0xf2,
-		SecurityEarasePrepare = 0xf3,
+		SecurityErasePrepare = 0xf3,
 		SecurityEraseUnit = 0xf4,
 		SecurityFreezeLock = 0xf5,
 		SecurityDisablePassword = 0xf6,
