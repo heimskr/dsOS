@@ -155,6 +155,7 @@ namespace DsOS {
 							continue;
 
 						controller.ports[i] = new AHCI::Port(&port, abar);
+						controller.ports[i]->identify();
 						// wait(5);
 
 						printf("Salutations. 0x%lx\n", controller.ports[i]->physicalBuffers[0]);
