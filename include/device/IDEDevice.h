@@ -2,7 +2,7 @@
 
 #include "device/Device.h"
 
-namespace DsOS::Device {
+namespace Thorn::Device {
 	struct IDEDevice: public DeviceBase {
 		uint8_t ideID;
 		IDEDevice() = delete;

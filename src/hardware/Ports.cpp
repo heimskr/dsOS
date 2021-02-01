@@ -1,6 +1,6 @@
 #include "hardware/Ports.h"
 
-namespace DsOS::Ports {
+namespace Thorn::Ports {
 	uint8_t inb(port_t port) {
 		uint8_t out = 0;
 		asm volatile("inb %1, %0" : "=a"(out) : "dN"(port));

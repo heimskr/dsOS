@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Defs.h"
-#include "fs/dsFAT/Types.h"
+#include "fs/ThornFAT/Types.h"
 
 #include <optional>
 #include <string>
 
-namespace DsOS::FS::DsFAT::Util {
+namespace Thorn::FS::ThornFAT::Util {
 	std::optional<std::string> pathFirst(std::string path, std::string *remainder);
 	/**
 	 * Returns the last component of a path.

@@ -10,7 +10,7 @@
 #include "Defs.h"
 #include "fs/Partition.h"
 
-namespace DsOS::FS {
+namespace Thorn::FS {
 	constexpr size_t BLOCKSIZE = 512;
 
 	using DirFiller = std::function<void(const char *, off_t)>;

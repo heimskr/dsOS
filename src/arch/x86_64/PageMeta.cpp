@@ -2,7 +2,7 @@
 #include "arch/x86_64/PageTableWrapper.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
-#include "DsUtil.h"
+#include "ThornUtil.h"
 #include "Kernel.h"
 
 namespace x86_64 {
@@ -46,7 +46,7 @@ namespace x86_64 {
 	}
 
 	bool PageMeta::modifyEntry(volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier) {
-		DsOS::Kernel *kernel = DsOS::Kernel::instance;
+		Thorn::Kernel *kernel = Thorn::Kernel::instance;
 		if (!kernel) {
 			printf("Kernel instance is null!\n");
 			for (;;) asm("hlt");
@@ -103,14 +103,14 @@ namespace x86_64 {
 	
 	PageMeta4K::PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_):
 	PageMeta(physical_start, virtual_start), pages(pages_) {
-		bitmap = new (bitmap_address) bitmap_t[DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t))];
-		// printf("Bitmap size: %lu bytes\n", DsOS::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
+		bitmap = new (bitmap_address) bitmap_t[Thorn::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t))];
+		// printf("Bitmap size: %lu bytes\n", Thorn::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
 	}
 
 	size_t PageMeta4K::bitmapSize() const {
 		if (pages == -1 || !bitmap)
 			return 0;
-		return DsOS::Util::updiv((size_t) pages, 8 * sizeof(bitmap_t)) * sizeof(bitmap_t);
+		return Thorn::Util::updiv((size_t) pages, 8 * sizeof(bitmap_t)) * sizeof(bitmap_t);
 	}
 
 	size_t PageMeta4K::pageCount() const {
@@ -124,7 +124,7 @@ namespace x86_64 {
 	void PageMeta4K::clear() {
 		if (pages == -1)
 			return;
-		memset(bitmap, 0, DsOS::Util::updiv(pages, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
+		memset(bitmap, 0, Thorn::Util::updiv(pages, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
 	}
 
 	int PageMeta4K::findFree(size_t start) const {
@@ -154,14 +154,14 @@ namespace x86_64 {
 			return 0;
 		}
 
-		DsOS::Kernel *kernel = DsOS::Kernel::instance;
+		Thorn::Kernel *kernel = Thorn::Kernel::instance;
 		if (!kernel) {
 			printf("Kernel instance is null!\n");
 			for (;;) asm("hlt");
 		}
 
 		PageTableWrapper &wrapper = kernel->kernelPML4;
-		if (!DsOS::Util::isCanonical(wrapper.entries)) {
+		if (!Thorn::Util::isCanonical(wrapper.entries)) {
 			printf("PML4 (0x%lx) isn't canonical!\n", wrapper.entries);
 			for (;;) asm("hlt");
 		}
@@ -177,7 +177,7 @@ namespace x86_64 {
 		}
 
 		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
-		if (!DsOS::Util::isCanonical(pdpt)) {
+		if (!Thorn::Util::isCanonical(pdpt)) {
 			kernel->kernelPML4.print(false);
 			printf("PDPT (0x%lx) isn't canonical!\n", pdpt);
 			for (;;) asm("hlt");
@@ -194,7 +194,7 @@ namespace x86_64 {
 		}
 
 		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
-		if (!DsOS::Util::isCanonical(pdt)) {
+		if (!Thorn::Util::isCanonical(pdt)) {
 			kernel->kernelPML4.print(false);
 			printf("PDT (0x%lx) isn't canonical!\n", pdt);
 			for (;;) asm("hlt");
@@ -212,7 +212,7 @@ namespace x86_64 {
 
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
 		uintptr_t assigned = 0;
-		if (!DsOS::Util::isCanonical(pt)) {
+		if (!Thorn::Util::isCanonical(pt)) {
 			kernel->kernelPML4.print(false);
 			printf("PT (0x%lx) isn't canonical!\n", pt);
 			for (;;) asm("hlt");

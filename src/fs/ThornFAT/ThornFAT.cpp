@@ -1,36 +1,36 @@
 #include <cerrno>
 #include <string>
 
-#include "fs/dsFAT/dsFAT.h"
-#include "fs/dsFAT/Types.h"
-#include "fs/dsFAT/Util.h"
+#include "fs/ThornFAT/ThornFAT.h"
+#include "fs/ThornFAT/Types.h"
+#include "fs/ThornFAT/Util.h"
 #include "lib/printf.h"
 #include "memory/Memory.h"
-#include "DsUtil.h"
+#include "ThornUtil.h"
 
 #define FD_VALID(fd) ((fd) != UINT64_MAX)
 
-namespace DsOS::FS::DsFAT {
-	char DsFATDriver::nothing[sizeof(DirEntry)] = {0};
+namespace Thorn::FS::ThornFAT {
+	char ThornFATDriver::nothing[sizeof(DirEntry)] = {0};
 
-	DsFATDriver::DsFATDriver(Partition *partition_): Driver(partition_) {
+	ThornFATDriver::ThornFATDriver(Partition *partition_): Driver(partition_) {
 		root.startBlock = UNUSABLE;
 		readSuperblock(superblock);
 	}
 
-	int DsFATDriver::readSuperblock(Superblock &out) {
+	int ThornFATDriver::readSuperblock(Superblock &out) {
 		int status = partition->read(&out, sizeof(Superblock), 0);
 		if (status != 0)
-			printf("[DsFATDriver::readSuperblock] Reading failed: %s\n", strerror(status));
+			printf("[ThornFATDriver::readSuperblock] Reading failed: %s\n", strerror(status));
 		return -status;
 	}
 
-	void DsFATDriver::error(const std::string &err) {
+	void ThornFATDriver::error(const std::string &err) {
 		printf("Error: %s\n", err.c_str());
 		for (;;);
 	}
 
-	int DsFATDriver::find(fd_t fd, const char *path, DirEntry *out, DirEntry **outptr, off_t *offset, bool get_parent,
+	int ThornFATDriver::find(fd_t fd, const char *path, DirEntry *out, DirEntry **outptr, off_t *offset, bool get_parent,
 	                      std::string *last_name) {
 		// ENTER;
 
@@ -231,7 +231,7 @@ namespace DsOS::FS::DsFAT {
 		return -EIO;
 	}
 
-	size_t DsFATDriver::forget(block_t start) {
+	size_t ThornFATDriver::forget(block_t start) {
 		// ENTER;
 
 		// DBGNE(FORGETH, "Forgetting", start);
@@ -261,7 +261,7 @@ namespace DsOS::FS::DsFAT {
 		return removed;
 	}
 
-	int DsFATDriver::writeEntry(const DirEntry &dir, off_t offset) {
+	int ThornFATDriver::writeEntry(const DirEntry &dir, off_t offset) {
 		// HELLO(dir->fname.str);
 		// ENTER;
 		// DBGF(WRENTRYH, "Writing directory entry at offset " BLR " (" BLR DMS BLR DL BLR ") with filename " BSTR DM " length " BUR
@@ -276,7 +276,7 @@ namespace DsOS::FS::DsFAT {
 
 		int status = partition->write(&dir, sizeof(DirEntry), offset);
 		if (status != 0) {
-			printf("[DsFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
+			printf("[ThornFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 		// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
@@ -290,7 +290,7 @@ namespace DsOS::FS::DsFAT {
 			// write(imgfd, &dir_cpy, sizeof(DirEntry));
 			partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
 			if (status != 0) {
-				printf("[DsFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
+				printf("[ThornFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
 				return -status;
 			}
 			// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
@@ -315,7 +315,7 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	DirEntry & DsFATDriver::getRoot(off_t *offset) {
+	DirEntry & ThornFATDriver::getRoot(off_t *offset) {
 		// If the root directory is already cached, we can simply return a pointer to the cached entry.
 		if (root.startBlock != UNUSABLE)
 			return root;
@@ -329,7 +329,7 @@ namespace DsOS::FS::DsFAT {
 	}
 
 
-	int DsFATDriver::readDir(const DirEntry &dir, std::vector<DirEntry> &entries, std::vector<off_t> *offsets,
+	int ThornFATDriver::readDir(const DirEntry &dir, std::vector<DirEntry> &entries, std::vector<off_t> *offsets,
 	                         int *first_index) {
 // #ifndef DEBUG_DIRREAD
 // 		METHOD_OFF(INDEX_DIRREAD);
@@ -341,7 +341,7 @@ namespace DsOS::FS::DsFAT {
 		if (dir.length == 0 || !dir.isDirectory()) {
 			// If the directory is free or actually a file, it's not valid.
 			// DR_EXIT;
-			printf("[DsFATDriver::readDir] Not a directory.\n");
+			printf("[ThornFATDriver::readDir] Not a directory.\n");
 			return -ENOTDIR;
 		}
 
@@ -354,7 +354,7 @@ namespace DsOS::FS::DsFAT {
 		const size_t count = dir.length / sizeof(DirEntry);
 		entries.clear();
 		entries.resize(count);
-		printf("[DsFATDriver::readDir] count = %lu\n", count);
+		printf("[ThornFATDriver::readDir] count = %lu\n", count);
 
 		if (offsets) {
 			offsets->clear();
@@ -364,13 +364,13 @@ namespace DsOS::FS::DsFAT {
 		std::vector<uint8_t> raw;
 		size_t byte_c;
 
-		printf("[DsFATDriver::readDir] About to read from ");
+		printf("[ThornFATDriver::readDir] About to read from ");
 		dir.print();
 
 		int status = readFile(dir, raw, &byte_c);
 		if (status < 0) {
 			// DR_EXIT;
-			printf("[DsFATDriver::readDir] readFile failed: %s\n", strerror(-status));
+			printf("[ThornFATDriver::readDir] readFile failed: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -378,8 +378,8 @@ namespace DsOS::FS::DsFAT {
 			printf("%x ", ch & 0xff);
 		printf("\n");
 
-		char first_name[DSFAT_PATH_MAX + 1];
-		memcpy(first_name, raw.data(), DSFAT_PATH_MAX);
+		char first_name[THORNFAT_PATH_MAX + 1];
+		memcpy(first_name, raw.data(), THORNFAT_PATH_MAX);
 		if (strcmp(first_name, ".") == 0) {
 			// The directory contains a "." entry, presumably in addition to a ".." entry.
 			// This means there are two meta-entries before the actual entries.
@@ -392,7 +392,7 @@ namespace DsOS::FS::DsFAT {
 				*first_index = 1;
 		}
 
-		printf("[DsFATDriver::readDir] first_name = \"%s\", byte_c = %lu, count = %lu\n", first_name, byte_c, count);
+		printf("[ThornFATDriver::readDir] first_name = \"%s\", byte_c = %lu, count = %lu\n", first_name, byte_c, count);
 
 		// for (size_t i = 0; i < raw.size(); ++i)
 		// 	printf("[%lu] '%c' (%d)\n", i, raw[i], raw[i]);
@@ -413,7 +413,7 @@ namespace DsOS::FS::DsFAT {
 
 			DirEntry entry;
 			memcpy(&entry, raw.data() + sizeof(DirEntry) * i, sizeof(DirEntry));
-			printf("[DsFATDriver::readDir] [i=%d, offset=%lu] ", i, sizeof(DirEntry) * i);
+			printf("[ThornFATDriver::readDir] [i=%d, offset=%lu] ", i, sizeof(DirEntry) * i);
 			entry.print();
 
 			const int entries_per_block = superblock.blockSize / sizeof(DirEntry);
@@ -427,7 +427,7 @@ namespace DsOS::FS::DsFAT {
 		}
 
 		for (const DirEntry &entry: entries) {
-			printf("[DsFATDriver::readDir] ");
+			printf("[ThornFATDriver::readDir] ");
 			entry.print();
 		}
 
@@ -435,10 +435,10 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::readFile(const DirEntry &file, std::vector<uint8_t> &out, size_t *count) {
+	int ThornFATDriver::readFile(const DirEntry &file, std::vector<uint8_t> &out, size_t *count) {
 		// ENTER;
 		// DBGFE(FILEREADH, IDS("Reading file ") BSTR " of length " BDR, file->fname.str, file->length);
-		printf("[DsFATDriver::readFile] Reading file \"%s\" of length %lu @ %ld\n", file.name.str, file.length, file.startBlock * superblock.blockSize);
+		printf("[ThornFATDriver::readFile] Reading file \"%s\" of length %lu @ %ld\n", file.name.str, file.length, file.startBlock * superblock.blockSize);
 		printf("                        file.startBlock = %ld, superblock.blockSize = %u\n", file.startBlock, superblock.blockSize);
 		if (file.length == 0) {
 			if (count)
@@ -448,7 +448,7 @@ namespace DsOS::FS::DsFAT {
 		}
 
 		const auto bs = superblock.blockSize;
-		printf("[DsFATDriver::readFile] bs = %u\n", bs);
+		printf("[ThornFATDriver::readFile] bs = %u\n", bs);
 
 		if (count)
 			*count = file.length;
@@ -524,7 +524,7 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::newFile(const char *path, uint32_t length, FileType type, const Times *times, DirEntry **dir_out,
+	int ThornFATDriver::newFile(const char *path, uint32_t length, FileType type, const Times *times, DirEntry **dir_out,
 	                         off_t *offset_out, DirEntry **parent_dir_out, off_t *parent_offset_out, bool noalloc) {
 		// HELLO(path);
 // #ifndef DEBUG_NEWFILE
@@ -541,16 +541,16 @@ namespace DsOS::FS::DsFAT {
 
 		if (status < 0 && status != -ENOENT) {
 			// It's fine if we get ENOENT. The existence of a file shouldn't be a prerequisite for its creation.
-			printf("[DsFATDriver::newFile] find failed: %s\n", strerror(-status));
+			printf("[ThornFATDriver::newFile] find failed: %s\n", strerror(-status));
 			// NF_EXIT;
 			return status;
 		}
 
 		// First, check the filename length.
 		const size_t ln_length = last_name.size();
-		if (DSFAT_PATH_MAX < ln_length) {
+		if (THORNFAT_PATH_MAX < ln_length) {
 			// If it's too long, we can give up early.
-			printf("[DsFATDriver::newFile] Name too long (%lu chars)\n", ln_length);
+			printf("[ThornFATDriver::newFile] Name too long (%lu chars)\n", ln_length);
 			// WARN(NEWFILEH, "Name too long: " BSR " " UDARR " " IDS("ENAMETOOLONG"), last_name);
 			// FREE(last_name);
 			// FREE(parent);
@@ -626,7 +626,7 @@ namespace DsOS::FS::DsFAT {
 		// FREE(offsets);
 
 		const size_t bs = superblock.blockSize;
-		const uint64_t block_c = DsOS::Util::updiv(static_cast<size_t>(length), bs);
+		const uint64_t block_c = Thorn::Util::updiv(static_cast<size_t>(length), bs);
 
 		// There are four different scenarios that we have to accommodate when we want to add a new directory entry.
 		// The first and easiest is when the parent directory has a slot that used to contain an entry but was later freed.
@@ -639,11 +639,11 @@ namespace DsOS::FS::DsFAT {
 
 		if (offset != -1) {
 			// Scenario one: we found a free entry earlier. Way too easy.
-			printf("[DsFATDriver::newFile] Scenario one.\n");
+			printf("[ThornFATDriver::newFile] Scenario one.\n");
 
 			status = writeEntry(newfile, offset);
 			if (status < 0) {
-				printf("[DsFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+				printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 				// NF_EXIT;
 				return status;
 			}
@@ -655,7 +655,7 @@ namespace DsOS::FS::DsFAT {
 			}
 		} else if (parent->length <= bs - sizeof(DirEntry)) {
 			// Scenario two: the parent directory has free space in its first block, which is also pretty easy to deal with.
-			printf("[DsFATDriver::newFile] Scenario two.\n");
+			printf("[ThornFATDriver::newFile] Scenario two.\n");
 
 			if (!noalloc && !hasFree(block_c)) {
 				// If we're allocating space for the new file, we need enough blocks to hold it.
@@ -673,7 +673,7 @@ namespace DsOS::FS::DsFAT {
 			offset = parent->startBlock * bs + parent->length;
 			status = writeEntry(newfile, offset);
 			if (status < 0) {
-				printf("[DsFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+				printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 				// NF_EXIT;
 				return status;
 			}
@@ -684,24 +684,24 @@ namespace DsOS::FS::DsFAT {
 			// Skip to the last block; we don't need to read or change anything in the earlier blocks.
 			size_t remaining = parent->length;
 			block_t block = parent->startBlock;
-			printf("[DsFATDriver::newFile] Parent start block: %ld\n", block);
+			printf("[ThornFATDriver::newFile] Parent start block: %ld\n", block);
 			int skipped = 0;
 			while (bs < remaining) {
 				block = readFAT(block);
 				remaining -= bs;
 				if (++skipped <= NEWFILE_SKIP_MAX)
-					printf("[DsFATDriver::newFile] Skipping to %ld\n", block);
+					printf("[ThornFATDriver::newFile] Skipping to %ld\n", block);
 			}
 
 			if (NEWFILE_SKIP_MAX < skipped)
-				printf("[DsFATDriver::newFile]   ... %d more\n", skipped);
+				printf("[ThornFATDriver::newFile]   ... %d more\n", skipped);
 
 			// DBGF(NEWFILEH, "bs - sizeof(DirEntry) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " BLR " < " BLR, bs, sizeof(DirEntry), remaining, bs - sizeof(DirEntry), remaining);
 
 			if (bs - sizeof(DirEntry) < remaining) {
 				// Scenario three, the worst one: there isn't enough free space left in the
 				// parent directory to fit in another entry, so we have to add another block.
-				printf("[DsFATDriver::newFile] Scenario three.\n");
+				printf("[ThornFATDriver::newFile] Scenario three.\n");
 
 				bool nospc = false;
 
@@ -735,7 +735,7 @@ namespace DsOS::FS::DsFAT {
 					// another free block to use as the new file's start block.
 					free_block = findFreeBlock();
 					if (free_block == UNUSABLE) {
-						printf("[DsFATDriver::newFile] No free block -> ENOSPC\n");
+						printf("[ThornFATDriver::newFile] No free block -> ENOSPC\n");
 						writeFAT(0, old_free_block);
 						// NF_EXIT;
 						return -ENOSPC;
@@ -750,18 +750,18 @@ namespace DsOS::FS::DsFAT {
 				offset = block * bs;
 				status = writeEntry(newfile, offset);
 				if (status < 0) {
-					printf("[DsFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+					printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 					// NF_EXIT;
 					return status;
 				}
 			} else {
 				// Scenario four: there's enough space in the parent directory to add the new entry. Nice.
-				printf("[DsFATDriver::newFile] Scenario four.\n");
+				printf("[ThornFATDriver::newFile] Scenario four.\n");
 
 				offset = block * bs + remaining;
 				status = writeEntry(newfile, offset);
 				if (status < 0) {
-					printf("[DsFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+					printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 					// NF_EXIT;
 					return status;
 				}
@@ -770,12 +770,12 @@ namespace DsOS::FS::DsFAT {
 
 		if (increase_parent_length) {
 			// Increase the size of the parent directory and write it back to its original offset.
-			printf("[DsFATDriver::newFile] Increasing parent length.\n");
+			printf("[ThornFATDriver::newFile] Increasing parent length.\n");
 			// DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length+sizeof(DirEntry)));
 			parent->length += sizeof(DirEntry);
 			status = writeEntry(*parent, parent_offset);
 			if (status < 0) {
-				printf("[DsFATDriver::newFile] Couldn't write the parent directory to disk: %s\n", strerror(-status));
+				printf("[ThornFATDriver::newFile] Couldn't write the parent directory to disk: %s\n", strerror(-status));
 				// NF_EXIT;
 				return status;
 			}
@@ -790,7 +790,7 @@ namespace DsOS::FS::DsFAT {
 					writeFAT(FINAL, block);
 					blocksFree = -1;
 					writeFAT(0, old_free_block);
-					printf("[DsFATDriver::newFile] No free block -> ENOSPC\n");
+					printf("[ThornFATDriver::newFile] No free block -> ENOSPC\n");
 					countFree();
 					// fat_save(imgfd, &superblock, pcache.fat);
 					// NF_EXIT;
@@ -811,7 +811,7 @@ namespace DsOS::FS::DsFAT {
 			// DBG(NEWFILEH, "Inserted.");
 			if (insert_status != PCInsertStatus::Success && insert_status != PCInsertStatus::Overwritten) {
 				// Inserting a pcache entry should always work. If it doesn't, there's a bug somewhere.
-				printf("[DsFATDriver::newFile] pc_insert failed (%d)\n", insert_status);
+				printf("[ThornFATDriver::newFile] pc_insert failed (%d)\n", insert_status);
 				for (;;);
 				return -666;
 			} else if (dir_out)
@@ -846,7 +846,7 @@ namespace DsOS::FS::DsFAT {
 		return parent_is_new;
 	}
 
-	int DsFATDriver::remove(const char *path, bool remove_pentry) {
+	int ThornFATDriver::remove(const char *path, bool remove_pentry) {
 		// DBGF(REMOVEH, "Removing " BSR " from the filesystem %s from " IMS("pcache") ".",
 		// 	path, remove_pentry? "and" : "but not");
 
@@ -857,7 +857,7 @@ namespace DsOS::FS::DsFAT {
 		int status = find(-1, path, nullptr, &found, &offset, false, nullptr);
 		// DBG_ONE();
 		if (status < 0) {
-			printf("[DsFATDriver::remove] find failed: %s\n", strerror(-status));
+			printf("[ThornFATDriver::remove] find failed: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -875,7 +875,7 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	block_t DsFATDriver::findFreeBlock() {
+	block_t ThornFATDriver::findFreeBlock() {
 		auto block_c = superblock.blockCount;
 		for (decltype(block_c) i = 0; i < block_c; i++)
 			if (readFAT(i) == 0) // TODO: cache FAT
@@ -883,28 +883,28 @@ namespace DsOS::FS::DsFAT {
 		return UNUSABLE;
 	}
 
-	block_t DsFATDriver::readFAT(size_t block_offset) {
+	block_t ThornFATDriver::readFAT(size_t block_offset) {
 		block_t out;
 		int status = partition->read(&out, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
-			printf("[DsFATDriver::readFAT] Reading failed: %s\n", strerror(status));
+			printf("[ThornFATDriver::readFAT] Reading failed: %s\n", strerror(status));
 			return status;
 		}
 		printf("readFAT adjusted offset: %lu -> %d\n", superblock.blockSize + block_offset * sizeof(block_t), out);
 		return out;
 	}
 
-	int DsFATDriver::writeFAT(block_t block, size_t block_offset) {
+	int ThornFATDriver::writeFAT(block_t block, size_t block_offset) {
 		printf("writeFAT adjusted offset: %lu <- %d\n", superblock.blockSize + block_offset * sizeof(block_t), block);
 		int status = partition->write(&block, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
-			printf("[DsFATDriver::writeFAT] Writing failed: %s\n", strerror(status));
+			printf("[ThornFATDriver::writeFAT] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 		return 0;
 	}
 
-	void DsFATDriver::initFAT(size_t table_size, size_t block_size) {
+	void ThornFATDriver::initFAT(size_t table_size, size_t block_size) {
 		size_t written = 0;
 		printf("initFAT: writeOffset = %lu, table_size = %lu\n", writeOffset, table_size);
 		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
@@ -922,7 +922,7 @@ namespace DsOS::FS::DsFAT {
 		writeMany((block_t) 0, times);
 	}
 
-	void DsFATDriver::initData(size_t block_count, size_t table_size) {
+	void ThornFATDriver::initData(size_t block_count, size_t table_size) {
 		root.reset();
 		root.name.str[0] = '.';
 		root.length = 2 * sizeof(DirEntry);
@@ -934,7 +934,7 @@ namespace DsOS::FS::DsFAT {
 		root.name.str[1] = '\0';
 	}
 
-	bool DsFATDriver::hasFree(const size_t count) {
+	bool ThornFATDriver::hasFree(const size_t count) {
 		size_t scanned = 0;
 		size_t block_c = superblock.blockCount;
 		for (size_t i = 0; i < block_c; i++)
@@ -943,7 +943,7 @@ namespace DsOS::FS::DsFAT {
 		return false;
 	}
 
-	ssize_t DsFATDriver::countFree() {
+	ssize_t ThornFATDriver::countFree() {
 		if (0 <= blocksFree)
 			return blocksFree;
 
@@ -954,7 +954,7 @@ namespace DsOS::FS::DsFAT {
 		return blocksFree;
 	}
 
-	bool DsFATDriver::checkBlock(block_t block) {
+	bool ThornFATDriver::checkBlock(block_t block) {
 		if (block < 1) {
 			printf("Invalid block: %d\n", block);
 			for (;;);
@@ -964,20 +964,20 @@ namespace DsOS::FS::DsFAT {
 		return true;
 	}
 
-	bool DsFATDriver::isFree(const DirEntry &entry) {
+	bool ThornFATDriver::isFree(const DirEntry &entry) {
 		return entry.startBlock == 0 || readFAT(entry.startBlock) == 0;
 	}
 
-	bool DsFATDriver::isRoot(const DirEntry &entry) {
+	bool ThornFATDriver::isRoot(const DirEntry &entry) {
 		return superblock.startBlock == entry.startBlock;
 	}
 
-	size_t DsFATDriver::tableSize(size_t block_count, size_t block_size) {
+	size_t ThornFATDriver::tableSize(size_t block_count, size_t block_size) {
 		return block_count < block_size / sizeof(block_t)?
-			1 : DsOS::Util::updiv(block_count, block_size / sizeof(block_t));
+			1 : Thorn::Util::updiv(block_count, block_size / sizeof(block_t));
 	}
 
-	int DsFATDriver::rename(const char *srcpath, const char *destpath) {
+	int ThornFATDriver::rename(const char *srcpath, const char *destpath) {
 		// HELLO(srcpath);
 		// DBGL;
 		// DBGF(RENAMEH, CMETHOD("rename") BSTR " " UARR " " BSTR, srcpath, destpath);
@@ -988,7 +988,7 @@ namespace DsOS::FS::DsFAT {
 
 		// It's okay if the destination doesn't exist, but the source is required to exist.
 		if ((status = find(-1, srcpath, nullptr, &src_entry, &src_offset, false, nullptr)) < 0) {
-			printf("[DsFATDriver::rename] find failed for old path: %s\n", strerror(-status));
+			printf("[ThornFATDriver::rename] find failed for old path: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -998,7 +998,7 @@ namespace DsOS::FS::DsFAT {
 		status = find(-1, destpath, nullptr, &dest_entry, &dest_offset, false, nullptr);
 		// DBGN(RENAMEH, "fat_find status:", status);
 		if (status < 0 && status != -ENOENT) {
-			printf("[DsFATDriver::rename] find failed for new path: %s\n", strerror(-status));
+			printf("[ThornFATDriver::rename] find failed for new path: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -1010,7 +1010,7 @@ namespace DsOS::FS::DsFAT {
 			// we're actually freeing up at least one block.
 			status = remove(destpath, true);
 			if (status < 0) {
-				printf("[DsFATDriver::rename] Couldn't unlink target: %s\n", strerror(-status));
+				printf("[ThornFATDriver::rename] Couldn't unlink target: %s\n", strerror(-status));
 				return status;
 			}
 
@@ -1027,7 +1027,7 @@ namespace DsOS::FS::DsFAT {
 			status = newFile(destpath, 0, src_entry->isDirectory()? FileType::Directory : FileType::File,
 			                 &src_entry->times, &dest_entry, &dest_offset, &parent_entry, &parent_offset, 1);
 			if (status < 0) {
-				printf("[DsFATDriver::rename] Couldn't create new directory entry: %s\n", strerror(-status));
+				printf("[ThornFATDriver::rename] Couldn't create new directory entry: %s\n", strerror(-status));
 				return status;
 			}
 			// DBGF(RENAMEH, BLR SUDARR BLR, src_offset, dest_offset);
@@ -1043,25 +1043,25 @@ namespace DsOS::FS::DsFAT {
 		// Zero out the source entry's filename, then copy in the basename of the destination.
 		std::optional<std::string> destbase = Util::pathLast(destpath);
 		if (!destbase.has_value()) {
-			printf("[DsFATDriver::rename] destbase has no value!\n");
+			printf("[ThornFATDriver::rename] destbase has no value!\n");
 			return -EINVAL;
 		}
 
-		memset(src_entry->name.str, 0, DSFAT_PATH_MAX + 1);
-		strncpy(src_entry->name.str, destbase->c_str(), DSFAT_PATH_MAX);
+		memset(src_entry->name.str, 0, THORNFAT_PATH_MAX + 1);
+		strncpy(src_entry->name.str, destbase->c_str(), THORNFAT_PATH_MAX);
 
 		// Once we've ensured the destination doesn't exist or no longer exists,
 		// we move the source's directory entry to the destination's offset.
 		status = partition->write(src_entry, sizeof(DirEntry), dest_offset);
 		if (status != 0) {
-			printf("[DsFATDriver::rename] Writing failed: %s\n", strerror(status));
+			printf("[ThornFATDriver::rename] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 
 		// Now we need to remove the source entry's original directory entry from the disk image.
 		status = partition->write(nothing, sizeof(DirEntry), src_offset);
 		if (status != 0) {
-			printf("[DsFATDriver::rename] Writing failed: %s\n", strerror(status));
+			printf("[ThornFATDriver::rename] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 
@@ -1072,33 +1072,33 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::release(const char *path) {
+	int ThornFATDriver::release(const char *path) {
 		return 0;
 	}
 
-	int DsFATDriver::statfs(const char *, DriverStats &) {
+	int ThornFATDriver::statfs(const char *, DriverStats &) {
 		return 0;
 	}
 
-	int DsFATDriver::utimens(const char *path, const timespec &) {
+	int ThornFATDriver::utimens(const char *path, const timespec &) {
 		return 0;
 	}
 
-	int DsFATDriver::create(const char *path, mode_t modes) {
+	int ThornFATDriver::create(const char *path, mode_t modes) {
 		// HELLO(path);
 		// UNUSED(mode);
 		// UNUSED(fi);
 		// IGNORE_ECHO(path, 0);
 		// DBGL;
 
-#ifdef DEBUG_DSFAT
+#ifdef DEBUG_THORNFAT
 		// if (IS_DOT(path)) {
 		// 	return handle_extra(path);
 		// }
 #endif
 
 		// DBGF(CREATEH, PMETHOD("create") BSTR DM " mode " BDR DM " flags " BXR, path, mode, fi->flags);
-		printf("[DsFATDriver::create] path \"%s\" modes %u\n", path, modes);
+		printf("[ThornFATDriver::create] path \"%s\" modes %u\n", path, modes);
 
 		// int status = fat_find(imgfd, -1, path, NULL, NULL, NULL, 0, NULL);
 		int status = find(-1, path);
@@ -1106,7 +1106,7 @@ namespace DsOS::FS::DsFAT {
 			// The file already exists, so we don't have to bother creating another entry with the same name.
 			// That would be a pretty dumb thing to do...
 			// DBG2(CREATEH, "File already exists:", path);
-			printf("[DsFATDriver::create] File already exists: \"%s\"\n", path);
+			printf("[ThornFATDriver::create] File already exists: \"%s\"\n", path);
 			return -EEXIST;
 		}
 
@@ -1114,7 +1114,7 @@ namespace DsOS::FS::DsFAT {
 		off_t offset, poffset;
 		status = newFile(path, 0, FileType::File, nullptr, &newfile, &offset, &parent, &poffset, false);
 		if (status < 0) {
-			printf("[DsFATDriver::create] newFile failed: %s\n", strerror(-status));
+			printf("[ThornFATDriver::create] newFile failed: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -1126,10 +1126,10 @@ namespace DsOS::FS::DsFAT {
 			// FREE(parent);
 		// }
 
-		printf("[DsFATDriver::create] Done. {offset: %ld, poffset: %ld}\n", offset, poffset);
+		printf("[ThornFATDriver::create] Done. {offset: %ld, poffset: %ld}\n", offset, poffset);
 		// if (offset == 5440 & poffset == 4800) for (;;) asm("hlt");
 		// SUCC(CREATEH, "Done. " IDS("{") "offset" DLS BLR DMS "poffset" DLS BLR IDS("}"), offset, poffset);
-#ifdef DEBUG_DSFAT
+#ifdef DEBUG_THORNFAT
 		// if (strcmp(path, "/dbg") == 0) {
 		// 	struct fuse_file_info fake_fi = {.flags = 0};
 		// 	char buf[4096];
@@ -1143,39 +1143,39 @@ namespace DsOS::FS::DsFAT {
 		return 0;
 	}
 
-	int DsFATDriver::write(const char *path, const char *buffer, size_t size, off_t offset) {
+	int ThornFATDriver::write(const char *path, const char *buffer, size_t size, off_t offset) {
 		return 0;
 	}
 
-	int DsFATDriver::mkdir(const char *path, mode_t mode) {
+	int ThornFATDriver::mkdir(const char *path, mode_t mode) {
 		return 0;
 	}
 
-	int DsFATDriver::truncate(const char *path, off_t size) {
+	int ThornFATDriver::truncate(const char *path, off_t size) {
 		return 0;
 	}
 
-	int DsFATDriver::ftruncate(const char *path, off_t size) {
+	int ThornFATDriver::ftruncate(const char *path, off_t size) {
 		return 0;
 	}
 
-	int DsFATDriver::rmdir(const char *path) {
+	int ThornFATDriver::rmdir(const char *path) {
 		return 0;
 	}
 
-	int DsFATDriver::unlink(const char *path) {
+	int ThornFATDriver::unlink(const char *path) {
 		return 0;
 	}
 
-	int DsFATDriver::open(const char *path) {
+	int ThornFATDriver::open(const char *path) {
 		return 0;
 	}
 
-	int DsFATDriver::read(const char *path, char *buffer, size_t size, off_t offset) {
+	int ThornFATDriver::read(const char *path, char *buffer, size_t size, off_t offset) {
 		return 0;
 	}
 
-	int DsFATDriver::readdir(const char *path, DirFiller filler) {
+	int ThornFATDriver::readdir(const char *path, DirFiller filler) {
 		// HELLO(path);
 		// UNUSED(offset);
 		// UNUSED(fi);
@@ -1189,13 +1189,13 @@ namespace DsOS::FS::DsFAT {
 
 		int status = find(-1, path, nullptr, &found, &file_offset);
 		if (status < 0) {
-			printf("[DsFATDriver::readdir] find failed: %s\n", strerror(-status));
+			printf("[ThornFATDriver::readdir] find failed: %s\n", strerror(-status));
 			return status;
 		}
 
 		if (!found->isDirectory()) {
 			// You can't really use readdir with a file.
-			printf("[DsFATDriver::readdir] Can't readdir() a file -> ENOTDIR\n");
+			printf("[ThornFATDriver::readdir] Can't readdir() a file -> ENOTDIR\n");
 			// DBG_ON();
 			return -ENOTDIR;
 		}
@@ -1205,7 +1205,7 @@ namespace DsOS::FS::DsFAT {
 			// For other directories, it has to be added dynamically.
 			filler(".", 0);
 
-		printf("[DsFATDriver::readdir] Found directory at offset %ld: ", file_offset);
+		printf("[ThornFATDriver::readdir] Found directory at offset %ld: ", file_offset);
 		found->print();
 
 		std::vector<DirEntry> entries;
@@ -1213,11 +1213,11 @@ namespace DsOS::FS::DsFAT {
 
 		status = readDir(*found, entries, &offsets);
 		if (status < 0) {
-			printf("[DsFATDriver::readdir] readDir failed: %s\n", strerror(-status));
+			printf("[ThornFATDriver::readdir] readDir failed: %s\n", strerror(-status));
 			return status;
 		}
 		const size_t count = entries.size();
-		printf("[DsFATDriver::readdir] Count: %lu\n", count);
+		printf("[ThornFATDriver::readdir] Count: %lu\n", count);
 
 		size_t excluded = 0;
 #ifdef READDIR_MAX_INCLUDE
@@ -1234,7 +1234,7 @@ namespace DsOS::FS::DsFAT {
 				last_index = i;
 				if (++included < READDIR_MAX_INCLUDE)
 #else
-				printf("[DsFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
+				printf("[ThornFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
 #endif
 
 				filler(entry.name.str, offsets[i]);
@@ -1244,30 +1244,30 @@ namespace DsOS::FS::DsFAT {
 
 #ifdef READDIR_MAX_INCLUDE
 		if (READDIR_MAX_INCLUDE < included)
-			printf("[DsFATDriver::readdir] ... %lu more\n", count - READDIR_MAX_INCLUDE);
+			printf("[ThornFATDriver::readdir] ... %lu more\n", count - READDIR_MAX_INCLUDE);
 
 		if (READDIR_MAX_INCLUDE <= included)
-			printf("[DsFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
+			printf("[ThornFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
 #endif
 
 		if (0 < excluded) {
-			printf("[DsFATDriver::readdir] Excluding %lu freed entr%s.\n", excluded, excluded == 1? "y" : "ies");
+			printf("[ThornFATDriver::readdir] Excluding %lu freed entr%s.\n", excluded, excluded == 1? "y" : "ies");
 		}
 
-		printf("[DsFATDriver::readdir] Done.\n");
+		printf("[ThornFATDriver::readdir] Done.\n");
 		// DBGE(READDIRH, "Done.");
 		// DBG_ON();
 		return 0;
 	}
 
-	int DsFATDriver::getattr(const char *path, FileStats &) {
+	int ThornFATDriver::getattr(const char *path, FileStats &) {
 		return 0;
 	}
 
-	bool DsFATDriver::make(uint32_t block_size) {
+	bool ThornFATDriver::make(uint32_t block_size) {
 		int status = partition->clear();
 		if (status != 0) {
-			printf("[DsFATDriver::make] Clearing partition failed: %s\n", strerror(status));
+			printf("[ThornFATDriver::make] Clearing partition failed: %s\n", strerror(status));
 			return false;
 		}
 
@@ -1276,24 +1276,24 @@ namespace DsOS::FS::DsFAT {
 		const size_t block_count = partition->length / block_size;
 
 		if (block_count < MINBLOCKS) {
-			printf("[DsFATDriver::make] Number of blocks for partition is too small: %lu\n", block_count);
+			printf("[ThornFATDriver::make] Number of blocks for partition is too small: %lu\n", block_count);
 			return false;
 		}
 
 		if (block_size % sizeof(DirEntry)) {
 			// The block size must be a multiple of the size of a directory entry because it must be possible to fill a
 			// block with directory entries without any space left over.
-			printf("[DsFATDriver::make] Block size isn't a multiple of %lu.\n", sizeof(DirEntry));
+			printf("[ThornFATDriver::make] Block size isn't a multiple of %lu.\n", sizeof(DirEntry));
 			return false;
 		}
 
 		if (block_size < 2 * sizeof(DirEntry)) {
-			printf("[DsFATDriver::make] Block size must be able to hold at least two directory entries.\n");
+			printf("[ThornFATDriver::make] Block size must be able to hold at least two directory entries.\n");
 			return false;
 		}
 
 		if (block_size < sizeof(Superblock)) {
-			printf("[DsFATDriver::make] Block size isn't large enough to contain a superblock (%luB).\n",
+			printf("[ThornFATDriver::make] Block size isn't large enough to contain a superblock (%luB).\n",
 				sizeof(Superblock));
 			return false;
 		}
@@ -1301,7 +1301,7 @@ namespace DsOS::FS::DsFAT {
 		const size_t table_size = tableSize(block_count, block_size);
 
 		if (UINT32_MAX <= table_size) {
-			printf("[DsFATDriver::make] Table size too large: %u\n", table_size);
+			printf("[ThornFATDriver::make] Table size too large: %u\n", table_size);
 			return false;
 		}
 

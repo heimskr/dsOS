@@ -5,7 +5,7 @@
 
 extern volatile bool irqInvoked;
 
-namespace DsOS::IDE {
+namespace Thorn::IDE {
 	constexpr size_t SECTOR_SIZE = 512;
 
 	// Status codes

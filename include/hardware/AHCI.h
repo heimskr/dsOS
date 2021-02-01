@@ -9,11 +9,11 @@
 #include "hardware/ATA.h"
 #include "hardware/PCI.h"
 
-namespace DsOS {
+namespace Thorn {
 	class Kernel;
 }
 
-namespace DsOS::AHCI {
+namespace Thorn::AHCI {
 	constexpr uint32_t SIG_ATA   = 0x00000101; // SATA drive
 	constexpr uint32_t SIG_ATAPI = 0xEB140101; // SATAPI drive
 	constexpr uint32_t SIG_SEMB  = 0xC33C0101; // Enclosure management bridge

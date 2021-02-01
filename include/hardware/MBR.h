@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace DsOS {
+namespace Thorn {
 	struct CHS {
 		uint8_t cylinders = 0;
 		uint8_t heads = 0;

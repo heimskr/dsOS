@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace DsOS::Ports {
+namespace Thorn::Ports {
 	using port_t = uint16_t;
 
 	uint8_t inb(port_t);

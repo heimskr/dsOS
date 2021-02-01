@@ -1,5 +1,5 @@
-#include "DsUtil.h"
+#include "ThornUtil.h"
 
-namespace DsOS::Util {
+namespace Thorn::Util {
 	
 }

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "fs/dsFAT/Types.h"
+#include "fs/ThornFAT/Types.h"
 
-namespace DsOS::FS::DsFAT {
-	class DsFATDriver;
+namespace Thorn::FS::ThornFAT {
+	class ThornFATDriver;
 	struct PathCacheEntry;
 
 	struct FDCache;
@@ -18,10 +18,10 @@ namespace DsOS::FS::DsFAT {
 	};
 
 	struct FDCache {
-		DsFATDriver *parent;
+		ThornFATDriver *parent;
 		FDCacheEntry entries[FDC_MAX];
 		
-		FDCache(DsFATDriver *parent_): parent(parent_) {}
+		FDCache(ThornFATDriver *parent_): parent(parent_) {}
 
 		FDCacheEntry * find(fd_t);
 	};

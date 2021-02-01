@@ -4,9 +4,9 @@
 #include "memory/memset.h"
 #include "Options.h"
 
-DsOS::Memory *global_memory = nullptr;
+Thorn::Memory *global_memory = nullptr;
 
-namespace DsOS {
+namespace Thorn {
 	Memory::Memory(char *start_, char *high_): start(start_), high(high_), end(start_) {
 		start = (char *) realign((uintptr_t) start);
 		global_memory = this;

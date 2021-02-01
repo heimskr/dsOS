@@ -6,11 +6,11 @@
 #include <string.h>
 #include "Defs.h"
 
-namespace DsOS::FS::DsFAT {
+namespace Thorn::FS::ThornFAT {
 	using block_t = int32_t;
 	using fd_t = uint64_t;
 
-	constexpr size_t DSFAT_PATH_MAX = 255;
+	constexpr size_t THORNFAT_PATH_MAX = 255;
 	constexpr size_t FD_MAX = 128; // ???
 
 	constexpr size_t PATHC_MAX = 1024;
@@ -39,7 +39,7 @@ namespace DsOS::FS::DsFAT {
 	};
 
 	union Filename {
-		char str[DSFAT_PATH_MAX + 1] = {0};
+		char str[THORNFAT_PATH_MAX + 1] = {0};
 		uint64_t longs[sizeof(str) / sizeof(uint64_t)];
 	};
 
@@ -54,7 +54,7 @@ namespace DsOS::FS::DsFAT {
 		block_t startBlock = {-1};
 		FileType type = FileType::File;
 		mode_t modes = 0;
-		char padding[16] = {0}; // update if DSFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
+		char padding[16] = {0}; // update if THORNFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
 
 		bool isFile() const { return type == FileType::File; }
 		bool isDirectory() const { return type == FileType::Directory; }

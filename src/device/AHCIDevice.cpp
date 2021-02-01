@@ -1,7 +1,7 @@
 #include "device/AHCIDevice.h"
 #include "memory/Memory.h"
 
-namespace DsOS::Device {
+namespace Thorn::Device {
 	int AHCIDevice::read(void *buffer, size_t size, off_t offset) {
 		if (offset % AHCI::Port::BLOCKSIZE == 0 && size % AHCI::Port::BLOCKSIZE == 0)
 			return static_cast<int>(port->read(offset / AHCI::Port::BLOCKSIZE, size, buffer));

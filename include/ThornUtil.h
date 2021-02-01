@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace DsOS::Util {
+namespace Thorn::Util {
 	template <typename T>
 	inline T upalign(T number, int alignment) {
 		return number + ((alignment - (number % alignment)) % alignment);

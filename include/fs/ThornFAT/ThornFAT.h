@@ -1,22 +1,22 @@
 #pragma once
 
-// dsFAT: a primitive filesystem that shares some concepts with the FAT family of filesystems.
+// ThornFAT: a primitive filesystem that shares some concepts with the FAT family of filesystems.
 
 #include <string>
 #include <vector>
 
 #include "fs/FS.h"
-#include "fs/dsFAT/FDCache.h"
-#include "fs/dsFAT/PathCache.h"
-#include "fs/dsFAT/Types.h"
+#include "fs/ThornFAT/FDCache.h"
+#include "fs/ThornFAT/PathCache.h"
+#include "fs/ThornFAT/Types.h"
 
-namespace DsOS::FS::DsFAT {
+namespace Thorn::FS::ThornFAT {
 	constexpr uint32_t MAGIC = 0xfa91283e;
 	constexpr int NEWFILE_SKIP_MAX = 4;
 	constexpr int OVERFLOW_MAX = 32;
 	constexpr size_t MINBLOCKS = 3;
 
-	class DsFATDriver: public Driver {
+	class ThornFATDriver: public Driver {
 		public:
 			Superblock superblock;
 			ssize_t blocksFree = -1;
@@ -132,7 +132,7 @@ namespace DsOS::FS::DsFAT {
 				for (size_t i = 0; i < count; ++i) {
 					status = partition->write(&n, sizeof(T), offset + i * sizeof(T));
 					if (status != 0) {
-						printf("[DsFATDriver::writeInt] Writing failed: %s\n", strerror(status));
+						printf("[ThornFATDriver::writeInt] Writing failed: %s\n", strerror(status));
 						return -status;
 					}
 				}
@@ -146,7 +146,7 @@ namespace DsOS::FS::DsFAT {
 				for (size_t i = 0; i < count; ++i) {
 					status = partition->write(&n, sizeof(T), writeOffset);
 					if (status != 0) {
-						printf("[DsFATDriver::writeInt] Writing failed: %s\n", strerror(status));
+						printf("[ThornFATDriver::writeInt] Writing failed: %s\n", strerror(status));
 						return -status;
 					}
 					writeOffset += sizeof(T);
@@ -159,7 +159,7 @@ namespace DsOS::FS::DsFAT {
 			int write(const T &n) {
 				int status = partition->write(&n, sizeof(T), writeOffset);
 				if (status != 0) {
-					printf("[DsFATDriver::write] Writing failed: %s\n", strerror(status));
+					printf("[ThornFATDriver::write] Writing failed: %s\n", strerror(status));
 					return -status;
 				}
 				printf("[S] writeOffset: %lu -> %lu\n", writeOffset, writeOffset + sizeof(T));
@@ -195,7 +195,7 @@ namespace DsOS::FS::DsFAT {
 			virtual int getattr(const char *path, FileStats &) override;
 			bool make(uint32_t block_size);
 
-			DsFATDriver(Partition *);
+			ThornFATDriver(Partition *);
 			PathCache pathCache = this;
 			FDCache fdCache = this;
 	};

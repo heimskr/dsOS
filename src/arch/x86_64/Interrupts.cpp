@@ -84,7 +84,7 @@ void page_interrupt() {
 	printf("[PML4 %d, PDP %d, PD %d, PT %d, Offset %d]\n", pml4i, pdpi, pdi, pti, offset);
 #endif
 
-	DsOS::Kernel *kernel = DsOS::Kernel::instance;
+	Thorn::Kernel *kernel = Thorn::Kernel::instance;
 	if (!kernel) {
 		printf("Kernel is null!\n");
 		for (;;);
@@ -118,11 +118,11 @@ void spurious_interrupt() {
 }
 
 void irq1() {
-	DsOS::PS2Keyboard::onIRQ1();
+	Thorn::PS2Keyboard::onIRQ1();
 }
 
 void irq14() {
-	DsOS::Ports::outb(0xa0, 0x20);
+	Thorn::Ports::outb(0xa0, 0x20);
 	x86_64::PIC::sendEOI(1);
 	printf("IRQ14\n");
 	for (;;);
@@ -130,7 +130,7 @@ void irq14() {
 }
 
 void irq15() {
-	DsOS::Ports::outb(0xa0, 0x20);
+	Thorn::Ports::outb(0xa0, 0x20);
 	x86_64::PIC::sendEOI(1);
 	printf("IRQ15\n");
 	for (;;);

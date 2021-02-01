@@ -1,9 +1,9 @@
-#include "fs/dsFAT/dsFAT.h"
-#include "fs/dsFAT/FDCache.h"
-#include "fs/dsFAT/PathCache.h"
+#include "fs/ThornFAT/ThornFAT.h"
+#include "fs/ThornFAT/FDCache.h"
+#include "fs/ThornFAT/PathCache.h"
 #include "lib/printf.h"
 
-namespace DsOS::FS::DsFAT {
+namespace Thorn::FS::ThornFAT {
 	PathCacheEntry::~PathCacheEntry() {
 		if (complement)
 			complement->complement = nullptr;

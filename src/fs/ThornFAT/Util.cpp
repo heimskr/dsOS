@@ -1,6 +1,6 @@
-#include "fs/dsFAT/Util.h"
+#include "fs/ThornFAT/Util.h"
 
-namespace DsOS::FS::DsFAT::Util {
+namespace Thorn::FS::ThornFAT::Util {
 	std::optional<std::string> pathFirst(std::string path, std::string *remainder) {
 		if (path.empty()) {
 			if (remainder)

@@ -1,7 +1,7 @@
 #include "hardware/SATA.h"
 #include "memory/memset.h"
 
-namespace DsOS::SATA {
+namespace Thorn::SATA {
 	/*
 	bool issueCommand(AHCI::Controller &controller, AHCI::Port &port, ATA::Command command, bool write, void *buffer,
 	                  uint16_t prdtl, uint32_t byte_count, uint64_t start) {

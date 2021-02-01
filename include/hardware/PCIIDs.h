@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-namespace DsOS::PCI::ID {
+namespace Thorn::PCI::ID {
 	static constexpr const char *vendor_0001 = "SafeNet (wrong ID)";
 	static constexpr const char *vendor_0010 = "Allied Telesis, Inc (Wrong ID)";
 	static constexpr const char *vendor_0014 = "Loongson Technology LLC";

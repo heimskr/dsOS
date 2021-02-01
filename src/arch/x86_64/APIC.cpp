@@ -13,7 +13,7 @@ static bool timer_calibrated = false;
 static uint32_t last_tps = 0;
 
 namespace x86_64::APIC {
-	void init(DsOS::Kernel &kernel) {
+	void init(Thorn::Kernel &kernel) {
 		timer_calibrated = false;
 		last_tps = 0;
 		printf("Initializing APIC.\n");
@@ -46,7 +46,7 @@ namespace x86_64::APIC {
 	}
 
 	uint32_t calibrateTimer() {
-		using namespace DsOS::Ports;
+		using namespace Thorn::Ports;
 		apic_base[REGISTER_LVT_TIMER] = BSP_VECTOR_APIC_TIMER;
 		apic_base[REGISTER_TIMER_DIV] = TIMER_SELECT_DIVIDER;
 

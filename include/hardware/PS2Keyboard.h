@@ -4,7 +4,7 @@
 
 extern uint8_t last_scancode;
 
-namespace DsOS::PS2Keyboard {
+namespace Thorn::PS2Keyboard {
 	void onIRQ1();
 
 	enum class InputPage: unsigned char {

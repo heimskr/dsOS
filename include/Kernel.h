@@ -8,7 +8,7 @@
 #include "arch/x86_64/PageMeta.h"
 #include "arch/x86_64/PageTableWrapper.h"
 
-namespace DsOS {
+namespace Thorn {
 	class Kernel {
 		private:
 			size_t memoryLow = 0;

@@ -3,7 +3,7 @@
 #include "device/Device.h"
 #include "hardware/AHCI.h"
 
-namespace DsOS::Device {
+namespace Thorn::Device {
 	struct AHCIDevice: public DeviceBase {
 		AHCI::Port *port;
 		AHCIDevice() = delete;

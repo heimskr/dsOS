@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace DsOS {
+namespace Thorn {
 	struct Terminal {
 		static constexpr size_t VGA_WIDTH = 80;
 		static constexpr size_t VGA_HEIGHT = 25;

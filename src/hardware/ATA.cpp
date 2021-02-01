@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-namespace DsOS::ATA {
+namespace Thorn::ATA {
 	void DeviceInfo::copyModel(char *str) {
 		size_t i, index = 0;
 		for (i = 0; i < sizeof(model) / sizeof(model[0]); ++i) {

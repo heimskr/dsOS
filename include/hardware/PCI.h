@@ -19,7 +19,7 @@
 
 #include "Defs.h"
 
-namespace DsOS::PCI {
+namespace Thorn::PCI {
 	constexpr uint8_t MSI_CONTROL_64 = 1 << 7;
 	constexpr uint32_t MSI_ADDRESS_BASE = 0xfee00000;
 

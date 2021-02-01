@@ -1,7 +1,7 @@
-#include "fs/dsFAT/Types.h"
+#include "fs/ThornFAT/Types.h"
 #include "lib/printf.h"
 
-namespace DsOS::FS::DsFAT {
+namespace Thorn::FS::ThornFAT {
 	void DirEntry::reset() {
 		memset(name.str, 0, sizeof(name));
 		times = {0, 0, 0};

@@ -1,8 +1,8 @@
 #include "Terminal.h"
-#include "DsUtil.h"
+#include "ThornUtil.h"
 #include "hardware/Serial.h"
 
-namespace DsOS {
+namespace Thorn {
 	size_t Terminal::row = 0;
 	size_t Terminal::column = 0;
 	uint8_t Terminal::color = vgaEntryColor(VGAColor::LightGray, VGAColor::Black);

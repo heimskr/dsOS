@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-namespace DsOS::ATA {
+namespace Thorn::ATA {
 	enum class Command: uint8_t {
 		NOP = 0x00,
 		CFARequestExtendedError = 0x03,

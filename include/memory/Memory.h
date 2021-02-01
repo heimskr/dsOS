@@ -8,7 +8,7 @@
 
 void spin(size_t time = 3);
 
-namespace DsOS {
+namespace Thorn {
 	class Memory {
 		public:
 			struct BlockMeta {
@@ -55,7 +55,7 @@ extern "C" {
 	int posix_memalign(void **memptr, size_t alignment, size_t size);
 }
 
-extern DsOS::Memory *global_memory;
+extern Thorn::Memory *global_memory;
 
 #define MEMORY_OPERATORS_SET
 #ifdef __clang__

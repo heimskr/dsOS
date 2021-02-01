@@ -1,6 +1,6 @@
 #pragma once
 
-namespace DsOS {
+namespace Thorn {
 	struct KeyboardEvent {
 		
 	};

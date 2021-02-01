@@ -2,7 +2,7 @@
 #include "arch/x86_64/PageTableWrapper.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
-#include "DsUtil.h"
+#include "ThornUtil.h"
 #include "Kernel.h"
 
 namespace x86_64 {
@@ -23,7 +23,7 @@ namespace x86_64 {
 				printMeta(pml4e);
 				size_t i_shift = (size_t) i << 39;
 				printf(" 0x%lx\n", i_shift);
-				if (!DsOS::Util::isCanonical(pml4e))
+				if (!Thorn::Util::isCanonical(pml4e))
 					printf("  Non-canonical.\n");
 				if ((pml4e & MMU_PRESENT) && show_pdpt)
 					printPDPT(i_shift, pml4e, show_pdt, pt_display);
@@ -40,7 +40,7 @@ namespace x86_64 {
 				printMeta(pdpe);
 				size_t j_shift = i_shift | ((size_t) j << 30);
 				printf(" 0x%lx\n", j_shift);
-				if (!DsOS::Util::isCanonical(pdpe))
+				if (!Thorn::Util::isCanonical(pdpe))
 					printf("    Non-canonical.\n");
 				else if ((pdpe & MMU_PRESENT) && show_pdt)
 					printPDT(j_shift, pdpe, pt_display);
@@ -56,7 +56,7 @@ namespace x86_64 {
 				printMeta(pde);
 				size_t k_shift = j_shift | ((size_t) k << 21);
 				printf(" 0x%lx\n", k_shift);
-				if (!DsOS::Util::isCanonical(pde))
+				if (!Thorn::Util::isCanonical(pde))
 					printf("      Non-canonical.\n");
 				else if (pt_display == PTDisplay::Full) {
 					if ((pde & MMU_PRESENT) && !(pde & MMU_PDE_TWO_MB))
@@ -79,7 +79,7 @@ namespace x86_64 {
 	}
 
 	void PageTableWrapper::printCondensed(size_t k_shift, uint64_t pde) {
-		if (!DsOS::Util::isCanonical(pde)) {
+		if (!Thorn::Util::isCanonical(pde)) {
 			printf("      Non-canonical.\n");
 			return;
 		}

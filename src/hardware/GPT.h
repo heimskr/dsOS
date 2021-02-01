@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace DsOS {
+namespace Thorn {
 	struct GPTHeader {
 		uint64_t signature;
 		uint32_t revision;

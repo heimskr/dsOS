@@ -1,6 +1,6 @@
 #pragma once
 
-namespace DsOS::Serial {
+namespace Thorn::Serial {
 	extern bool ready;
 	bool init();
 	unsigned char read();

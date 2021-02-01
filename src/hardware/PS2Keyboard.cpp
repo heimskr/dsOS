@@ -11,7 +11,7 @@
 
 uint8_t last_scancode = 0;
 
-namespace DsOS::PS2Keyboard {
+namespace Thorn::PS2Keyboard {
 	const Scanmap scanmapNormal[0x80] = {
 		/* 0x00 */ {},
 		/* 0x01 */ {InputPage::Keyboard, InputKey::KeyEscape},
@@ -276,7 +276,7 @@ namespace DsOS::PS2Keyboard {
 
 	void onIRQ1() {
 		x86_64::PIC::sendEOI(1);
-		uint8_t scancode = DsOS::Ports::inb(0x60);
+		uint8_t scancode = Thorn::Ports::inb(0x60);
 		last_scancode = scancode;
 
 #ifdef PS2_KEYBOARD_DEBUG

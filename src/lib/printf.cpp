@@ -48,18 +48,18 @@ static bool printf_warned = false;
 
 static bool mappend(char *out, char *&optr, const size_t max, const char ch) {
 	if (out == nullptr) {
-		if (!DsOS::Serial::init()) {
+		if (!Thorn::Serial::init()) {
 			if (!printf_warned) {
-				DsOS::Terminal::write("Serial failed to initialize.\n");
+				Thorn::Terminal::write("Serial failed to initialize.\n");
 				printf_warned = true;
 				// for (;;) asm("hlt");
 			}
 		} else if (ch == '\0')
-			DsOS::Serial::write("\e[1m\\0\e[22m");
+			Thorn::Serial::write("\e[1m\\0\e[22m");
 		else
-			DsOS::Serial::write(ch);
+			Thorn::Serial::write(ch);
 		if (printf_putc)
-			DsOS::Terminal::putChar(ch);
+			Thorn::Terminal::putChar(ch);
 		return true;
 	}
 

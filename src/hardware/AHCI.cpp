@@ -5,7 +5,7 @@
 #include "Kernel.h"
 #include "lib/printf.h"
 
-namespace DsOS::AHCI {
+namespace Thorn::AHCI {
 	std::vector<Controller> *controllers;
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};

@@ -11,9 +11,9 @@
 
 #include "Kernel.h"
 #include "Terminal.h"
-#include "DsUtil.h"
+#include "ThornUtil.h"
 #include "device/IDEDevice.h"
-#include "fs/dsFAT/dsFAT.h"
+#include "fs/ThornFAT/ThornFAT.h"
 #include "fs/Partition.h"
 #include "hardware/AHCI.h"
 #include "hardware/IDE.h"
@@ -41,7 +41,7 @@ void schedule();
 
 static bool waiting = true;
 
-namespace DsOS {
+namespace Thorn {
 	Kernel * Kernel::instance = nullptr;
 
 	Kernel::Kernel(const x86_64::PageTableWrapper &pml4_): kernelPML4(pml4_) {
@@ -189,14 +189,9 @@ namespace DsOS {
 				}
 			if (port) {
 				port->read(0, 512, &mbr);
-				printf("Disk ID:");
-				for (int i = 0; i < 4; ++i)
-					printf(" %x", mbr.diskID[i]);
-				printf("\n");
-				for (const MBREntry &entry: {mbr.firstEntry, mbr.secondEntry, mbr.thirdEntry, mbr.fourthEntry})
-					printf("Attributes[%x], startCHS->LBA[%d], type[%d], lastSectorCHS->LBA[%d], startLBA[%d], sectors[%d]\n",
-						entry.attributes, entry.startCHS.toLBA(), entry.type, entry.lastSectorCHS.toLBA(), entry.startLBA, entry.sectors);
-				printf("GPT? %y\n", mbr.indicatesGPT());
+				if (mbr.indicatesGPT()) {
+					
+				}
 			} else printf(":[\n");
 		} else printf(":(\n");
 
@@ -208,8 +203,8 @@ namespace DsOS {
 		IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
 		Device::IDEDevice device(0);
 		FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
-		using namespace FS::DsFAT;
-		auto driver = std::make_unique<DsFATDriver>(&first_partition);
+		using namespace FS::ThornFAT;
+		auto driver = std::make_unique<ThornFATDriver>(&first_partition);
 		driver->make(320 * 5);
 		int status;
 
@@ -388,14 +383,14 @@ namespace DsOS {
 }
 
 void schedule() {
-	if (!DsOS::Kernel::instance) {
+	if (!Thorn::Kernel::instance) {
 		printf("schedule(): Kernel instance is null!\n");
 		for (;;);
 	}
-	DsOS::Kernel::instance->schedule();
+	Thorn::Kernel::instance->schedule();
 }
 
 extern "C" void kernel_main() {
-	DsOS::Kernel kernel(x86_64::PageTableWrapper(&pml4, x86_64::PageTableWrapper::Type::PML4));
+	Thorn::Kernel kernel(x86_64::PageTableWrapper(&pml4, x86_64::PageTableWrapper::Type::PML4));
 	kernel.main();
 }

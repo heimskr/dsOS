@@ -8,12 +8,12 @@
 #include "lib/printf.h"
 #include "Kernel.h"
 
-using DsOS::Ports::inb;
-using DsOS::Ports::outb;
+using Thorn::Ports::inb;
+using Thorn::Ports::outb;
 
 volatile bool irqInvoked = false;
 
-namespace DsOS::IDE {
+namespace Thorn::IDE {
 	Device devices[4];
 	ChannelRegisters channels[2];
 	uint8_t ideBuffer[2048] = {0};

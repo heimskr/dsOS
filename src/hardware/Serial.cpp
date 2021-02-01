@@ -5,7 +5,7 @@
 
 #define COM1 0x3f8
 
-namespace DsOS::Serial {
+namespace Thorn::Serial {
 	bool ready = false;
 
 	bool init() {

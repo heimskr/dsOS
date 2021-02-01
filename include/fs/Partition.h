@@ -2,11 +2,11 @@
 
 #include <memory>
 
-namespace DsOS::Device {
+namespace Thorn::Device {
 	struct DeviceBase;
 }
 
-namespace DsOS::FS {
+namespace Thorn::FS {
 
 	struct Partition {
 		Device::DeviceBase *parent;

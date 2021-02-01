@@ -8,7 +8,7 @@ extern void (*timer_addr)();
 extern uint64_t timer_max;
 extern uint64_t ticks;
 
-namespace DsOS {
+namespace Thorn {
 	class Kernel;
 }
 
@@ -57,7 +57,7 @@ namespace x86_64::APIC {
 	constexpr uint16_t ICR_MESSAGE_TYPE_STARTUP = 6 << 8;
 	constexpr uint16_t ICR_MESSAGE_TYPE_EXTERNAL = 7 << 8;
 
-	void init(DsOS::Kernel &);
+	void init(Thorn::Kernel &);
 	void initTimer(uint32_t frequency);
 	uint32_t calibrateTimer();
 	void disableTimer();

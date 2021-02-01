@@ -2,7 +2,7 @@
 
 #include "hardware/PCIIDs.h"
 
-namespace DsOS::PCI::ID {
+namespace Thorn::PCI::ID {
 	IDSet pci_database[32748] = {
 		{0x0001, 0x0000, 0x0000, 0x0000, vendor_0001, nullptr, nullptr},
 		{0x0010, 0x0000, 0x0000, 0x0000, vendor_0010, nullptr, nullptr},

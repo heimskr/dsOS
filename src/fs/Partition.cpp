@@ -5,7 +5,7 @@
 
 #define VERIFY_WRITES
 
-namespace DsOS::FS {
+namespace Thorn::FS {
 	int Partition::read(void *buffer, size_t size, off_t offset) {
 		printf("\e[32m[read(buffer, %lu, %ld)]\e[0m\n", size, offset);
 		return parent->read(buffer, size, offset);

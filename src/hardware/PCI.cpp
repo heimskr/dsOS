@@ -11,11 +11,11 @@
 #include "hardware/Serial.h"
 #include "lib/printf.h"
 #include "memory/Memory.h"
-#include "DsUtil.h"
+#include "ThornUtil.h"
 #include "Terminal.h"
 
-namespace DsOS::PCI {
-	using namespace DsOS::Ports;
+namespace Thorn::PCI {
+	using namespace Thorn::Ports;
 
 	uint8_t readByte(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset) {
 		outl(0xcf8, 0x80000000 | (bus << 16) | (device << 11) | (function << 8) | (offset & 0xfc));
