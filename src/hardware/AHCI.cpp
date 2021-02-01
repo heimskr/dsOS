@@ -338,7 +338,7 @@ namespace DsOS::AHCI {
 		HBACommandHeader *header = (HBACommandHeader *) getCLB();
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr, MMU_CACHE_DISABLED);
-		uintptr_t base = (uintptr_t) addr;
+		uintptr_t base = reinterpret_cast<uintptr_t>(addr);
 
 		for (int i = 0; i < 16; ++i) {
 			header[i].prdtl = 8;
@@ -383,21 +383,21 @@ namespace DsOS::AHCI {
 	}
 
 	void Port::setCLB(void *address) {
-		registers->clb  = ((uintptr_t) address) & 0xffffffff;
-		registers->clbu = ((uintptr_t) address) >> 32;
+		registers->clb  = reinterpret_cast<uintptr_t>(address) & 0xffffffff;
+		registers->clbu = reinterpret_cast<uintptr_t>(address) >> 32;
 	}
 
 	void * Port::getCLB() const {
-		return (void *) ((uintptr_t) registers->clb | ((uintptr_t) registers->clbu << 32));
+		return (void *) (static_cast<uintptr_t>(registers->clb) | (static_cast<uintptr_t>(registers->clbu) << 32));
 	}
 
 	void Port::setFB(void *address) {
-		registers->fb  = ((uintptr_t) address) & 0xffffffff;
-		registers->fbu = ((uintptr_t) address) >> 32;
+		registers->fb  = reinterpret_cast<uintptr_t>(address) & 0xffffffff;
+		registers->fbu = reinterpret_cast<uintptr_t>(address) >> 32;
 	}
 
 	void * Port::getFB() const {
-		return (void *) ((uintptr_t) registers->fb | ((uintptr_t) registers->fbu << 32));
+		return (void *) (static_cast<uintptr_t>(registers->fb) | (static_cast<uintptr_t>(registers->fbu) << 32));
 	}
 
 	Port::AccessStatus Port::access(uint64_t lba, uint32_t count, void *buffer, bool write) {
@@ -426,8 +426,8 @@ namespace DsOS::AHCI {
 		HBACommandTable &table = *commandTables[slot];
 		memset(&table, 0, sizeof(table));
 
-		table.prdtEntry[0].dba = (uintptr_t) buffer & 0xffffffff;
-		table.prdtEntry[0].dbaUpper = ((uintptr_t) buffer >> 32) & 0xffffffff;
+		table.prdtEntry[0].dba = reinterpret_cast<uintptr_t>(buffer) & 0xffffffff;
+		table.prdtEntry[0].dbaUpper = (reinterpret_cast<uintptr_t>(buffer) >> 32) & 0xffffffff;
 		table.prdtEntry[0].dbc = BLOCKSIZE * count - 1;
 		table.prdtEntry[0].interrupt = true;
 
@@ -493,7 +493,7 @@ namespace DsOS::AHCI {
 
 	Port::AccessStatus Port::read(uint64_t lba, uint32_t count, void *buffer) {
 		uint64_t block_count = (count + BLOCKSIZE - 1) / BLOCKSIZE;
-		char *cbuffer = (char *) buffer;
+		char *cbuffer = reinterpret_cast<char *>(buffer);
 		// TODO: synchronization
 		unsigned buffer_index = 1;
 
@@ -539,9 +539,97 @@ namespace DsOS::AHCI {
 		return AccessStatus::Success;
 	}
 
+	Port::AccessStatus Port::readBytes(size_t count, size_t offset, void *buffer) {
+		size_t total_bytes_read = 0, bytes_read = 0;
+		uint64_t lba = offset / BLOCKSIZE;
+		offset %= BLOCKSIZE;
+		char read_buffer[BLOCKSIZE];
+		AccessStatus status;
+
+		while (0 < count) {
+			if ((status = read(lba, BLOCKSIZE, read_buffer)) != AccessStatus::Success)
+				return status;
+			bytes_read = 0;
+			for (size_t i = 0; (bytes_read < count) && ((i + offset) < BLOCKSIZE); ++i, ++bytes_read)
+				((char *) buffer)[total_bytes_read++] = read_buffer[i + offset];
+			if (count <= BLOCKSIZE)
+				break;
+			count -= bytes_read;
+			offset = 0;
+			++lba;
+		}
+
+		return AccessStatus::Success;
+	}
+
+	Port::AccessStatus Port::write(uint64_t lba, uint32_t count, const void *buffer) {
+		uint64_t block_count = (count + BLOCKSIZE - 1) / BLOCKSIZE;
+		const char *cbuffer = reinterpret_cast<const char *>(buffer);
+		// TODO: synchronization
+		unsigned buffer_index = 1;
+
+		while (block_count-- && count) {
+			size_t size = count < BLOCKSIZE? count : BLOCKSIZE;
+			memcpy(physicalBuffers[buffer_index], cbuffer, size);
+			AccessStatus status;
+			if ((status = access(lba, 1, physicalBuffers[buffer_index], true)) != AccessStatus::Success)
+				return status;
+			cbuffer += size;
+			++lba;
+		}
+
+		return AccessStatus::Success;
+	}
+
+	Port::AccessStatus Port::writeBytes(size_t count, size_t offset, const void *buffer) {
+		uint64_t lba = offset / BLOCKSIZE;
+		offset %= BLOCKSIZE;
+		AccessStatus status = AccessStatus::Success;
+		char write_buffer[BLOCKSIZE];
+		const char *cbuffer = reinterpret_cast<const char *>(buffer);
+
+		if (offset != 0) {
+			if ((status = read(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
+				return status;
+			const size_t to_write = (BLOCKSIZE - offset) < count? BLOCKSIZE - offset : count;
+			memcpy(write_buffer + offset, cbuffer, to_write);
+			write(lba, BLOCKSIZE, write_buffer);
+			count -= to_write;
+			++lba;
+			cbuffer += to_write;
+		}
+
+		while (0 < count) {
+			if (count < BLOCKSIZE) {
+				if ((status = read(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
+					return status;
+				memcpy(write_buffer, cbuffer, count);
+				if ((status = write(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
+					return status;
+				break;
+			} else {
+				if ((status = write(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
+					return status;
+				count -= BLOCKSIZE;
+				cbuffer += BLOCKSIZE;
+				++lba;
+			}
+		}
+
+		return status;
+	}
+
+	ATA::DeviceInfo & Port::getInfo() {
+		if (identified)
+			return info;
+		identify(info);
+		identified = true;
+		return info;
+	}
+
 	void HBACommandHeader::setCTBA(void *address) volatile {
-		ctba  = ((uintptr_t) address) & 0xffffffff;
-		ctbau = ((uintptr_t) address) >> 32;
+		ctba  = (reinterpret_cast<uintptr_t>(address)) & 0xffffffff;
+		ctbau = (reinterpret_cast<uintptr_t>(address)) >> 32;
 	}
 
 	void * HBACommandHeader::getCTBA() const volatile {

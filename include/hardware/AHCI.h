@@ -332,35 +332,44 @@ namespace DsOS::AHCI {
 
 	struct HBAMemory;
 
-	struct Port {
-		static constexpr size_t BLOCKSIZE = 512;
-		volatile HBAPort *registers = nullptr;
-		volatile HBAMemory *abar = nullptr;
-		HBACommandHeader *commandList = nullptr;
-		HBAFIS *fis = nullptr;
-		HBACommandTable *commandTables[8];
-		Status status = Status::Uninitialized;
-		void *physicalBuffers[8];
-		DeviceType type = DeviceType::Null;
+	class Port {
+		private:
+			ATA::DeviceInfo info;
+			bool identified;
 
-		Port(volatile HBAPort *, volatile HBAMemory *);
+		public:
+			static constexpr size_t BLOCKSIZE = 512;
+			volatile HBAPort *registers = nullptr;
+			volatile HBAMemory *abar = nullptr;
+			HBACommandHeader *commandList = nullptr;
+			HBAFIS *fis = nullptr;
+			HBACommandTable *commandTables[8];
+			Status status = Status::Uninitialized;
+			void *physicalBuffers[8];
+			DeviceType type = DeviceType::Null;
 
-		enum class AccessStatus: uint8_t {Success = 0, DiskError = 1, BadSlot = 2, Hung = 3};
+			Port(volatile HBAPort *, volatile HBAMemory *);
 
-		inline bool valid() const { return registers && abar; }
-		void init();
-		DeviceType identifyDevice();
-		void identify(ATA::DeviceInfo &);
-		int getCommandSlot();
-		void rebase();
-		void start();
-		void stop();
-		void setCLB(void *);
-		void * getCLB() const;
-		void setFB(void *);
-		void * getFB() const;
-		AccessStatus access(uint64_t lba, uint32_t count, void *buffer, bool write);
-		AccessStatus read(uint64_t lba, uint32_t count, void *buffer);
+			enum class AccessStatus: uint8_t {Success = 0, DiskError = 1, BadSlot = 2, Hung = 3};
+
+			inline bool valid() const { return registers && abar; }
+			void init();
+			DeviceType identifyDevice();
+			void identify(ATA::DeviceInfo &);
+			int getCommandSlot();
+			void rebase();
+			void start();
+			void stop();
+			void setCLB(void *);
+			void * getCLB() const;
+			void setFB(void *);
+			void * getFB() const;
+			AccessStatus access(uint64_t lba, uint32_t count, void *buffer, bool write);
+			AccessStatus read(uint64_t lba, uint32_t count, void *buffer);
+			AccessStatus readBytes(size_t count, size_t offset, void *buffer);
+			AccessStatus write(uint64_t lba, uint32_t count, const void *buffer);
+			AccessStatus writeBytes(size_t count, size_t offset, const void *buffer);
+			ATA::DeviceInfo & getInfo();
 	};
 
 	struct HBAMemory {
