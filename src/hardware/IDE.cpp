@@ -31,6 +31,7 @@ namespace Thorn::IDE {
 	int readSectors(uint8_t drive, uint8_t numsects, uint32_t lba, char *buffer) {
 		int status = 0;
 		if (drive > 3 || devices[drive].reserved == 0) {
+			printf("Drive not found!\n");
 			status = ENXIO; // Drive not found!
 		} else if (((lba + numsects) > devices[drive].size) && (devices[drive].type == IDE_ATA)) {
 			status = -EINVAL; // Seeking to invalid position.
@@ -80,7 +81,7 @@ namespace Thorn::IDE {
 			if ((status = readSectors(drive, 1, lba, write_buffer)))
 				return status;
 			const size_t to_write = (SECTOR_SIZE - offset) < bytes? SECTOR_SIZE - offset : bytes;
-			printf("\e[35mOffset = %lu, bytes = %lu, to_write = %lu\e[0m\n", offset, bytes, to_write);
+			// printf("\e[35mOffset = %lu, bytes = %lu, to_write = %lu\e[0m\n", offset, bytes, to_write);
 			memcpy(write_buffer + offset, buffer, to_write);
 			writeSectors(drive, 1, lba, write_buffer);
 			bytes -= to_write;
@@ -89,18 +90,18 @@ namespace Thorn::IDE {
 		}
 
 		while (0 < bytes) {
-			printf("\e[35mBytes: %lu.", bytes);
-			for (size_t i = 0; i < bytes; ++i)
-				printf(" %lu:%x", i, cbuffer[i] & 0xff);
-			printf("\e[0m\n");
+			// printf("\e[35mBytes: %lu.", bytes);
+			// for (size_t i = 0; i < bytes; ++i)
+			// 	printf(" %lu:%x", i, cbuffer[i] & 0xff);
+			// printf("\e[0m\n");
 			if (bytes < SECTOR_SIZE) {
 				if ((status = readSectors(drive, 1, lba, write_buffer)))
 					return status;
 				memcpy(write_buffer, cbuffer, bytes);
-				printf("\e[34m");
-				for (size_t i = 0; i < SECTOR_SIZE; ++i)
-					printf("%lu:%x ", i, write_buffer[i] & 0xff);
-				printf("\e[0m\n");
+				// printf("\e[34m");
+				// for (size_t i = 0; i < SECTOR_SIZE; ++i)
+				// 	printf("%lu:%x ", i, write_buffer[i] & 0xff);
+				// printf("\e[0m\n");
 				if ((status = writeSectors(drive, 1, lba, write_buffer)))
 					return status;
 				break;

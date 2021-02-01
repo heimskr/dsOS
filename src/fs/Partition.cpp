@@ -5,6 +5,7 @@
 
 // #define DEBUG_WRITES
 #define VERIFY_WRITES
+#define VERIFY_WRITES_QUIETLY
 
 namespace Thorn::FS {
 	int Partition::read(void *buffer, size_t size, off_t offset) {
@@ -39,7 +40,11 @@ namespace Thorn::FS {
 				printf("Mistake at %lu: %x should be %x\n", i, verify[i] & 0xff, ((char *) buffer)[i] & 0xff);
 				++mistakes;
 			}
-		printf("Found %lu mistake%s%s\n", mistakes, mistakes == 1? "" : "s", mistakes == 0? "." : "!!!");
+#ifdef VERIFY_WRITES_QUIETLY
+		if (mistakes != 0)
+#endif
+		printf("Found %lu mistake%s%s (size=%lu, offset=0x%lx)\n",
+			mistakes, mistakes == 1? "" : "s", mistakes == 0? "." : "!!!", size, offset);
 		return 0;
 #endif
 	}

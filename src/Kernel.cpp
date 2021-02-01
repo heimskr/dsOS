@@ -116,7 +116,7 @@ namespace Thorn {
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
 
-		// IDE::init();
+		IDE::init();
 
 		PCI::printDevices();
 
@@ -128,6 +128,7 @@ namespace Thorn {
 
 		// wait(5);
 
+/*
 		AHCI::Controller *last_controller = nullptr;
 
 		for (uint32_t bus = 0; bus < 256; ++bus)
@@ -268,52 +269,85 @@ namespace Thorn {
 		} else printf(":(\n");
 
 		perish();
+//*/
 
-/*
+//*
 		MBR mbr;
-		mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
-		IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
-		Device::IDEDevice device(0);
-		FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
-		using namespace FS::ThornFAT;
-		auto driver = std::make_unique<ThornFATDriver>(&first_partition);
-		driver->make(320 * 5);
-		int status;
+		// mbr.firstEntry = {1 << 7, 0x42, 1, 2047};
+		// IDE::writeBytes(0, sizeof(MBR), 0, &mbr);
 
-		printf("\e[32;1;4mFirst readdir.\e[0m\n");
-		status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
-		if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+		int status = IDE::readBytes(0, sizeof(MBR), 0, &mbr);
 
-		printf("\e[32;1;4mCreating foo.\e[0m\n");
-		status = driver->create("/foo", 0666);
-		if (status != 0) printf("create failed: %s\n", strerror(-status));
+		if (status != 0) {
+			printf("status = %d\n", status);
+		} else if (!mbr.indicatesGPT()) {
+			printf("MBR doesn't indicate GPT.\n");
+			for (unsigned i = 0; i < 512; ++i)
+				printf("%x ", ((char *) &mbr)[i] & 0xff);
+			printf("\n");
+		} else {
+			Device::IDEDevice device(0);
+			GPT::Header gpt;
+			IDE::readBytes(0, sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
+			size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA;
+			GPT::PartitionEntry first_entry;
+			for (unsigned i = 0; i < gpt.partitionCount; ++i) {
+				GPT::PartitionEntry entry;
+				IDE::readBytes(0, gpt.partitionEntrySize, offset, &entry);
+				if (entry.typeGUID) {
+					first_entry = entry;
+					break;
+				}
+				offset += gpt.partitionEntrySize;
+			}
 
-		printf("\e[32;1;4mReaddir after creating foo.\e[0m\n");
-		status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
-		if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+			FS::Partition partition(&device, first_entry.firstLBA * AHCI::Port::BLOCKSIZE,
+				(first_entry.lastLBA - first_entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
 
-		printf("\e[32;1;4mCreating bar.\e[0m\n");
-		status = driver->create("/bar", 0666);
-		if (status != 0) printf("create failed: %s\n", strerror(-status));
 
-		printf("\e[32;1;4mReaddir after creating bar.\e[0m\n");
-		status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
-		if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+			// FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
+			using namespace FS::ThornFAT;
+			auto driver = std::make_unique<ThornFATDriver>(&partition);
+			driver->make(sizeof(DirEntry) * 5);
+			int status;
 
-		printf("\e[32;1;4mDone.\e[0m\n");
-		driver->superblock.print();
+			printf("\e[32;1;4mFirst readdir.\e[0m\n");
+			status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
+			if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+
+			printf("\e[32;1;4mCreating foo.\e[0m\n");
+			status = driver->create("/foo", 0666);
+			if (status != 0) printf("create failed: %s\n", strerror(-status));
+
+			printf("\e[32;1;4mReaddir after creating foo.\e[0m\n");
+			status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
+			if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+
+			printf("\e[32;1;4mCreating bar.\e[0m\n");
+			status = driver->create("/bar", 0666);
+			if (status != 0) printf("create failed: %s\n", strerror(-status));
+
+			printf("\e[32;1;4mReaddir after creating bar.\e[0m\n");
+			status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
+			if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+
+			printf("\e[32;1;4mDone.\e[0m\n");
+			driver->superblock.print();
+		}
+
+		perish();
 
 		// for (size_t i = 0; i < 50; ++i) {
 		// 	printf("[%lu] %d\n", i, driver->readFAT(i));
 		// }
 
-		printf("offsetof(  DirEntry::      name) = 0x%lx = %lu\n", offsetof(DirEntry, name), offsetof(DirEntry, name));
-		printf("offsetof(  DirEntry::     times) = 0x%lx = %lu\n", offsetof(DirEntry, times), offsetof(DirEntry, times));
-		printf("offsetof(  DirEntry::    length) = 0x%lx = %lu\n", offsetof(DirEntry, length), offsetof(DirEntry, length));
-		printf("offsetof(  DirEntry::startBlock) = 0x%lx = %lu\n", offsetof(DirEntry, startBlock), offsetof(DirEntry, startBlock));
-		printf("offsetof(  DirEntry::      type) = 0x%lx = %lu\n", offsetof(DirEntry, type), offsetof(DirEntry, type));
-		printf("offsetof(  DirEntry::     modes) = 0x%lx = %lu\n", offsetof(DirEntry, modes), offsetof(DirEntry, modes));
-		printf("offsetof(  DirEntry::   padding) = 0x%lx = %lu\n", offsetof(DirEntry, padding), offsetof(DirEntry, padding));
+		// printf("offsetof(  DirEntry::      name) = 0x%lx = %lu\n", offsetof(DirEntry, name), offsetof(DirEntry, name));
+		// printf("offsetof(  DirEntry::     times) = 0x%lx = %lu\n", offsetof(DirEntry, times), offsetof(DirEntry, times));
+		// printf("offsetof(  DirEntry::    length) = 0x%lx = %lu\n", offsetof(DirEntry, length), offsetof(DirEntry, length));
+		// printf("offsetof(  DirEntry::startBlock) = 0x%lx = %lu\n", offsetof(DirEntry, startBlock), offsetof(DirEntry, startBlock));
+		// printf("offsetof(  DirEntry::      type) = 0x%lx = %lu\n", offsetof(DirEntry, type), offsetof(DirEntry, type));
+		// printf("offsetof(  DirEntry::     modes) = 0x%lx = %lu\n", offsetof(DirEntry, modes), offsetof(DirEntry, modes));
+		// printf("offsetof(  DirEntry::   padding) = 0x%lx = %lu\n", offsetof(DirEntry, padding), offsetof(DirEntry, padding));
 //*/
 
 		for (;;) {

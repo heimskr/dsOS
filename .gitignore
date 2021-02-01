@@ -11,6 +11,7 @@
 ._.DS_Store
 /pvs.*
 /strace_out
+/*.txt
 
 
 # Prerequisites
