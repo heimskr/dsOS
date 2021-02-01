@@ -9,6 +9,8 @@
 /serial.txt
 .DS_Store
 ._.DS_Store
+/pvs.*
+/strace_out
 
 
 # Prerequisites
