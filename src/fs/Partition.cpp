@@ -3,6 +3,7 @@
 #include "lib/printf.h"
 #include "Kernel.h"
 
+// #define DEBUG_WRITES
 #define VERIFY_WRITES
 
 namespace Thorn::FS {
@@ -12,6 +13,7 @@ namespace Thorn::FS {
 	}
 
 	int Partition::write(const void *buffer, size_t size, off_t offset) {
+#ifdef DEBUG_WRITES
 		printf("\e[32m[\e[31mwrite\e[32m(buffer, %lu, %ld)]\e[0m", size, offset);
 		if (size == 320) {
 			printf(":");
@@ -20,6 +22,7 @@ namespace Thorn::FS {
 			printf("\n");
 		} else
 			printf("\n");
+#endif
 #ifndef VERIFY_WRITES
 		return parent->write(buffer, size, offset);
 #else

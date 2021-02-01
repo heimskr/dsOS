@@ -233,8 +233,34 @@ namespace Thorn {
 							using namespace FS::ThornFAT;
 							auto driver = std::make_unique<ThornFATDriver>(&partition);
 							driver->make(sizeof(DirEntry) * 5);
-							// char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-							// partition.write(buffer, 512, 0);
+							printf("Made a ThornFAT partition.\n");
+							int status;
+
+							printf("\e[32;1;4mFirst readdir.\e[0m\n");
+							status = driver->readdir("/", [](const char *path, off_t offset) {
+								printf("\"%s\" @ %ld\n", path, offset); });
+							if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+
+							printf("\e[32;1;4mCreating foo.\e[0m\n");
+							status = driver->create("/foo", 0666);
+							if (status != 0) printf("create failed: %s\n", strerror(-status));
+
+							printf("\e[32;1;4mReaddir after creating foo.\e[0m\n");
+							status = driver->readdir("/", [](const char *path, off_t offset) {
+								printf("\"%s\" @ %ld\n", path, offset); });
+							if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+
+							printf("\e[32;1;4mCreating bar.\e[0m\n");
+							status = driver->create("/bar", 0666);
+							if (status != 0) printf("create failed: %s\n", strerror(-status));
+
+							printf("\e[32;1;4mReaddir after creating bar.\e[0m\n");
+							status = driver->readdir("/", [](const char *path, off_t offset) {
+								printf("\"%s\" @ %ld\n", path, offset); });
+							if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+
+							printf("\e[32;1;4mDone.\e[0m\n");
+							driver->superblock.print();
 						}
 					}
 				}
