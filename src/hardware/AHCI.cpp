@@ -262,6 +262,7 @@ namespace DsOS::AHCI {
 				printf("[Port::Port] Port hung\n");
 		}
 
+
 		if ((registers->ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_PRESENT) {
 			printf("[Port::Port] Device not present (DET: %x)\n", registers->ssts & HBA_PxSSTS_DET);
 			status = Status::Error;
@@ -275,8 +276,6 @@ namespace DsOS::AHCI {
 		}
 
 		status = Status::Active;
-
-
 	}
 
 	int Port::getCommandSlot() {

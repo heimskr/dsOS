@@ -126,7 +126,8 @@ namespace DsOS {
 
 		// wait(5);
 
-#if 1
+		AHCI::Controller *last_controller = nullptr;
+
 		for (uint32_t bus = 0; bus < 256; ++bus)
 			for (uint32_t device = 0; device < 32; ++device)
 				for (uint32_t function = 0; function < 8; ++function) {
@@ -142,6 +143,7 @@ namespace DsOS {
 					AHCI::controllers->push_back(AHCI::Controller(PCI::initDevice({bus, device, function})));
 					AHCI::Controller &controller = AHCI::controllers->back();
 					controller.init(*this);
+					last_controller = &controller;
 					volatile AHCI::HBAMemory *abar = controller.abar;
 					printf("Controller at %x:%x:%x (abar = 0x%llx):", bus, device, function, abar);
 					printf(" %dL.%dP ", controller.device->getInterruptLine(), controller.device->getInterruptPin());
@@ -164,116 +166,33 @@ namespace DsOS {
 						info.copyModel(model);
 						printf("Model: \"%s\"\n", model);
 
-						if (controller.ports[i]->type != AHCI::DeviceType::Null) {
-							char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-							printf("Result for port %d: %d\n", i, controller.ports[i]->read(0, 512, buffer));
-							for (int i = 0; i < 512; ++i)
-								printf("%c", buffer[i]);
-							printf("\n");
-						}
-
-						// if (port.sig == AHCI::SIG_ATAPI)
-						// 	printf("Result for port %d: %d\n", i, SATA::issueCommand(controller, port, ATA::Command::IdentifyPacketDevice, false, buffer, 1, 512, 0));
-						// else if (port.sig == AHCI::SIG_ATA)
-						// 	printf("Result for port %d: %d\n", i, SATA::issueCommand(controller, port, ATA::Command::IdentifyDevice, false, buffer, 1, 512, 0));
-						// else
-							// continue;
-						// for (int i = 0; i < 512; ++i)
-						// for (int i = 0; i < 80; ++i)
-						// 	printf("%c", buffer[i]);
-						// printf("\n");
-
-						// printf("%d:%c ", i, AHCI::deviceTypes[(int) port.identifyDevice()][0]);
+						// if (controller.ports[i]->type != AHCI::DeviceType::Null) {
+						// 	char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+						// 	printf("Result for port %d: %d\n", i, controller.ports[i]->read(0, 512, buffer));
+						// 	for (int i = 0; i < 512; ++i)
+						// 		printf("%c", buffer[i]);
+						// 	printf("\n");
+						// }
+						printf("%d done.\n", i);
 					}
 					printf("\nNext.\n");
 				}
 		printf("Done.\n");
-		perish();
-#else
-		PCI::scan();
-		PCI::Device *controller = AHCI::controller;
-		if (controller) {
-		// if (false) {
-			printf("Found AHCI controller.\n");
-			printf("Command: %x / %b\n", controller->nativeHeader.command, controller->nativeHeader.command);
-			PCI::HeaderNative &header = controller->nativeHeader;
-			header.command &= ~PCI::COMMAND_INT_DISABLE;
-			header.command |= PCI::COMMAND_MEMORY;
-			header.command |= PCI::COMMAND_MASTER;
-			PCI::writeWord(controller->bdf, PCI::COMMAND, header.command);
 
-			volatile AHCI::HBAMemory *abar = (AHCI::HBAMemory *) (uint64_t) (controller->nativeHeader.bar5 & ~0xf);
-			AHCI::abar = abar;
-			printf("abar: 0x%lx\n", abar);
-			pager.identityMap(abar, MMU_CACHE_DISABLED);
-			pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
+		if (last_controller) {
+			MBR mbr;
+			AHCI::Port *port = nullptr;
+			for (int i = 0; i < 32; ++i)
+				if (last_controller->ports[i]) {
+					port = last_controller->ports[i];
+					break;
+				}
+			if (port) {
+				port->read(0, 512, &mbr);
+				printf("Hello.\n");
+			} else printf(":[\n");
+		} else printf(":(\n");
 
-			// wait(5);
-			abar->probe();
-			abar->cap = abar->cap | (1 << 31);
-			abar->ghc = abar->ghc | (1 << 31);
-			// wait(5);
-			printf("Interrupt line: %d\n", controller->nativeHeader.interruptLine);
-			printf("Interrupt pin:  %d\n", controller->nativeHeader.interruptPin);
-			printf("cap: %u / %b\n", abar->cap, abar->cap);
-			printf("ghc: %u / %b\n", abar->ghc, abar->ghc);
-			printf("is: %u\n", abar->is);
-			printf("pi: %u\n", abar->pi);
-			printf("vs: %u\n", abar->vs);
-			// printf("ccc_ctl: %u\n", abar->ccc_ctl);
-			// printf("ccc_pts: %u\n", abar->ccc_pts);
-			// printf("em_loc: %u\n", abar->em_loc);
-			// printf("em_ctl: %u\n", abar->em_ctl);
-			printf("cap2: %u\n", abar->cap2);
-			printf("bohc: %u\n", abar->bohc);
-			wait(5);
-			for (int i = 0; i < 32; ++i) {
-				volatile AHCI::HBAPort &port = abar->ports[i];
-				if (port.clb == 0)
-					continue;
-				// wait(5);
-				printf("--------------------------------\nPort: %d\n", i);
-				printf("Type: %s\n", AHCI::deviceTypes[(int) port.identifyDevice()]);
-				// printf("%d: clb: %x / %b\n", i, port.clb, port.clb);
-				// printf("%d: clbu: %x / %b\n", i, port.clbu, port.clbu);
-				// printf("%d: fb: %u / %b\n", i, port.fb, port.fb);
-				// printf("%d: fbu: %u / %b\n", i, port.fbu, port.fbu);
-				// printf("%d: is: %u / %b\n", i, port.is, port.is);
-				// printf("%d: ie: %u / %b\n", i, port.ie, port.ie);
-				// printf("%d: cmd: %u / %b\n", i, port.cmd, port.cmd);
-				// printf("%d: rsv0: %u / %b\n", i, port.rsv0, port.rsv0);
-				// printf("%d: tfd: %u / %b\n", i, port.tfd, port.tfd);
-				// printf("%d: sig: %u / %b\n", i, port.sig, port.sig);
-				// printf("%d: ssts: %u / %b\n", i, port.ssts, port.ssts);
-				// printf("%d: sctl: %u / %b\n", i, port.sctl, port.sctl);
-				// printf("%d: serr: %u / %b\n", i, port.serr, port.serr);
-				// printf("%d: sact: %u / %b\n", i, port.sact, port.sact);
-				// printf("%d: ci: %u / %b\n", i, port.ci, port.ci);
-				// printf("%d: sntf: %u / %b\n", i, port.sntf, port.sntf);
-				// printf("%d: fbs: %u / %b\n", i, port.fbs, port.fbs);
-				// printf("%d: devslp: %u / %b\n", i, port.devslp, port.devslp);
-			}
-
-			for (int portID = 0; portID <= 0; ++portID) {
-				volatile AHCI::HBAPort &port = abar->ports[portID];
-				// char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-				// printf("Port %d:\n", portID);
-				// volatile AHCI::HBAFIS &fis = *(AHCI::HBAFIS *) port.getFB();
-				// printf("interrupt: %d\n", fis.rfis.interrupt);
-				// printf("status: %d\n", fis.rfis.status);
-				// printf("error: %d\n", fis.rfis.error);
-				// printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::IdentifyDevice, false, buffer, 1, 512, 0, 1));
-				// printf("Result: %d\n", SATA::read(port, 0, 1, buffer));
-				// printf("Result: %d\n", SATA::issueCommand(port, ATA::Command::ReadSectors, false, buffer, 4, 512, 0, 1));
-				// for (int i = 0; i < 512; ++i)
-				// 	printf("%c", buffer[i]);
-				// printf("\n");
-			}
-		} else {
-			printf("No AHCI controller found.\n");
-		}
-#endif
-		// PCI::printDevices();
 		perish();
 
 /*

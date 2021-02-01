@@ -9,8 +9,13 @@
 
 volatile uint32_t *apic_base;
 
+static bool timer_calibrated = false;
+static uint32_t last_tps = 0;
+
 namespace x86_64::APIC {
 	void init(DsOS::Kernel &kernel) {
+		timer_calibrated = false;
+		last_tps = 0;
 		printf("Initializing APIC.\n");
 		uint64_t msr = rdmsr(MSR);
 		apic_base = (uint32_t *) (msr & 0xffffff000);
@@ -23,12 +28,16 @@ namespace x86_64::APIC {
 	}
 
 	void initTimer(uint32_t frequency) {
-		uint32_t ticks_per_second = 0;
-		uint32_t tick_collections[TIMER_NUM_CALIBRATIONS] = {0};
-		uint64_t tick_total = 0;
-		for (uint32_t i = 0; i < TIMER_NUM_CALIBRATIONS; i++)
-			tick_total += tick_collections[i] = calibrateTimer();
-		ticks_per_second = tick_total / TIMER_NUM_CALIBRATIONS;
+		uint32_t ticks_per_second = last_tps;
+		if (!timer_calibrated) {
+			uint32_t tick_collections[TIMER_NUM_CALIBRATIONS] = {0};
+			uint64_t tick_total = 0;
+			for (uint32_t i = 0; i < TIMER_NUM_CALIBRATIONS; i++)
+				tick_total += tick_collections[i] = calibrateTimer();
+			ticks_per_second = tick_total / TIMER_NUM_CALIBRATIONS;
+			timer_calibrated = true;
+			last_tps = ticks_per_second;
+		}
 		uint32_t timer_reload_value = ticks_per_second / frequency;
 
 		apic_base[REGISTER_LVT_TIMER] = BSP_VECTOR_APIC_TIMER | SELECT_TMR_PERIODIC;
