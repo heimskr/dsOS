@@ -13,7 +13,7 @@ namespace DsOS {
 		CHS(uint8_t cylinders_, uint8_t heads_, uint8_t sectors_):
 			cylinders(cylinders_), heads(heads_), sectors(sectors_) {}
 
-		uint32_t toLBA(uint8_t heads_per_cylinder = 16, uint8_t sectors_per_track = 63) {
+		inline uint32_t toLBA(uint8_t heads_per_cylinder = 16, uint8_t sectors_per_track = 63) const {
 			return (cylinders * heads_per_cylinder + heads) * sectors_per_track + sectors - 1;
 		}
 
@@ -41,9 +41,9 @@ namespace DsOS {
 	} __attribute__((packed));
 
 	struct MBR {
-		uint8_t bootstrap[440] = {0};
-		uint8_t diskID[4] = {0};
-		uint8_t reserved[2] = {0};
+		uint8_t bootstrap[440] = {};
+		uint8_t diskID[4] = {};
+		uint8_t reserved[2] = {};
 		MBREntry firstEntry;
 		MBREntry secondEntry;
 		MBREntry thirdEntry;
@@ -61,5 +61,6 @@ namespace DsOS {
 			memcpy(&fourthEntry, buffer + (offset += sizeof(thirdEntry)),  sizeof(fourthEntry));
 			memcpy(signature,    buffer + (offset += sizeof(fourthEntry)), sizeof(signature));
 		}
+		bool indicatesGPT() const;
 	} __attribute__((packed));
 }

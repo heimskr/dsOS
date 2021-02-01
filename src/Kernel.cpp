@@ -189,7 +189,14 @@ namespace DsOS {
 				}
 			if (port) {
 				port->read(0, 512, &mbr);
-				printf("Hello.\n");
+				printf("Disk ID:");
+				for (int i = 0; i < 4; ++i)
+					printf(" %x", mbr.diskID[i]);
+				printf("\n");
+				for (const MBREntry &entry: {mbr.firstEntry, mbr.secondEntry, mbr.thirdEntry, mbr.fourthEntry})
+					printf("Attributes[%x], startCHS->LBA[%d], type[%d], lastSectorCHS->LBA[%d], startLBA[%d], sectors[%d]\n",
+						entry.attributes, entry.startCHS.toLBA(), entry.type, entry.lastSectorCHS.toLBA(), entry.startLBA, entry.sectors);
+				printf("GPT? %y\n", mbr.indicatesGPT());
 			} else printf(":[\n");
 		} else printf(":(\n");
 
