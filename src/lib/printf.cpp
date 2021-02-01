@@ -144,22 +144,16 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 					status = Status::Scan;
 				} else if (next == 'y') {
 					if (va_arg(list, int)) {
-						APPEND('y');
-						APPEND('e');
-						APPEND('s');
+						APPEND('y'); APPEND('e'); APPEND('s');
 					} else {
-						APPEND('n');
-						APPEND('o');
+						APPEND('n'); APPEND('o');
 					}
 					status = Status::Scan;
 				} else if (next == 'Y') {
 					if (va_arg(list, int)) {
-						APPEND('Y');
-						APPEND('e');
-						APPEND('s');
+						APPEND('Y'); APPEND('e'); APPEND('s');
 					} else {
-						APPEND('N');
-						APPEND('o');
+						APPEND('N'); APPEND('o');
 					}
 					status = Status::Scan;
 				} else if (next == '%') {

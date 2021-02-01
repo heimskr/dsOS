@@ -17,6 +17,7 @@
 #include "fs/Partition.h"
 #include "hardware/AHCI.h"
 #include "hardware/IDE.h"
+#include "hardware/GPT.h"
 #include "hardware/MBR.h"
 #include "hardware/PCI.h"
 #include "hardware/PS2Keyboard.h"
@@ -190,7 +191,35 @@ namespace Thorn {
 			if (port) {
 				port->read(0, 512, &mbr);
 				if (mbr.indicatesGPT()) {
-					
+					GPT::Header gpt;
+					port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
+					printf("Signature:   0x%lx\n", gpt.signature);
+					printf("Revision:    %d\n", gpt.revision);
+					printf("Header size: %d\n", gpt.headerSize);
+					printf("Current LBA: %ld\n", gpt.currentLBA);
+					printf("Other LBA:   %ld\n", gpt.otherLBA);
+					printf("First LBA:   %ld\n", gpt.firstLBA);
+					printf("Last LBA:    %ld\n", gpt.lastLBA);
+					printf("Start LBA:   %ld\n", gpt.startLBA);
+					printf("Partitions:  %d\n", gpt.partitionCount);
+					printf("Entry size:  %d\n", gpt.partitionEntrySize);
+					size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA;
+					gpt.guid.print(true);
+					if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
+						printf("Unsupported partition entry size.\n");
+					} else {
+						for (unsigned i = 0; i < gpt.partitionCount; ++i) {
+							GPT::PartitionEntry entry;
+							port->readBytes(gpt.partitionEntrySize, offset, &entry);
+							if (entry.typeGUID) {
+								printf("Partition %d: \"", i);
+								entry.printName(false);
+								printf("\", type GUID[%s], partition GUID[%s]\n", std::string(entry.typeGUID).c_str(),
+									std::string(entry.partitionGUID).c_str());
+							}
+							offset += gpt.partitionEntrySize;
+						}
+					}
 				}
 			} else printf(":[\n");
 		} else printf(":(\n");
