@@ -9,7 +9,7 @@ namespace Thorn::GPT {
 		uint16_t timeMid;
 		uint16_t timeHigh: 12;
 		uint8_t version: 4;
-		uint16_t clock;
+		uint8_t clock[2];
 		uint8_t node[6];
 
 		void print(bool newline = true);
