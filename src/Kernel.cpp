@@ -12,6 +12,7 @@
 #include "Kernel.h"
 #include "Terminal.h"
 #include "ThornUtil.h"
+#include "device/AHCIDevice.h"
 #include "device/IDEDevice.h"
 #include "fs/ThornFAT/ThornFAT.h"
 #include "fs/Partition.h"
@@ -208,16 +209,32 @@ namespace Thorn {
 					if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
 						printf("Unsupported partition entry size.\n");
 					} else {
+						GPT::PartitionEntry first_entry;
 						for (unsigned i = 0; i < gpt.partitionCount; ++i) {
 							GPT::PartitionEntry entry;
 							port->readBytes(gpt.partitionEntrySize, offset, &entry);
 							if (entry.typeGUID) {
 								printf("Partition %d: \"", i);
 								entry.printName(false);
-								printf("\", type GUID[%s], partition GUID[%s]\n", std::string(entry.typeGUID).c_str(),
-									std::string(entry.partitionGUID).c_str());
+								printf("\", type GUID[%s], partition GUID[%s], first[%ld], last[%ld]\n",
+									std::string(entry.typeGUID).c_str(), std::string(entry.partitionGUID).c_str(),
+									entry.firstLBA, entry.lastLBA);
+								if (!first_entry.typeGUID)
+									first_entry = entry;
 							}
 							offset += gpt.partitionEntrySize;
+						}
+
+						if (first_entry.typeGUID) {
+							printf("Using partition \"%s\".\n", std::string(first_entry).c_str());
+							Device::AHCIDevice device(port);
+							FS::Partition partition(&device, first_entry.firstLBA * AHCI::Port::BLOCKSIZE,
+								(first_entry.lastLBA - first_entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
+							using namespace FS::ThornFAT;
+							auto driver = std::make_unique<ThornFATDriver>(&partition);
+							driver->make(sizeof(DirEntry) * 5);
+							// char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+							// partition.write(buffer, 512, 0);
 						}
 					}
 				}

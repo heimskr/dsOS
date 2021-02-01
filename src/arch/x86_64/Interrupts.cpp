@@ -59,12 +59,12 @@ namespace x86_64::IDT {
 
 void div0() {
 	printf("Division by zero!\n");
-	for (;;);
+	for (;;) asm("hlt");
 }
 
 void double_fault() {
 	printf("Double fault :(\n");
-	for (;;);
+	for (;;) asm("hlt");
 }
 
 void page_interrupt() {
@@ -87,21 +87,21 @@ void page_interrupt() {
 	Thorn::Kernel *kernel = Thorn::Kernel::instance;
 	if (!kernel) {
 		printf("Kernel is null!\n");
-		for (;;);
+		for (;;) asm("hlt");
 	}
 
 	x86_64::PageMeta &meta = kernel->pager;
 	if (!meta) {
 		printf("Kernel pager is invalid!\n");
 		kernel->backtrace();
-		for (;;);
+		for (;;) asm("hlt");
 	}
 
 	uintptr_t assigned = meta.assign(pml4i, pdpi, pdi, pti) & ~0xfff;
 
 	if (assigned == 0) {
-		printf("Couldn't assign a page!\n");
-		for (;;);
+		printf("Couldn't assign a page! [%d, %d, %d, %d]\n", pml4i, pdpi, pdi, pti);
+		for (;;) asm("hlt");
 	}
 
 	uint64_t *base = (uint64_t *) (address & ~0xfff);
@@ -125,7 +125,7 @@ void irq14() {
 	Thorn::Ports::outb(0xa0, 0x20);
 	x86_64::PIC::sendEOI(1);
 	printf("IRQ14\n");
-	for (;;);
+	for (;;) asm("hlt");
 	// irqInvoked = 1;
 }
 
@@ -133,7 +133,7 @@ void irq15() {
 	Thorn::Ports::outb(0xa0, 0x20);
 	x86_64::PIC::sendEOI(1);
 	printf("IRQ15\n");
-	for (;;);
+	for (;;) asm("hlt");
 	// irqInvoked = 1;
 }
 

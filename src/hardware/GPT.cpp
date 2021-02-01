@@ -28,4 +28,12 @@ namespace Thorn::GPT {
 		if (newline)
 			printf("\n");
 	}
+
+	PartitionEntry::operator std::string() const {
+		char str[37];
+		for (unsigned i = 0; i < 36; ++i)
+			str[i] = name[i] & 0xff;
+		str[36] = '\0';
+		return str;
+	}
 }

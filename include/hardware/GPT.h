@@ -43,5 +43,6 @@ namespace Thorn::GPT {
 		char16_t name[36];
 
 		void printName(bool newline = true);
+		operator std::string() const;
 	};
 }

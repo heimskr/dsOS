@@ -132,14 +132,17 @@ namespace x86_64 {
 			for (size_t i = start; i < pages / (8 * sizeof(bitmap_t)); ++i)
 				if (bitmap[i] != -1L)
 					for (unsigned int j = 0; j < 8 * sizeof(bitmap_t); ++j)
-						if ((bitmap[i] & (1 << j)) == 0)
-							return (i * sizeof(bitmap_t)) + j;
+						if ((bitmap[i] & (1L << j)) == 0)
+							return i * 8 * sizeof(bitmap_t) + j;
 		return -1;
 	}
 
 	void PageMeta4K::mark(int index, bool used) {
-		if (pages == -1)
+		if (pages == -1) {
+			printf("[PageMeta4K::mark] pages == -1\n");
 			return;
+		}
+
 		if (used)
 			bitmap[index / (8 * sizeof(bitmap_t))] |=   1L << (index % (8 * sizeof(bitmap_t)));
 		else
@@ -150,7 +153,7 @@ namespace x86_64 {
 	                             volatile void *physical_address, uint64_t extra_meta) {
 		// printf("\e[32massign\e[0m %u, %u, %u, %u, 0x%lx, 0x%lx\n", pml4_index, pdpt_index, pdt_index, pt_index, physical_address, extra_meta);
 		if (pages == -1) {
-			printf("pages == -1\n");
+			printf("[PageMeta4K::assign] pages == -1\n");
 			return 0;
 		}
 

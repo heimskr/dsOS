@@ -5,7 +5,7 @@
 /.metals
 /.vscode
 /lib/*.a
-/disk.img
+/*.img
 /serial.txt
 .DS_Store
 ._.DS_Store
