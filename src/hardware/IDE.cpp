@@ -77,74 +77,31 @@ namespace Thorn::IDE {
 
 		int status = 0;
 		char write_buffer[SECTOR_SIZE] = {0};
-		char verify_buffer[SECTOR_SIZE] = {0};
 		const char *cbuffer = static_cast<const char *>(buffer);
 
 		if (offset != 0) {
 			if ((status = readSectors(drive, 1, lba, write_buffer)))
 				return status;
 			const size_t to_write = (SECTOR_SIZE - offset) < bytes? SECTOR_SIZE - offset : bytes;
-			// printf("\e[35mOffset = %lu, bytes = %lu, to_write = %lu\e[0m\n", offset, bytes, to_write);
 			memcpy(write_buffer + offset, buffer, to_write);
-
-			if (memcmp(write_buffer + offset, buffer, to_write) != 0)
-				printf("[IDE::writeBytes] memcpy didn't work correctly!\n");
-
 			if ((status = writeSectors(drive, 1, lba, write_buffer)))
 				return status;
-
-			if ((status = readSectors(drive, 1, lba, verify_buffer)))
-				printf("[%s:%d] readSectors failed.\n", __FILE__, __LINE__);
-			else {
-				const int result = memcmp(write_buffer, verify_buffer, SECTOR_SIZE);
-				if (bytes != 4 || result)
-					printf("[bytes=%lu] memcmp: %d\n", bytes, result);
-			}
-
 			bytes -= to_write;
 			++lba;
 			cbuffer += to_write;
 		}
 
 		while (0 < bytes) {
-			// printf("\e[35mBytes: %lu.", bytes);
-			// for (size_t i = 0; i < bytes; ++i)
-			// 	printf(" %lu:%x", i, cbuffer[i] & 0xff);
-			// printf("\e[0m\n");
 			if (bytes < SECTOR_SIZE) {
 				if ((status = readSectors(drive, 1, lba, write_buffer)))
 					return status;
 				memcpy(write_buffer, cbuffer, bytes);
-				// printf("\e[34m");
-				// for (size_t i = 0; i < SECTOR_SIZE; ++i)
-				// 	printf("%lu:%x ", i, write_buffer[i] & 0xff);
-				// printf("\e[0m\n");
 				if ((status = writeSectors(drive, 1, lba, write_buffer)))
 					return status;
-
-
-				if ((status = readSectors(drive, 1, lba, verify_buffer)))
-					printf("[%s:%d] readSectors failed.\n", __FILE__, __LINE__);
-				else {
-					const int result = memcmp(write_buffer, verify_buffer, SECTOR_SIZE);
-					if (bytes != 4 || result)
-						printf("[%s:%d, bytes=%lu] memcmp: %d\n", __FILE__, __LINE__, bytes, result);
-				}
-
-
 				break;
 			} else {
 				if ((status = writeSectors(drive, 1, lba, cbuffer)))
 					return status;
-
-				if ((status = readSectors(drive, 1, lba, verify_buffer)))
-					printf("[%s:%d] readSectors failed.\n", __FILE__, __LINE__);
-				else {
-					const int result = memcmp(cbuffer, verify_buffer, SECTOR_SIZE);
-					printf("[%s:%d, bytes=%lu] memcmp: %d\n", __FILE__, __LINE__, bytes, result);
-				}
-
-
 				bytes -= SECTOR_SIZE;
 				cbuffer += SECTOR_SIZE;
 			}
