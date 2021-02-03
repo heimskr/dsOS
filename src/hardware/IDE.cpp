@@ -73,8 +73,13 @@ namespace Thorn::IDE {
 	int writeBytes(uint8_t drive, size_t bytes, size_t offset, const void *buffer) {
 		uint32_t lba = offset / SECTOR_SIZE;
 		offset %= SECTOR_SIZE;
+
+		if (bytes % SECTOR_SIZE == 0 && offset == 0)
+			return writeSectors(drive, bytes / SECTOR_SIZE, lba, buffer);
+
 		int status = 0;
-		char write_buffer[SECTOR_SIZE];
+		char write_buffer[SECTOR_SIZE] = {0};
+		char verify_buffer[SECTOR_SIZE] = {0};
 		const char *cbuffer = static_cast<const char *>(buffer);
 
 		if (offset != 0) {
@@ -83,7 +88,21 @@ namespace Thorn::IDE {
 			const size_t to_write = (SECTOR_SIZE - offset) < bytes? SECTOR_SIZE - offset : bytes;
 			// printf("\e[35mOffset = %lu, bytes = %lu, to_write = %lu\e[0m\n", offset, bytes, to_write);
 			memcpy(write_buffer + offset, buffer, to_write);
-			writeSectors(drive, 1, lba, write_buffer);
+
+			if (memcmp(write_buffer + offset, buffer, to_write) != 0)
+				printf("[IDE::writeBytes] memcpy didn't work correctly!\n");
+
+			if ((status = writeSectors(drive, 1, lba, write_buffer)))
+				return status;
+
+			if ((status = readSectors(drive, 1, lba, verify_buffer)))
+				printf("[%s:%d] readSectors failed.\n", __FILE__, __LINE__);
+			else {
+				const int result = memcmp(write_buffer, verify_buffer, SECTOR_SIZE);
+				if (bytes != 4 || result)
+					printf("[bytes=%lu] memcmp: %d\n", bytes, result);
+			}
+
 			bytes -= to_write;
 			++lba;
 			cbuffer += to_write;
@@ -104,10 +123,30 @@ namespace Thorn::IDE {
 				// printf("\e[0m\n");
 				if ((status = writeSectors(drive, 1, lba, write_buffer)))
 					return status;
+
+
+				if ((status = readSectors(drive, 1, lba, verify_buffer)))
+					printf("[%s:%d] readSectors failed.\n", __FILE__, __LINE__);
+				else {
+					const int result = memcmp(write_buffer, verify_buffer, SECTOR_SIZE);
+					if (bytes != 4 || result)
+						printf("[%s:%d, bytes=%lu] memcmp: %d\n", __FILE__, __LINE__, bytes, result);
+				}
+
+
 				break;
 			} else {
 				if ((status = writeSectors(drive, 1, lba, cbuffer)))
 					return status;
+
+				if ((status = readSectors(drive, 1, lba, verify_buffer)))
+					printf("[%s:%d] readSectors failed.\n", __FILE__, __LINE__);
+				else {
+					const int result = memcmp(cbuffer, verify_buffer, SECTOR_SIZE);
+					printf("[%s:%d, bytes=%lu] memcmp: %d\n", __FILE__, __LINE__, bytes, result);
+				}
+
+
 				bytes -= SECTOR_SIZE;
 				cbuffer += SECTOR_SIZE;
 			}
@@ -229,10 +268,8 @@ namespace Thorn::IDE {
 		// Print summary:
 		for (int i = 0; i < 4; i++)
 			if (devices[i].reserved)
-				printf("Slot %d: found %s Drive %dMB - %s\n", i,
-					devices[i].type == 0? "ATA" : "ATAPI",
-					devices[i].size / 2048,
-					devices[i].model);
+				printf("Slot %d: found %s Drive %dMB - %s\n",
+					i, devices[i].type == 0? "ATA" : "ATAPI", devices[i].size / 2048, devices[i].model);
 	}
 
 	/* This function reads/writes sectors from ATA drives.
@@ -242,7 +279,7 @@ namespace Thorn::IDE {
 	 *   cause performance issues. If numsects is 0, the ATA controller will know that we want 256 sectors.
 	 */
 	uint8_t accessATA(bool writing, uint8_t drive, uint32_t lba, uint8_t numsects, char *buffer) {
-		uint8_t  lba_mode /* 0: CHS, 1: LBA28, 2: LBA48 */, dma /* 0: No DMA, 1: DMA */, cmd;
+		uint8_t  lba_mode /* 0: CHS, 1: LBA28, 2: LBA48 */, dma /* 0: No DMA, 1: DMA */, cmd = 0;
 		uint8_t  lba_io[6];
 		uint32_t channel = devices[drive].channel; // Read the channel
 		uint32_t slavebit = devices[drive].drive; // Read the drive (master/slave)
@@ -251,7 +288,8 @@ namespace Thorn::IDE {
 		uint16_t cyl, i;
 		uint8_t  head, sect, err;
 
-		write(channel, ATA_REG_CONTROL, channels[channel].nIEN = (irqInvoked = 0) + 0x02);
+		irqInvoked = false;
+		write(channel, ATA_REG_CONTROL, channels[channel].nIEN = 0x02);
 
 		// Select one from LBA28, LBA48 or CHS
 		if (lba >= 0x10000000) { // Sure drive should support LBA in this case, or you are giving a wrong LBA.
@@ -315,36 +353,33 @@ namespace Thorn::IDE {
 		// Select the command and send it
 		if (!writing) {
 			if (dma == 0) {
-				if (lba_mode == 0)
-					cmd = ATA_CMD_READ_PIO;
-				else if (lba_mode == 1)
+				if (lba_mode == 0 || lba_mode == 1)
 					cmd = ATA_CMD_READ_PIO;
 				else if (lba_mode == 2)
 					cmd = ATA_CMD_READ_PIO_EXT;
 			} else if (dma == 1) {
-				if (lba_mode == 0)
-					cmd = ATA_CMD_READ_DMA;
-				else if (lba_mode == 1)
+				if (lba_mode == 0 || lba_mode == 1)
 					cmd = ATA_CMD_READ_DMA;
 				else if (lba_mode == 2)
 					cmd = ATA_CMD_READ_DMA_EXT;
 			}
 		} else {
 			if (dma == 0) {
-				if (lba_mode == 0)
-					cmd = ATA_CMD_WRITE_PIO;
-				else if (lba_mode == 1)
+				if (lba_mode == 0 || lba_mode == 1)
 					cmd = ATA_CMD_WRITE_PIO;
 				else if (lba_mode == 2)
 					cmd = ATA_CMD_WRITE_PIO_EXT;
 			} else if (dma == 1) {
-				if (lba_mode == 0)
-					cmd = ATA_CMD_WRITE_DMA;
-				else if (lba_mode == 1)
+				if (lba_mode == 0 || lba_mode == 1)
 					cmd = ATA_CMD_WRITE_DMA;
 				else if (lba_mode == 2)
 					cmd = ATA_CMD_WRITE_DMA_EXT;
 			}
+		}
+
+		if (cmd == 0) {
+			printf("[IDE::accessATA] Invalid command!\n");
+			return EIO;
 		}
 		
 		write(channel, ATA_REG_COMMAND, cmd); // Send the command
@@ -358,7 +393,7 @@ namespace Thorn::IDE {
 				// uint64_t es;
 				// asm volatile("mov %%es, %0" : "=r"(es));
 				// asm volatile("mov %%ax, %%es" :: "a"(selector));
-				asm volatile("rep insw" :: "c"(words), "d"(bus), "D"(buffer)); // Receive Data.
+				asm volatile("rep insw" :: "c"(words), "d"(bus), "D"(buffer)); // Receive data.
 				// asm volatile("mov %0, %%es" :: "r"(es));
 				buffer += (words * 2);
 			}
@@ -369,7 +404,7 @@ namespace Thorn::IDE {
 				// uint64_t ds;
 				// asm volatile("mov %%ds, %0" : "=r"(ds));
 				// asm volatile("mov %%ax, %%ds" :: "a"(selector));
-				asm volatile("rep outsw" :: "c"(words), "d"(bus), "S"(buffer)); // Send Data
+				asm volatile("rep outsw" :: "c"(words), "d"(bus), "S"(buffer)); // Send data.
 				// asm volatile("mov %0, %%ds" :: "r"(ds));
 				buffer += (words * 2);
 			}
@@ -523,7 +558,8 @@ namespace Thorn::IDE {
 		uint32_t words    = 1024; // ATAPI drives have a sector size of 2048 bytes.
 		uint8_t err;
 
-		write(channel, ATA_REG_CONTROL, channels[channel].nIEN = irqInvoked = false);
+		irqInvoked = false;
+		write(channel, ATA_REG_CONTROL, channels[channel].nIEN = 0x0);
 
 		atapiPacket[ 0] = ATAPI_CMD_READ;
 		atapiPacket[ 1] = 0x0;

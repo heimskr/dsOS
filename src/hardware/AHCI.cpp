@@ -583,16 +583,23 @@ namespace Thorn::AHCI {
 	Port::AccessStatus Port::writeBytes(size_t count, size_t offset, const void *buffer) {
 		uint64_t lba = offset / BLOCKSIZE;
 		offset %= BLOCKSIZE;
+
+		if (count % BLOCKSIZE == 0 && offset == 0)
+			return write(lba, count, buffer);
+
 		AccessStatus status = AccessStatus::Success;
-		char write_buffer[BLOCKSIZE];
-		const char *cbuffer = reinterpret_cast<const char *>(buffer);
+		char write_buffer[BLOCKSIZE] = {0};
+		const char *cbuffer = static_cast<const char *>(buffer);
 
 		if (offset != 0) {
 			if ((status = read(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 				return status;
+			Kernel::wait(1, 10);
 			const size_t to_write = (BLOCKSIZE - offset) < count? BLOCKSIZE - offset : count;
 			memcpy(write_buffer + offset, cbuffer, to_write);
-			write(lba, BLOCKSIZE, write_buffer);
+			if ((status = write(lba, BLOCKSIZE, write_buffer) ) != AccessStatus::Success)
+				return status;
+			Kernel::wait(1, 10);
 			count -= to_write;
 			++lba;
 			cbuffer += to_write;
@@ -602,13 +609,16 @@ namespace Thorn::AHCI {
 			if (count < BLOCKSIZE) {
 				if ((status = read(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 					return status;
+				Kernel::wait(1, 10);
 				memcpy(write_buffer, cbuffer, count);
 				if ((status = write(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 					return status;
+				Kernel::wait(1, 10);
 				break;
 			} else {
 				if ((status = write(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 					return status;
+				Kernel::wait(1, 10);
 				count -= BLOCKSIZE;
 				cbuffer += BLOCKSIZE;
 				++lba;

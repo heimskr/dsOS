@@ -9,7 +9,7 @@
 
 namespace Thorn::FS {
 	int Partition::read(void *buffer, size_t size, off_t offset) {
-		printf("\e[32m[read(buffer, %lu, %ld)]\e[0m\n", size, offset);
+		// printf("\e[32m[read(buffer, %lu, %ld)]\e[0m\n", size, offset);
 		return parent->read(buffer, size, offset);
 	}
 
@@ -31,6 +31,7 @@ namespace Thorn::FS {
 		if (status != 0)
 			return status;
 		char *verify = new char[size];
+		memset(verify, 0, size);
 		status = parent->read(verify, size, offset);
 		if (status != 0)
 			return status;
@@ -43,8 +44,9 @@ namespace Thorn::FS {
 #ifdef VERIFY_WRITES_QUIETLY
 		if (mistakes != 0)
 #endif
-		printf("Found %lu mistake%s%s (size=%lu, offset=0x%lx)\n",
-			mistakes, mistakes == 1? "" : "s", mistakes == 0? "." : "!!!", size, offset);
+		printf("Found %lu mistake%s%s (size=%lu, offset=0x%lx) memcmp = %d\n",
+			mistakes, mistakes == 1? "" : "s", mistakes == 0? "." : "!!!", size, offset,
+			memcmp(buffer, verify, size));
 		return 0;
 #endif
 	}

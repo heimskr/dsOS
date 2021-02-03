@@ -327,12 +327,12 @@ namespace Thorn {
 			status = driver->create("/bar", 0666);
 			if (status != 0) printf("create failed: %s\n", strerror(-status));
 
-			printf("\e[32;1;4mReaddir after creating bar.\e[0m\n");
-			status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
-			if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+			// printf("\e[32;1;4mReaddir after creating bar.\e[0m\n");
+			// status = driver->readdir("/", [](const char *path, off_t offset) { printf("\"%s\" @ %ld\n", path, offset); });
+			// if (status != 0) printf("readdir failed: %s\n", strerror(-status));
 
-			printf("\e[32;1;4mDone.\e[0m\n");
-			driver->superblock.print();
+			// printf("\e[32;1;4mDone.\e[0m\n");
+			// driver->superblock.print();
 		}
 
 		perish();

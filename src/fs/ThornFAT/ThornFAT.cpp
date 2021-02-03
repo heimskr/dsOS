@@ -288,7 +288,7 @@ namespace Thorn::FS::ThornFAT {
 			memset(dir_cpy.name.str, 0, sizeof(dir_cpy.name.str));
 			dir_cpy.name.str[0] = dir_cpy.name.str[1] = '.';
 			// write(imgfd, &dir_cpy, sizeof(DirEntry));
-			partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
+			status = partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
 			if (status != 0) {
 				printf("[ThornFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
 				return -status;
@@ -324,7 +324,11 @@ namespace Thorn::FS::ThornFAT {
 		if (offset)
 			*offset = start;
 
-		partition->read(&root, sizeof(DirEntry), start);
+		int status = partition->read(&root, sizeof(DirEntry), start);
+		if (status) {
+			printf("[ThornFAT::getRoot] Reading failed.\n");
+		}
+
 		return root;
 	}
 
@@ -890,12 +894,12 @@ namespace Thorn::FS::ThornFAT {
 			printf("[ThornFATDriver::readFAT] Reading failed: %s\n", strerror(status));
 			return status;
 		}
-		printf("readFAT adjusted offset: %lu -> %d\n", superblock.blockSize + block_offset * sizeof(block_t), out);
+		// printf("readFAT adjusted offset: %lu -> %d\n", superblock.blockSize + block_offset * sizeof(block_t), out);
 		return out;
 	}
 
 	int ThornFATDriver::writeFAT(block_t block, size_t block_offset) {
-		printf("writeFAT adjusted offset: %lu <- %d\n", superblock.blockSize + block_offset * sizeof(block_t), block);
+		// printf("writeFAT adjusted offset: %lu <- %d\n", superblock.blockSize + block_offset * sizeof(block_t), block);
 		int status = partition->write(&block, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
 			printf("[ThornFATDriver::writeFAT] Writing failed: %s\n", strerror(status));
