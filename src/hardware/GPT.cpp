@@ -15,6 +15,10 @@ namespace Thorn::GPT {
 	}
 
 	GUID::operator bool() const {
+		if (timeLow == 0xffffffff && timeMid == 0xffff && timeHigh == 0xfff && version == 0xf && clock[0] == 0xff &&
+			clock[1] == 0xff && node[0] == 0xff && node[1] == 0xff && node[2] == 0xff && node[3] == 0xff &&
+			node[4] == 0xff && node[5] == 0xff)
+			return false;
 		return timeLow || timeMid || timeHigh || version || clock[0] || clock[1] || node[0] || node[1] || node[2]
 			|| node[3] || node[4] || node[5];
 	}
