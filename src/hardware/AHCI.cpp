@@ -539,7 +539,7 @@ namespace Thorn::AHCI {
 	}
 
 	Port::AccessStatus Port::readBytes(size_t count, size_t offset, void *buffer) {
-		size_t total_bytes_read = 0, bytes_read = 0;
+		size_t total_bytes_read = 0;
 		uint64_t lba = offset / BLOCKSIZE;
 		offset %= BLOCKSIZE;
 		char read_buffer[BLOCKSIZE];
@@ -548,12 +548,10 @@ namespace Thorn::AHCI {
 		while (0 < count) {
 			if ((status = read(lba, BLOCKSIZE, read_buffer)) != AccessStatus::Success)
 				return status;
-			bytes_read = 0;
-			for (size_t i = 0; (bytes_read < count) && ((i + offset) < BLOCKSIZE); ++i, ++bytes_read)
-				((char *) buffer)[total_bytes_read++] = read_buffer[i + offset];
-			if (count <= BLOCKSIZE)
-				break;
-			count -= bytes_read;
+			const size_t to_copy = BLOCKSIZE - offset < count? BLOCKSIZE - offset : count;
+			memcpy(static_cast<char *>(buffer) + total_bytes_read, read_buffer + offset, to_copy);
+			total_bytes_read += to_copy;
+			count -= to_copy;
 			offset = 0;
 			++lba;
 		}
@@ -594,12 +592,10 @@ namespace Thorn::AHCI {
 		if (offset != 0) {
 			if ((status = read(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 				return status;
-			Kernel::wait(1, 10);
 			const size_t to_write = (BLOCKSIZE - offset) < count? BLOCKSIZE - offset : count;
 			memcpy(write_buffer + offset, cbuffer, to_write);
 			if ((status = write(lba, BLOCKSIZE, write_buffer) ) != AccessStatus::Success)
 				return status;
-			Kernel::wait(1, 10);
 			count -= to_write;
 			++lba;
 			cbuffer += to_write;
@@ -609,16 +605,13 @@ namespace Thorn::AHCI {
 			if (count < BLOCKSIZE) {
 				if ((status = read(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 					return status;
-				Kernel::wait(1, 10);
 				memcpy(write_buffer, cbuffer, count);
 				if ((status = write(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 					return status;
-				Kernel::wait(1, 10);
 				break;
 			} else {
 				if ((status = write(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 					return status;
-				Kernel::wait(1, 10);
 				count -= BLOCKSIZE;
 				cbuffer += BLOCKSIZE;
 				++lba;

@@ -128,7 +128,7 @@ namespace Thorn {
 
 		// wait(5);
 
-/*
+//*
 		AHCI::Controller *last_controller = nullptr;
 
 		for (uint32_t bus = 0; bus < 256; ++bus)
@@ -303,7 +303,6 @@ namespace Thorn {
 
 			FS::Partition partition(&device, first_entry.firstLBA * AHCI::Port::BLOCKSIZE,
 				(first_entry.lastLBA - first_entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
-
 
 			// FS::Partition first_partition(&device, IDE::SECTOR_SIZE, 2047 * IDE::SECTOR_SIZE);
 			using namespace FS::ThornFAT;

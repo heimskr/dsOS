@@ -2,19 +2,19 @@
 #include "memory/Memory.h"
 
 namespace Thorn::Device {
-	int AHCIDevice::read(void *buffer, size_t size, off_t offset) {
+	int AHCIDevice::read(void *buffer, size_t size, size_t offset) {
 		if (offset % AHCI::Port::BLOCKSIZE == 0 && size % AHCI::Port::BLOCKSIZE == 0)
 			return static_cast<int>(port->read(offset / AHCI::Port::BLOCKSIZE, size, buffer));
 		return static_cast<int>(port->readBytes(size, offset, buffer));
 	}
 
-	int AHCIDevice::write(const void *buffer, size_t size, off_t offset) {
+	int AHCIDevice::write(const void *buffer, size_t size, size_t offset) {
 		if (offset % AHCI::Port::BLOCKSIZE == 0 && size % AHCI::Port::BLOCKSIZE == 0)
 			return static_cast<int>(port->write(offset / AHCI::Port::BLOCKSIZE, size, buffer));
 		return static_cast<int>(port->writeBytes(size, offset, buffer));
 	}
 
-	int AHCIDevice::clear(off_t offset, size_t size) {
+	int AHCIDevice::clear(size_t offset, size_t size) {
 		if (offset % AHCI::Port::BLOCKSIZE == 0 && size % AHCI::Port::BLOCKSIZE == 0) {
 			char buffer[AHCI::Port::BLOCKSIZE] = {0};
 			AHCI::Port::AccessStatus status = AHCI::Port::AccessStatus::Success;
