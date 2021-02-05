@@ -193,11 +193,6 @@ namespace Thorn {
 		memset(pageDescriptors, 0, pageDescriptorsLength);
 	}
 
-	void Kernel::waitm(size_t millimoments) {
-		for (size_t i = 0; i < millimoments; ++i)
-			for (size_t j = 0; j < 8000000; ++j);
-	}
-
 	void Kernel::perish() {
 		for (;;)
 			asm("hlt");
@@ -206,7 +201,7 @@ namespace Thorn {
 	x86_64::PageMeta4K & Kernel::getPager() {
 		if (!instance) {
 			printf("Kernel instance is null!\n");
-			for (;;) asm("hlt");
+			perish();
 		}
 
 		return instance->pager;
@@ -216,7 +211,7 @@ namespace Thorn {
 void schedule() {
 	if (!Thorn::Kernel::instance) {
 		printf("schedule(): Kernel instance is null!\n");
-		for (;;);
+		Thorn::Kernel::perish();
 	}
 	Thorn::Kernel::instance->schedule();
 }
