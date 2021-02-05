@@ -56,6 +56,8 @@ namespace Thorn {
 
 			static void backtrace();
 			static x86_64::PageMeta4K & getPager();
+
+			friend void runTests();
 	};
 }
 
