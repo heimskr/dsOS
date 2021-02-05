@@ -13,6 +13,8 @@ namespace Thorn {
 }
 
 namespace x86_64::APIC {
+	extern uint32_t lastTPS;
+
 	constexpr uint32_t BSP_VECTOR_SPURIOUS = 0xff;
 	constexpr uint32_t BSP_VECTOR_APIC_TIMER = 32;
 	constexpr uint32_t DISABLE = 0x10000;

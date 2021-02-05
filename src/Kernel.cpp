@@ -130,6 +130,18 @@ namespace Thorn {
 
 		PCI::scan();
 
+		printf("foo...\n");
+		ticks = 0;
+		timer_max = 1;
+		timer_addr = +[] { printf("...bar\n"); };
+		x86_64::APIC::initTimer(1);
+		for (int i = 0; i < 400; ++i) {
+			printf("currcnt: %d\n", static_cast<uint64_t>(apic_base[x86_64::APIC::REGISTER_TIMER_CURRCNT]) * 1000 / x86_64::APIC::lastTPS);
+			for (int j = 0; j < 1000000; ++j);
+		}
+
+		perish();
+
 #ifdef TEST_UHCI
 		if (!UHCI::controllers) {
 			printf("UHCI not initiated.\n");
