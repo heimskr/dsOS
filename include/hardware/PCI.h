@@ -201,12 +201,19 @@ namespace Thorn::PCI {
 		void init();
 		uint16_t readStatus();
 		uintptr_t getBAR(uint8_t);
+		uint32_t rawBAR(uint8_t);
 		uint16_t getCommand();
 		void setCommand(uint16_t);
 		uint8_t getInterruptLine();
 		uint8_t getInterruptPin();
 		uint8_t allocateVector(Vector);
 		uint8_t allocateVector(uint8_t);
+		uint8_t  readByte(uint32_t offset);
+		uint16_t readWord(uint32_t offset);
+		uint32_t readInt (uint32_t offset);
+		void writeByte(uint32_t offset, uint8_t  val);
+		void writeWord(uint32_t offset, uint16_t val);
+		void writeInt (uint32_t offset, uint32_t val);
 	};
 
 	std::vector<BDF> getDevices(uint32_t base_class, uint32_t subclass);

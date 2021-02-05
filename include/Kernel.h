@@ -11,8 +11,9 @@
 namespace Thorn {
 	class Kernel {
 		private:
-			size_t memoryLow = 0;
-			size_t memoryHigh = 0;
+			uintptr_t memoryLow = 0;
+			uintptr_t memoryHigh = 0;
+			uint64_t ticksPerMillisecond = 0;
 			Memory memory;
 
 			/** The area where page descriptors are stored. */
@@ -50,7 +51,7 @@ namespace Thorn {
 
 			static void wait(size_t num_ticks, uint32_t frequency = 1);
 			static void waitm(size_t millimoments = 1000);
-			void perish();
+			static void perish();
 
 			void schedule();
 

@@ -6,6 +6,10 @@
 #warning "The kernel needs to be compiled with an x86_64-elf compiler."
 #endif
 
+#define TEST_UHCI
+// #define TEST_AHCI
+// #define TEST_KEYBOARD
+
 #include <memory>
 #include <string>
 
@@ -21,9 +25,11 @@
 #include "hardware/GPT.h"
 #include "hardware/MBR.h"
 #include "hardware/PCI.h"
+#include "hardware/Ports.h"
 #include "hardware/PS2Keyboard.h"
 #include "hardware/SATA.h"
 #include "hardware/Serial.h"
+#include "hardware/UHCI.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
 #include "arch/x86_64/APIC.h"
@@ -105,6 +111,7 @@ namespace Thorn {
 		// wait(5);
 
 		x86_64::PIC::clearIRQ(1);
+		x86_64::PIC::clearIRQ(11);
 		x86_64::PIC::clearIRQ(14);
 		x86_64::PIC::clearIRQ(15);
 
@@ -113,22 +120,72 @@ namespace Thorn {
 
 		// printf("map size: %lu\n", map.size());
 
+
+		printf("cr4: 0x%lx\n", x86_64::getCR4());
+		uint32_t tsc_high_initial, tsc_low_initial;
+		asm volatile("rdtsc" : "=d"(tsc_high_initial), "=a"(tsc_low_initial));
+		wait(1, 1000);
+		uint32_t tsc_high_final, tsc_low_final;
+		asm volatile("rdtsc" : "=d"(tsc_high_final), "=a"(tsc_low_final));
+		uint64_t tsc_initial = tsc_low_initial | (static_cast<uint64_t>(tsc_high_initial) << 32);
+		uint64_t tsc_final = tsc_low_final | (static_cast<uint64_t>(tsc_high_final) << 32);
+		printf("%lu\n%lu\n", tsc_initial, tsc_final);
+		printf("Tick difference: %lu\n", tsc_final - tsc_initial);
+		ticksPerMillisecond = tsc_final - tsc_initial;
+
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
 
+		UHCI::init();
 		IDE::init();
 
 		PCI::printDevices();
 
-		// PCI::scan();
+		PCI::scan();
 
-		// printf("Scanned.\n\n");
+#ifdef TEST_UHCI
+		if (!UHCI::controllers) {
+			printf("UHCI not initiated.\n");
+		} else if (UHCI::controllers->empty()) {
+			printf("No UHCI controllers found.\n");
+		} else {
+			printf("Found %d UHCI controller%s.\n", UHCI::controllers->size(), UHCI::controllers->size() == 1? "" : "s");
+			UHCI::Controller &controller = UHCI::controllers->front();
+			printf("First controller: %x:%x:%x\n", controller.device->bdf.bus, controller.device->bdf.device, controller.device->bdf.function);
+			// controller.init();
 
-		// perish();
+			using namespace Thorn::Ports;
 
-		// wait(5);
+			uint32_t bar4 = controller.address;
 
-//*
+			// for (int i = 0; i <= 0xff; ++i)
+			// 	printf("%x (%x): %x\n", i, bar4 + i, inb(bar4 + i));
+			// 	printf("%x: %x\n", i, controller.device->readByte(i) & 0xff);
+
+			printf("0x34: %x\n", controller.device->readByte(34) & 0xff);
+
+			printf("0 (command): %x\n", inw(bar4 + 0));
+			printf("2 (status): %x\n", inw(bar4 + 2));
+			printf("4 (interrupts): %x\n", inw(bar4 + 4));
+			printf("6 (frame #): %x\n", inw(bar4 + 6));
+			printf("8 (frame base): %x\n", inl(bar4 + 8));
+			printf("c (SoF): %x\n", inb(bar4 + 0xc));
+			printf("0xc: %x\n", inb(bar4 + 0xc));
+			printf("0x10: %x\n", inw(bar4 + 0x10));
+			printf("0x12: %x\n", inw(bar4 + 0x12));
+			printf("0x34: %x\n", inb(bar4 + 0x34));
+
+
+			// printf("60: %x\n", controller.device->readByte(0x60));
+			// printf("34: %x\n", controller.device->readByte(0x34));
+			// printf("dc: %x\n", controller.device->readByte(0xdc));
+			// printf("dd: %x\n", controller.device->readByte(0xdd));
+			// printf("e0: %x\n", controller.device->readWord(0xe0));
+
+		}
+#endif
+
+#ifdef TEST_AHCI
 		AHCI::Controller *last_controller = nullptr;
 
 		for (uint32_t bus = 0; bus < 256; ++bus)
@@ -168,14 +225,6 @@ namespace Thorn {
 						char model[41];
 						info.copyModel(model);
 						printf("Model: \"%s\"\n", model);
-
-						// if (controller.ports[i]->type != AHCI::DeviceType::Null) {
-						// 	char buffer[513] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-						// 	printf("Result for port %d: %d\n", i, controller.ports[i]->read(0, 512, buffer));
-						// 	for (int i = 0; i < 512; ++i)
-						// 		printf("%c", buffer[i]);
-						// 	printf("\n");
-						// }
 						printf("%d done.\n", i);
 					}
 					printf("\nNext.\n");
@@ -267,11 +316,10 @@ namespace Thorn {
 				}
 			} else printf(":[\n");
 		} else printf(":(\n");
-
-		perish();
-//*/
+#endif
 
 		for (;;) {
+#ifdef TEST_KEYBOARD
 			if (last_scancode == (0x2c | 0x80)) { // z
 				last_scancode = 0;
 				printf("Hello!\n");
@@ -304,6 +352,7 @@ namespace Thorn {
 				printf_putc = true;
 				printf("\"%s\"\n", buffer);
 			}
+#endif
 			asm volatile("hlt");
 		}
 	}

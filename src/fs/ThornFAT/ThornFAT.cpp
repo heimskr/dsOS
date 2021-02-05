@@ -9,6 +9,8 @@
 #include "ThornUtil.h"
 
 #define FD_VALID(fd) ((fd) != UINT64_MAX)
+#define DEBUG(...)
+// #define DEBUG(...) printf(__VA_ARGS__)
 
 namespace Thorn::FS::ThornFAT {
 	char ThornFATDriver::nothing[sizeof(DirEntry)] = {0};
@@ -21,12 +23,12 @@ namespace Thorn::FS::ThornFAT {
 	int ThornFATDriver::readSuperblock(Superblock &out) {
 		int status = partition->read(&out, sizeof(Superblock), 0);
 		if (status != 0)
-			printf("[ThornFATDriver::readSuperblock] Reading failed: %s\n", strerror(status));
+			DEBUG("[ThornFATDriver::readSuperblock] Reading failed: %s\n", strerror(status));
 		return -status;
 	}
 
 	void ThornFATDriver::error(const std::string &err) {
-		printf("Error: %s\n", err.c_str());
+		DEBUG("Error: %s\n", err.c_str());
 		for (;;);
 	}
 
@@ -276,7 +278,7 @@ namespace Thorn::FS::ThornFAT {
 
 		int status = partition->write(&dir, sizeof(DirEntry), offset);
 		if (status != 0) {
-			printf("[ThornFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
+			DEBUG("[ThornFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 		// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
@@ -290,7 +292,7 @@ namespace Thorn::FS::ThornFAT {
 			// write(imgfd, &dir_cpy, sizeof(DirEntry));
 			status = partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
 			if (status != 0) {
-				printf("[ThornFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
+				DEBUG("[ThornFATDriver::writeEntry] Writing failed: %s\n", strerror(status));
 				return -status;
 			}
 			// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
@@ -326,7 +328,7 @@ namespace Thorn::FS::ThornFAT {
 
 		int status = partition->read(&root, sizeof(DirEntry), start);
 		if (status) {
-			printf("[ThornFAT::getRoot] Reading failed.\n");
+			DEBUG("[ThornFAT::getRoot] Reading failed.\n");
 		}
 
 		return root;
@@ -345,7 +347,7 @@ namespace Thorn::FS::ThornFAT {
 		if (dir.length == 0 || !dir.isDirectory()) {
 			// If the directory is free or actually a file, it's not valid.
 			// DR_EXIT;
-			printf("[ThornFATDriver::readDir] Not a directory.\n");
+			DEBUG("[ThornFATDriver::readDir] Not a directory.\n");
 			return -ENOTDIR;
 		}
 
@@ -353,12 +355,12 @@ namespace Thorn::FS::ThornFAT {
 		// 	WARN("dir_read", "Directory length " BDR " isn't a multiple of DirEntry size " BLR ".", dir.length,
 		// 		sizeof(DirEntry));
 
-		dir.print();
+		printf("%s\n", std::string(dir).c_str());
 
 		const size_t count = dir.length / sizeof(DirEntry);
 		entries.clear();
 		entries.resize(count);
-		printf("[ThornFATDriver::readDir] count = %lu\n", count);
+		DEBUG("[ThornFATDriver::readDir] count = %lu\n", count);
 
 		if (offsets) {
 			offsets->clear();
@@ -368,19 +370,18 @@ namespace Thorn::FS::ThornFAT {
 		std::vector<uint8_t> raw;
 		size_t byte_c;
 
-		printf("[ThornFATDriver::readDir] About to read from ");
-		dir.print();
+		DEBUG("[ThornFATDriver::readDir] About to read from %s\n", std::string(dir).c_str());
 
 		int status = readFile(dir, raw, &byte_c);
 		if (status < 0) {
 			// DR_EXIT;
-			printf("[ThornFATDriver::readDir] readFile failed: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::readDir] readFile failed: %s\n", strerror(-status));
 			return status;
 		}
 
 		for (uint8_t ch: raw)
-			printf("%x ", ch & 0xff);
-		printf("\n");
+			DEBUG("%x ", ch & 0xff);
+		DEBUG("\n");
 
 		char first_name[THORNFAT_PATH_MAX + 1];
 		memcpy(first_name, raw.data(), THORNFAT_PATH_MAX);
@@ -396,10 +397,10 @@ namespace Thorn::FS::ThornFAT {
 				*first_index = 1;
 		}
 
-		printf("[ThornFATDriver::readDir] first_name = \"%s\", byte_c = %lu, count = %lu\n", first_name, byte_c, count);
+		DEBUG("[ThornFATDriver::readDir] first_name = \"%s\", byte_c = %lu, count = %lu\n", first_name, byte_c, count);
 
 		// for (size_t i = 0; i < raw.size(); ++i)
-		// 	printf("[%lu] '%c' (%d)\n", i, raw[i], raw[i]);
+		// 	DEBUG("[%lu] '%c' (%d)\n", i, raw[i], raw[i]);
 
 		block_t block = dir.startBlock;
 		int rem;
@@ -410,15 +411,14 @@ namespace Thorn::FS::ThornFAT {
 			// for (size_t j = 0; j < sizeof(DirEntry); ++j) {
 			// 	const char ch = *(raw.data() + sizeof(DirEntry) * i + j);
 			// 	if (ch == '\0')
-			// 		printf("[%lu] \\0\n", j);
+			// 		DEBUG("[%lu] \\0\n", j);
 			// 	else
-			// 		printf("[%lu] %c\n", j, ch);
+			// 		DEBUG("[%lu] %c\n", j, ch);
 			// }
 
 			DirEntry entry;
 			memcpy(&entry, raw.data() + sizeof(DirEntry) * i, sizeof(DirEntry));
-			printf("[ThornFATDriver::readDir] [i=%d, offset=%lu] ", i, sizeof(DirEntry) * i);
-			entry.print();
+			DEBUG("[ThornFATDriver::readDir] [i=%d, offset=%lu] %s\n", i, sizeof(DirEntry) * i, std::string(entry).c_str());
 
 			const int entries_per_block = superblock.blockSize / sizeof(DirEntry);
 			rem = i % entries_per_block;
@@ -431,8 +431,7 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		for (const DirEntry &entry: entries) {
-			printf("[ThornFATDriver::readDir] ");
-			entry.print();
+			DEBUG("[ThornFATDriver::readDir] %s\n", std::string(entry).c_str());
 		}
 
 		// DR_EXIT;
@@ -442,8 +441,8 @@ namespace Thorn::FS::ThornFAT {
 	int ThornFATDriver::readFile(const DirEntry &file, std::vector<uint8_t> &out, size_t *count) {
 		// ENTER;
 		// DBGFE(FILEREADH, IDS("Reading file ") BSTR " of length " BDR, file->fname.str, file->length);
-		printf("[ThornFATDriver::readFile] Reading file \"%s\" of length %lu @ %ld\n", file.name.str, file.length, file.startBlock * superblock.blockSize);
-		printf("                        file.startBlock = %ld, superblock.blockSize = %u\n", file.startBlock, superblock.blockSize);
+		DEBUG("[ThornFATDriver::readFile] Reading file \"%s\" of length %lu @ %ld\n", file.name.str, file.length, file.startBlock * superblock.blockSize);
+		DEBUG("                        file.startBlock = %ld, superblock.blockSize = %u\n", file.startBlock, superblock.blockSize);
 		if (file.length == 0) {
 			if (count)
 				*count = 0;
@@ -452,7 +451,7 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		const auto bs = superblock.blockSize;
-		printf("[ThornFATDriver::readFile] bs = %u\n", bs);
+		DEBUG("[ThornFATDriver::readFile] bs = %u\n", bs);
 
 		if (count)
 			*count = file.length;
@@ -515,7 +514,7 @@ namespace Thorn::FS::ThornFAT {
 					return -EINVAL;
 				} else {
 					checkBlock(block);
-					printf("[%s:%d] block * bs = %u\n", __FILE__, __LINE__, block * bs);
+					DEBUG("[%s:%d] block * bs = %u\n", __FILE__, __LINE__, block * bs);
 					partition->read(ptr, bs, block * bs);
 					ptr += bs;
 					remaining -= bs;
@@ -545,7 +544,7 @@ namespace Thorn::FS::ThornFAT {
 
 		if (status < 0 && status != -ENOENT) {
 			// It's fine if we get ENOENT. The existence of a file shouldn't be a prerequisite for its creation.
-			printf("[ThornFATDriver::newFile] find failed: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::newFile] find failed: %s\n", strerror(-status));
 			// NF_EXIT;
 			return status;
 		}
@@ -554,7 +553,7 @@ namespace Thorn::FS::ThornFAT {
 		const size_t ln_length = last_name.size();
 		if (THORNFAT_PATH_MAX < ln_length) {
 			// If it's too long, we can give up early.
-			printf("[ThornFATDriver::newFile] Name too long (%lu chars)\n", ln_length);
+			DEBUG("[ThornFATDriver::newFile] Name too long (%lu chars)\n", ln_length);
 			// WARN(NEWFILEH, "Name too long: " BSR " " UDARR " " IDS("ENAMETOOLONG"), last_name);
 			// FREE(last_name);
 			// FREE(parent);
@@ -573,7 +572,7 @@ namespace Thorn::FS::ThornFAT {
 			// We provide an option not to allocate space for the file. This is helpful for fat_rename, when we just
 			// need to find an offset where an existing directory entry can be moved to. It's possibly okay if no
 			// free block is available if the parent directory has enough space for another entry.
-			printf("noalloc: startBlock set to 0\n");
+			DEBUG("noalloc: startBlock set to 0\n");
 			newfile.startBlock = 0;
 		} else {
 			// We'll need at least one free block to store the new file in so we can
@@ -593,7 +592,7 @@ namespace Thorn::FS::ThornFAT {
 			// pcache.fat[free_block] = FINAL;
 			writeFAT(FINAL, free_block);
 			--blocksFree;
-			printf("!noalloc: startBlock set to %d\n", free_block);
+			DEBUG("!noalloc: startBlock set to %d\n", free_block);
 			newfile.startBlock = free_block;
 
 			// There's not a point in copying the name to the entry if this function
@@ -615,8 +614,7 @@ namespace Thorn::FS::ThornFAT {
 		off_t offset = -1;
 		size_t offset_index = -1;
 		for (size_t i = (size_t) first_index; i < count; ++i) {
-			printf("[%lu] free(%d): ", i, isFree(entries[i])? 1 : 0);
-			entries[i].print();
+			DEBUG("[%lu] free(%d): %s\n", i, isFree(entries[i])? 1 : 0, std::string(entries[i]).c_str());
 			if (isFree(entries[i])) {
 				// We found one! Store its offset in `offset` to replace its previous value of -1.
 				offset = offsets[i];
@@ -643,11 +641,11 @@ namespace Thorn::FS::ThornFAT {
 
 		if (offset != -1) {
 			// Scenario one: we found a free entry earlier. Way too easy.
-			printf("[ThornFATDriver::newFile] Scenario one.\n");
+			DEBUG("[ThornFATDriver::newFile] Scenario one.\n");
 
 			status = writeEntry(newfile, offset);
 			if (status < 0) {
-				printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+				DEBUG("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 				// NF_EXIT;
 				return status;
 			}
@@ -659,7 +657,7 @@ namespace Thorn::FS::ThornFAT {
 			}
 		} else if (parent->length <= bs - sizeof(DirEntry)) {
 			// Scenario two: the parent directory has free space in its first block, which is also pretty easy to deal with.
-			printf("[ThornFATDriver::newFile] Scenario two.\n");
+			DEBUG("[ThornFATDriver::newFile] Scenario two.\n");
 
 			if (!noalloc && !hasFree(block_c)) {
 				// If we're allocating space for the new file, we need enough blocks to hold it.
@@ -677,7 +675,7 @@ namespace Thorn::FS::ThornFAT {
 			offset = parent->startBlock * bs + parent->length;
 			status = writeEntry(newfile, offset);
 			if (status < 0) {
-				printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+				DEBUG("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 				// NF_EXIT;
 				return status;
 			}
@@ -688,24 +686,24 @@ namespace Thorn::FS::ThornFAT {
 			// Skip to the last block; we don't need to read or change anything in the earlier blocks.
 			size_t remaining = parent->length;
 			block_t block = parent->startBlock;
-			printf("[ThornFATDriver::newFile] Parent start block: %ld\n", block);
+			DEBUG("[ThornFATDriver::newFile] Parent start block: %ld\n", block);
 			int skipped = 0;
 			while (bs < remaining) {
 				block = readFAT(block);
 				remaining -= bs;
 				if (++skipped <= NEWFILE_SKIP_MAX)
-					printf("[ThornFATDriver::newFile] Skipping to %ld\n", block);
+					DEBUG("[ThornFATDriver::newFile] Skipping to %ld\n", block);
 			}
 
 			if (NEWFILE_SKIP_MAX < skipped)
-				printf("[ThornFATDriver::newFile]   ... %d more\n", skipped);
+				DEBUG("[ThornFATDriver::newFile]   ... %d more\n", skipped);
 
 			// DBGF(NEWFILEH, "bs - sizeof(DirEntry) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " BLR " < " BLR, bs, sizeof(DirEntry), remaining, bs - sizeof(DirEntry), remaining);
 
 			if (bs - sizeof(DirEntry) < remaining) {
 				// Scenario three, the worst one: there isn't enough free space left in the
 				// parent directory to fit in another entry, so we have to add another block.
-				printf("[ThornFATDriver::newFile] Scenario three.\n");
+				DEBUG("[ThornFATDriver::newFile] Scenario three.\n");
 
 				bool nospc = false;
 
@@ -739,7 +737,7 @@ namespace Thorn::FS::ThornFAT {
 					// another free block to use as the new file's start block.
 					free_block = findFreeBlock();
 					if (free_block == UNUSABLE) {
-						printf("[ThornFATDriver::newFile] No free block -> ENOSPC\n");
+						DEBUG("[ThornFATDriver::newFile] No free block -> ENOSPC\n");
 						writeFAT(0, old_free_block);
 						// NF_EXIT;
 						return -ENOSPC;
@@ -754,18 +752,18 @@ namespace Thorn::FS::ThornFAT {
 				offset = block * bs;
 				status = writeEntry(newfile, offset);
 				if (status < 0) {
-					printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+					DEBUG("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 					// NF_EXIT;
 					return status;
 				}
 			} else {
 				// Scenario four: there's enough space in the parent directory to add the new entry. Nice.
-				printf("[ThornFATDriver::newFile] Scenario four.\n");
+				DEBUG("[ThornFATDriver::newFile] Scenario four.\n");
 
 				offset = block * bs + remaining;
 				status = writeEntry(newfile, offset);
 				if (status < 0) {
-					printf("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
+					DEBUG("[ThornFATDriver::newFile] Couldn't add entry to parent directory: %s\n", strerror(-status));
 					// NF_EXIT;
 					return status;
 				}
@@ -774,12 +772,12 @@ namespace Thorn::FS::ThornFAT {
 
 		if (increase_parent_length) {
 			// Increase the size of the parent directory and write it back to its original offset.
-			printf("[ThornFATDriver::newFile] Increasing parent length.\n");
+			DEBUG("[ThornFATDriver::newFile] Increasing parent length.\n");
 			// DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length+sizeof(DirEntry)));
 			parent->length += sizeof(DirEntry);
 			status = writeEntry(*parent, parent_offset);
 			if (status < 0) {
-				printf("[ThornFATDriver::newFile] Couldn't write the parent directory to disk: %s\n", strerror(-status));
+				DEBUG("[ThornFATDriver::newFile] Couldn't write the parent directory to disk: %s\n", strerror(-status));
 				// NF_EXIT;
 				return status;
 			}
@@ -794,7 +792,7 @@ namespace Thorn::FS::ThornFAT {
 					writeFAT(FINAL, block);
 					blocksFree = -1;
 					writeFAT(0, old_free_block);
-					printf("[ThornFATDriver::newFile] No free block -> ENOSPC\n");
+					DEBUG("[ThornFATDriver::newFile] No free block -> ENOSPC\n");
 					countFree();
 					// fat_save(imgfd, &superblock, pcache.fat);
 					// NF_EXIT;
@@ -815,13 +813,13 @@ namespace Thorn::FS::ThornFAT {
 			// DBG(NEWFILEH, "Inserted.");
 			if (insert_status != PCInsertStatus::Success && insert_status != PCInsertStatus::Overwritten) {
 				// Inserting a pcache entry should always work. If it doesn't, there's a bug somewhere.
-				printf("[ThornFATDriver::newFile] pc_insert failed (%d)\n", insert_status);
+				DEBUG("[ThornFATDriver::newFile] pc_insert failed (%d)\n", insert_status);
 				for (;;);
 				return -666;
 			} else if (dir_out)
 				*dir_out = &item->entry;
 		} else if (dir_out) {
-			printf("Overflowing. %lu -> %lu\n", overflowIndex, (overflowIndex + 1) % OVERFLOW_MAX);
+			DEBUG("Overflowing. %lu -> %lu\n", overflowIndex, (overflowIndex + 1) % OVERFLOW_MAX);
 			overflow[overflowIndex] = newfile;
 			*dir_out = &overflow[overflowIndex];
 			overflowIndex = (overflowIndex + 1) % OVERFLOW_MAX;
@@ -861,7 +859,7 @@ namespace Thorn::FS::ThornFAT {
 		int status = find(-1, path, nullptr, &found, &offset, false, nullptr);
 		// DBG_ONE();
 		if (status < 0) {
-			printf("[ThornFATDriver::remove] find failed: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::remove] find failed: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -891,18 +889,18 @@ namespace Thorn::FS::ThornFAT {
 		block_t out;
 		int status = partition->read(&out, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
-			printf("[ThornFATDriver::readFAT] Reading failed: %s\n", strerror(status));
+			DEBUG("[ThornFATDriver::readFAT] Reading failed: %s\n", strerror(status));
 			return status;
 		}
-		// printf("readFAT adjusted offset: %lu -> %d\n", superblock.blockSize + block_offset * sizeof(block_t), out);
+		// DEBUG("readFAT adjusted offset: %lu -> %d\n", superblock.blockSize + block_offset * sizeof(block_t), out);
 		return out;
 	}
 
 	int ThornFATDriver::writeFAT(block_t block, size_t block_offset) {
-		// printf("writeFAT adjusted offset: %lu <- %d\n", superblock.blockSize + block_offset * sizeof(block_t), block);
+		// DEBUG("writeFAT adjusted offset: %lu <- %d\n", superblock.blockSize + block_offset * sizeof(block_t), block);
 		int status = partition->write(&block, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		if (status != 0) {
-			printf("[ThornFATDriver::writeFAT] Writing failed: %s\n", strerror(status));
+			DEBUG("[ThornFATDriver::writeFAT] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 		return 0;
@@ -910,19 +908,19 @@ namespace Thorn::FS::ThornFAT {
 
 	void ThornFATDriver::initFAT(size_t table_size, size_t block_size) {
 		size_t written = 0;
-		printf("initFAT: writeOffset = %lu, table_size = %lu\n", writeOffset, table_size);
-		printf("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
+		DEBUG("initFAT: writeOffset = %lu, table_size = %lu\n", writeOffset, table_size);
+		DEBUG("sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]\n", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
 		// These blocks point to the FAT, so they're not valid regions to write data.
 		writeOffset = block_size;
-		printf("Writing UNUSABLE %lu times to %lu\n", table_size + 1, writeOffset);
+		DEBUG("Writing UNUSABLE %lu times to %lu\n", table_size + 1, writeOffset);
 		writeMany(UNUSABLE, table_size + 1);
 		written += table_size + 1;
-		printf("Writing FINAL 1 time to %lu\n", writeOffset);
+		DEBUG("Writing FINAL 1 time to %lu\n", writeOffset);
 		writeMany(FINAL, 1);
 		++written;
 		// Might be sensitize to sizeof(block_t).
 		size_t times = Util::blocks2count(table_size, block_size) - written;
-		printf("Writing 0 %lu times to %lu (table_size = %lu, written = %lu)\n", times, writeOffset, table_size, written);
+		DEBUG("Writing 0 %lu times to %lu (table_size = %lu, written = %lu)\n", times, writeOffset, table_size, written);
 		writeMany((block_t) 0, times);
 	}
 
@@ -960,7 +958,7 @@ namespace Thorn::FS::ThornFAT {
 
 	bool ThornFATDriver::checkBlock(block_t block) {
 		if (block < 1) {
-			printf("Invalid block: %d\n", block);
+			DEBUG("Invalid block: %d\n", block);
 			for (;;);
 			return false;
 		}
@@ -992,7 +990,7 @@ namespace Thorn::FS::ThornFAT {
 
 		// It's okay if the destination doesn't exist, but the source is required to exist.
 		if ((status = find(-1, srcpath, nullptr, &src_entry, &src_offset, false, nullptr)) < 0) {
-			printf("[ThornFATDriver::rename] find failed for old path: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::rename] find failed for old path: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -1002,7 +1000,7 @@ namespace Thorn::FS::ThornFAT {
 		status = find(-1, destpath, nullptr, &dest_entry, &dest_offset, false, nullptr);
 		// DBGN(RENAMEH, "fat_find status:", status);
 		if (status < 0 && status != -ENOENT) {
-			printf("[ThornFATDriver::rename] find failed for new path: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::rename] find failed for new path: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -1014,7 +1012,7 @@ namespace Thorn::FS::ThornFAT {
 			// we're actually freeing up at least one block.
 			status = remove(destpath, true);
 			if (status < 0) {
-				printf("[ThornFATDriver::rename] Couldn't unlink target: %s\n", strerror(-status));
+				DEBUG("[ThornFATDriver::rename] Couldn't unlink target: %s\n", strerror(-status));
 				return status;
 			}
 
@@ -1031,7 +1029,7 @@ namespace Thorn::FS::ThornFAT {
 			status = newFile(destpath, 0, src_entry->isDirectory()? FileType::Directory : FileType::File,
 			                 &src_entry->times, &dest_entry, &dest_offset, &parent_entry, &parent_offset, 1);
 			if (status < 0) {
-				printf("[ThornFATDriver::rename] Couldn't create new directory entry: %s\n", strerror(-status));
+				DEBUG("[ThornFATDriver::rename] Couldn't create new directory entry: %s\n", strerror(-status));
 				return status;
 			}
 			// DBGF(RENAMEH, BLR SUDARR BLR, src_offset, dest_offset);
@@ -1047,7 +1045,7 @@ namespace Thorn::FS::ThornFAT {
 		// Zero out the source entry's filename, then copy in the basename of the destination.
 		std::optional<std::string> destbase = Util::pathLast(destpath);
 		if (!destbase.has_value()) {
-			printf("[ThornFATDriver::rename] destbase has no value!\n");
+			DEBUG("[ThornFATDriver::rename] destbase has no value!\n");
 			return -EINVAL;
 		}
 
@@ -1058,14 +1056,14 @@ namespace Thorn::FS::ThornFAT {
 		// we move the source's directory entry to the destination's offset.
 		status = partition->write(src_entry, sizeof(DirEntry), dest_offset);
 		if (status != 0) {
-			printf("[ThornFATDriver::rename] Writing failed: %s\n", strerror(status));
+			DEBUG("[ThornFATDriver::rename] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 
 		// Now we need to remove the source entry's original directory entry from the disk image.
 		status = partition->write(nothing, sizeof(DirEntry), src_offset);
 		if (status != 0) {
-			printf("[ThornFATDriver::rename] Writing failed: %s\n", strerror(status));
+			DEBUG("[ThornFATDriver::rename] Writing failed: %s\n", strerror(status));
 			return -status;
 		}
 
@@ -1102,7 +1100,7 @@ namespace Thorn::FS::ThornFAT {
 #endif
 
 		// DBGF(CREATEH, PMETHOD("create") BSTR DM " mode " BDR DM " flags " BXR, path, mode, fi->flags);
-		printf("[ThornFATDriver::create] path \"%s\" modes %u\n", path, modes);
+		DEBUG("[ThornFATDriver::create] path \"%s\" modes %u\n", path, modes);
 
 		// int status = fat_find(imgfd, -1, path, NULL, NULL, NULL, 0, NULL);
 		int status = find(-1, path);
@@ -1110,7 +1108,7 @@ namespace Thorn::FS::ThornFAT {
 			// The file already exists, so we don't have to bother creating another entry with the same name.
 			// That would be a pretty dumb thing to do...
 			// DBG2(CREATEH, "File already exists:", path);
-			printf("[ThornFATDriver::create] File already exists: \"%s\"\n", path);
+			DEBUG("[ThornFATDriver::create] File already exists: \"%s\"\n", path);
 			return -EEXIST;
 		}
 
@@ -1118,7 +1116,7 @@ namespace Thorn::FS::ThornFAT {
 		off_t offset, poffset;
 		status = newFile(path, 0, FileType::File, nullptr, &newfile, &offset, &parent, &poffset, false);
 		if (status < 0) {
-			printf("[ThornFATDriver::create] newFile failed: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::create] newFile failed: %s\n", strerror(-status));
 			return status;
 		}
 
@@ -1130,7 +1128,7 @@ namespace Thorn::FS::ThornFAT {
 			// FREE(parent);
 		// }
 
-		printf("[ThornFATDriver::create] Done. {offset: %ld, poffset: %ld}\n", offset, poffset);
+		DEBUG("[ThornFATDriver::create] Done. {offset: %ld, poffset: %ld}\n", offset, poffset);
 		// if (offset == 5440 & poffset == 4800) for (;;) asm("hlt");
 		// SUCC(CREATEH, "Done. " IDS("{") "offset" DLS BLR DMS "poffset" DLS BLR IDS("}"), offset, poffset);
 #ifdef DEBUG_THORNFAT
@@ -1140,7 +1138,7 @@ namespace Thorn::FS::ThornFAT {
 		// 	size_t old = pcache.blocks_free;
 		// 	pcache.blocks_free = -1;
 		// 	pathc_count_free();
-		// 	snprintf(buf, 4096, "Free (old): " BZR "\nFree (new): " BZR "\n", old, pcache.blocks_free);
+		// 	snDEBUG(buf, 4096, "Free (old): " BZR "\nFree (new): " BZR "\n", old, pcache.blocks_free);
 		// 	driver_write(path, buf, strlen(buf), 0, &fake_fi);
 		// }
 #endif
@@ -1193,13 +1191,13 @@ namespace Thorn::FS::ThornFAT {
 
 		int status = find(-1, path, nullptr, &found, &file_offset);
 		if (status < 0) {
-			printf("[ThornFATDriver::readdir] find failed: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::readdir] find failed: %s\n", strerror(-status));
 			return status;
 		}
 
 		if (!found->isDirectory()) {
 			// You can't really use readdir with a file.
-			printf("[ThornFATDriver::readdir] Can't readdir() a file -> ENOTDIR\n");
+			DEBUG("[ThornFATDriver::readdir] Can't readdir() a file -> ENOTDIR\n");
 			// DBG_ON();
 			return -ENOTDIR;
 		}
@@ -1209,19 +1207,18 @@ namespace Thorn::FS::ThornFAT {
 			// For other directories, it has to be added dynamically.
 			filler(".", 0);
 
-		printf("[ThornFATDriver::readdir] Found directory at offset %ld: ", file_offset);
-		found->print();
+		DEBUG("[ThornFATDriver::readdir] Found directory at offset %ld: %s\n", file_offset, std::string(found).c_str());
 
 		std::vector<DirEntry> entries;
 		std::vector<off_t> offsets;
 
 		status = readDir(*found, entries, &offsets);
 		if (status < 0) {
-			printf("[ThornFATDriver::readdir] readDir failed: %s\n", strerror(-status));
+			DEBUG("[ThornFATDriver::readdir] readDir failed: %s\n", strerror(-status));
 			return status;
 		}
 		const size_t count = entries.size();
-		printf("[ThornFATDriver::readdir] Count: %lu\n", count);
+		DEBUG("[ThornFATDriver::readdir] Count: %lu\n", count);
 
 		size_t excluded = 0;
 #ifdef READDIR_MAX_INCLUDE
@@ -1231,14 +1228,13 @@ namespace Thorn::FS::ThornFAT {
 
 		for (int i = 0; i < (int) count; i++) {
 			const DirEntry &entry = entries[i];
-			printf("[] %s: ", isFree(entry)? "free" : "not free");
-			entry.print();
+			DEBUG("[] %s: %s\n", isFree(entry)? "free" : "not free", std::string(entry).c_str());
 			if (!isFree(entry)) {
 #ifdef READDIR_MAX_INCLUDE
 				last_index = i;
 				if (++included < READDIR_MAX_INCLUDE)
 #else
-				printf("[ThornFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
+				DEBUG("[ThornFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
 #endif
 
 				filler(entry.name.str, offsets[i]);
@@ -1248,17 +1244,17 @@ namespace Thorn::FS::ThornFAT {
 
 #ifdef READDIR_MAX_INCLUDE
 		if (READDIR_MAX_INCLUDE < included)
-			printf("[ThornFATDriver::readdir] ... %lu more\n", count - READDIR_MAX_INCLUDE);
+			DEBUG("[ThornFATDriver::readdir] ... %lu more\n", count - READDIR_MAX_INCLUDE);
 
 		if (READDIR_MAX_INCLUDE <= included)
-			printf("[ThornFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
+			DEBUG("[ThornFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
 #endif
 
 		if (0 < excluded) {
-			printf("[ThornFATDriver::readdir] Excluding %lu freed entr%s.\n", excluded, excluded == 1? "y" : "ies");
+			DEBUG("[ThornFATDriver::readdir] Excluding %lu freed entr%s.\n", excluded, excluded == 1? "y" : "ies");
 		}
 
-		printf("[ThornFATDriver::readdir] Done.\n");
+		DEBUG("[ThornFATDriver::readdir] Done.\n");
 		// DBGE(READDIRH, "Done.");
 		// DBG_ON();
 		return 0;
@@ -1271,7 +1267,7 @@ namespace Thorn::FS::ThornFAT {
 	bool ThornFATDriver::make(uint32_t block_size) {
 		int status = partition->clear();
 		if (status != 0) {
-			printf("[ThornFATDriver::make] Clearing partition failed: %s\n", strerror(status));
+			DEBUG("[ThornFATDriver::make] Clearing partition failed: %s\n", strerror(status));
 			return false;
 		}
 
@@ -1280,24 +1276,24 @@ namespace Thorn::FS::ThornFAT {
 		const size_t block_count = partition->length / block_size;
 
 		if (block_count < MINBLOCKS) {
-			printf("[ThornFATDriver::make] Number of blocks for partition is too small: %lu\n", block_count);
+			DEBUG("[ThornFATDriver::make] Number of blocks for partition is too small: %lu\n", block_count);
 			return false;
 		}
 
 		if (block_size % sizeof(DirEntry)) {
 			// The block size must be a multiple of the size of a directory entry because it must be possible to fill a
 			// block with directory entries without any space left over.
-			printf("[ThornFATDriver::make] Block size isn't a multiple of %lu.\n", sizeof(DirEntry));
+			DEBUG("[ThornFATDriver::make] Block size isn't a multiple of %lu.\n", sizeof(DirEntry));
 			return false;
 		}
 
 		if (block_size < 2 * sizeof(DirEntry)) {
-			printf("[ThornFATDriver::make] Block size must be able to hold at least two directory entries.\n");
+			DEBUG("[ThornFATDriver::make] Block size must be able to hold at least two directory entries.\n");
 			return false;
 		}
 
 		if (block_size < sizeof(Superblock)) {
-			printf("[ThornFATDriver::make] Block size isn't large enough to contain a superblock (%luB).\n",
+			DEBUG("[ThornFATDriver::make] Block size isn't large enough to contain a superblock (%luB).\n",
 				sizeof(Superblock));
 			return false;
 		}
@@ -1305,7 +1301,7 @@ namespace Thorn::FS::ThornFAT {
 		const size_t table_size = tableSize(block_count, block_size);
 
 		if (UINT32_MAX <= table_size) {
-			printf("[ThornFATDriver::make] Table size too large: %u\n", table_size);
+			DEBUG("[ThornFATDriver::make] Table size too large: %u\n", table_size);
 			return false;
 		}
 

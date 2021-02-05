@@ -43,6 +43,7 @@ extern "C" {
 	extern void isr_32();
 	extern void isr_33();
 	extern void isr_39();
+	extern void isr_43();
 	extern void isr_46();
 	extern void isr_47();
 
@@ -52,6 +53,7 @@ extern "C" {
 	void page_interrupt();
 	void irq1();
 	void spurious_interrupt();
+	void irq11();
 	void irq14();
 	void irq15();
 }

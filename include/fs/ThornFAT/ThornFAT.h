@@ -142,7 +142,7 @@ namespace Thorn::FS::ThornFAT {
 			template <typename T>
 			int writeMany(T n, size_t count) {
 				int status;
-				const size_t old_offset = writeOffset;
+				// const size_t old_offset = writeOffset;
 				for (size_t i = 0; i < count; ++i) {
 					status = partition->write(&n, sizeof(T), writeOffset);
 					if (status != 0) {
@@ -151,7 +151,7 @@ namespace Thorn::FS::ThornFAT {
 					}
 					writeOffset += sizeof(T);
 				}
-				printf("[M] writeOffset: %lu -> %lu (%lu * %lu)\n", old_offset, writeOffset, sizeof(T), count);
+				// printf("[M] writeOffset: %lu -> %lu (%lu * %lu)\n", old_offset, writeOffset, sizeof(T), count);
 				return 0;
 			}
 
@@ -162,7 +162,7 @@ namespace Thorn::FS::ThornFAT {
 					printf("[ThornFATDriver::write] Writing failed: %s\n", strerror(status));
 					return -status;
 				}
-				printf("[S] writeOffset: %lu -> %lu\n", writeOffset, writeOffset + sizeof(T));
+				// printf("[S] writeOffset: %lu -> %lu\n", writeOffset, writeOffset + sizeof(T));
 				writeOffset += sizeof(T);
 				return 0;
 			}

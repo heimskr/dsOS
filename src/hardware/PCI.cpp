@@ -9,6 +9,7 @@
 #include "hardware/PCIIDs.h"
 #include "hardware/Ports.h"
 #include "hardware/Serial.h"
+#include "hardware/UHCI.h"
 #include "lib/printf.h"
 #include "memory/Memory.h"
 #include "ThornUtil.h"
@@ -179,51 +180,55 @@ namespace Thorn::PCI {
 
 	void Device::init() {
 		if (readStatus() & STATUS_CAPABILITIES) {
-			uint8_t ptr = readWord(bdf, CAPABILITIES_PTR);
-			uint16_t cap = readWord(bdf, ptr);
+			uint8_t ptr = readWord(CAPABILITIES_PTR);
+			uint16_t cap = readWord(ptr);
 			do {
 				if ((cap & 0xff) == CAP_ID_MSI) {
 					msiPointer = ptr;
 					msiCapable = true;
-					msiCapability.register0 = readInt(bdf, ptr);
-					msiCapability.register1 = readInt(bdf, ptr + sizeof(uint32_t));
-					msiCapability.register2 = readInt(bdf, ptr + sizeof(uint32_t) * 2);
+					msiCapability.register0 = readInt(ptr);
+					msiCapability.register1 = readInt(ptr + sizeof(uint32_t));
+					msiCapability.register2 = readInt(ptr + sizeof(uint32_t) * 2);
 					if (msiCapability.msiControl & MSI_CONTROL_64)
-						msiCapability.data64 = readInt(bdf, ptr + sizeof(uint32_t) * 3);
+						msiCapability.data64 = readInt(ptr + sizeof(uint32_t) * 3);
 				}
 
 				ptr = cap >> 8;
-				cap = readWord(bdf, ptr);
+				cap = readWord(ptr);
 				capabilities.push_back(cap & 0xff);
 			} while (cap >> 8);
 		}
 	}
 
 	uint16_t Device::readStatus() {
-		return readWord(bdf, STATUS);
+		return readWord(STATUS);
 	}
 
 	uintptr_t Device::getBAR(uint8_t index) {
-		uintptr_t bar = readInt(bdf, BAR0 + index * sizeof(uint32_t));
+		uintptr_t bar = readInt(BAR0 + index * sizeof(uint32_t));
 		if (!(bar & 1) && (bar & 4) && index < 5)
-			bar |= static_cast<uintptr_t>(readInt(bdf, BAR0 + (bar + 1) * sizeof(uint32_t))) << 32;
+			bar |= static_cast<uintptr_t>(readInt(BAR0 + (bar + 1) * sizeof(uint32_t))) << 32;
 		return bar & ((bar & 1)? 0xfffffffffffffffc : 0xfffffffffffffff0);
 	}
 
+	uint32_t Device::rawBAR(uint8_t index) {
+		return readInt(BAR0 + index * sizeof(uint32_t));
+	}
+
 	uint16_t Device::getCommand() {
-		return readWord(bdf, COMMAND);
+		return readWord(COMMAND);
 	}
 
 	void Device::setCommand(uint16_t command) {
-		writeWord(bdf, COMMAND, command);
+		writeWord(COMMAND, command);
 	}
 
 	uint8_t Device::getInterruptLine() {
-		return readByte(bdf, INTERRUPT_LINE);
+		return readByte(INTERRUPT_LINE);
 	}
 
 	uint8_t Device::getInterruptPin() {
-		return readByte(bdf, INTERRUPT_PIN);
+		return readByte(INTERRUPT_PIN);
 	}
 
 	uint8_t Device::allocateVector(Vector vector) {
@@ -249,10 +254,10 @@ namespace Thorn::PCI {
 				// msiCapability.setAddress(x86_64::getCPULocal()->id);
 
 				if (msiCapability.msiControl & MSI_CONTROL_64)
-					writeInt(bdf, msiPointer + sizeof(uint32_t) * 3, msiCapability.register3);
-				writeInt(bdf, msiPointer + sizeof(uint32_t) * 2, msiCapability.register2);
-				writeInt(bdf, msiPointer + sizeof(uint32_t), msiCapability.register1);
-				writeInt(bdf, msiPointer + sizeof(uint16_t), msiCapability.msiControl);
+					writeInt(msiPointer + sizeof(uint32_t) * 3, msiCapability.register3);
+				writeInt(msiPointer + sizeof(uint32_t) * 2, msiCapability.register2);
+				writeInt(msiPointer + sizeof(uint32_t), msiCapability.register1);
+				writeInt(msiPointer + sizeof(uint16_t), msiCapability.msiControl);
 
 				return interrupt;
 			}
@@ -273,6 +278,31 @@ namespace Thorn::PCI {
 
 		printf("[PCI::Device::allocateVector] Could not allocate interrupt (type %d)!", static_cast<int>(vector));
 		return 0xff;
+	}
+
+
+	uint8_t  Device::readByte(uint32_t offset) {
+		return ::Thorn::PCI::readByte(bdf, offset);
+	}
+
+	uint16_t Device::readWord(uint32_t offset) {
+		return ::Thorn::PCI::readWord(bdf, offset);
+	}
+
+	uint32_t Device::readInt(uint32_t offset) {
+		return ::Thorn::PCI::readInt(bdf, offset);
+	}
+
+	void Device::writeByte(uint32_t offset, uint8_t val) {
+		return ::Thorn::PCI::writeByte(bdf, offset, val);
+	}
+
+	void Device::writeWord(uint32_t offset, uint16_t val) {
+		return ::Thorn::PCI::writeWord(bdf, offset, val);
+	}
+
+	void Device::writeInt(uint32_t offset, uint32_t val) {
+		return ::Thorn::PCI::writeInt(bdf, offset, val);
 	}
 
 	void scan() {
@@ -302,6 +332,8 @@ namespace Thorn::PCI {
 						// readNativeHeader({bus, device, function}, header);
 						printf("Found UHCI controller at %x:%x:%x [0=0x%llx, 1=0x%llx, 2=0x%llx, 3=0x%llx, 4=0x%llx, 5=0x%llx]\n", bus, device, function, header.bar0, header.bar1, header.bar2, header.bar3, header.bar4, header.bar5);
 						// printf("Found UHCI controller at %x:%x:%x [0=0x%lx, 1=0x%lx, 2=0x%lx, 3=0x%lx, 4=0x%lx, 5=0x%lx]\n", bus, device, function);
+						if (UHCI::controllers)
+							UHCI::controllers->push_back(UHCI::Controller(initDevice({bus, device, function})));
 					} else {
 						printf("%x,%x,%x at %x:%x:%x\n", baseclass, subclass, interface, bus, device, function);
 					}

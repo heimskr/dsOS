@@ -42,6 +42,7 @@ namespace x86_64::IDT {
 		add(32, &isr_32);
 		add(33, &isr_33);
 		add(39, &isr_39);
+		add(43, &isr_43);
 		add(46, &isr_46);
 		add(47, &isr_47);
 		asm volatile("lidt %0" :: "m"(idt_header));
@@ -119,6 +120,12 @@ void spurious_interrupt() {
 
 void irq1() {
 	Thorn::PS2Keyboard::onIRQ1();
+}
+
+void irq11() {
+	Thorn::Ports::outb(0xa0, 0x20);
+	x86_64::PIC::sendEOI(1);
+	printf("IRQ11\n");
 }
 
 void irq14() {

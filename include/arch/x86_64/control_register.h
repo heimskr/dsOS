@@ -12,14 +12,14 @@
 #define CONTROL_REGISTER4_OSXMMEXCPT (1 << 10)
 
 #ifndef __ASSEMBLER__
-#include <stddef.h>
+#include <cstdint>
 namespace x86_64 {
-	size_t getCR0();
+	uint64_t getCR0();
 	/** This will cause a #UD exception. */
-	size_t getCR1();
-	size_t getCR2();
-	size_t getCR3();
-	size_t getCR4();
+	uint64_t getCR1();
+	uint64_t getCR2();
+	uint64_t getCR3();
+	uint64_t getCR4();
 }
 #endif
 

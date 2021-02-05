@@ -150,6 +150,7 @@ timer_max: .8byte -1
 	// isr_errc   14, page_interrupt
 	// isr_noerrc 33, irq1
 	isr_noerrc 39, spurious_interrupt
+	isr_noerrc 43, irq11
 	// isr_noerrc 46, irq14
 	isr_noerrc 47, irq15
 
