@@ -13,17 +13,22 @@ namespace Thorn::UHCI {
 	constexpr uint16_t START_OF_FRAME = 0xc;
 	constexpr uint16_t PORT_STATUS = 0x10;
 
-	struct Controller {
-		PCI::Device *device;
-		uint32_t address;
-		uintptr_t bar4;
+	class Controller {
+		private:
+			void reset();
+			void resetPorts();
 
-		Controller(PCI::Device *);
-		void init();
-		void reset();
-		void enableInterrupts();
-		uint16_t portStatus(int port);
-		int countPorts();
+		public:
+			PCI::Device *device;
+			uint32_t address;
+			uintptr_t bar4;
+
+			Controller(PCI::Device *);
+			void init();
+			void enableInterrupts();
+			uint16_t portStatus(int port);
+			void setPortStatus(int port, uint16_t status);
+			int countPorts();
 	};
 
 	void init();

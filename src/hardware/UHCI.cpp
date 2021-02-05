@@ -52,6 +52,7 @@ namespace Thorn::UHCI {
 		command &= ~(1 << 7);
 		command |= 1;
 		Ports::outw(address + COMMAND, command);
+		resetPorts();
 	}
 
 	void Controller::reset() {
@@ -90,12 +91,30 @@ namespace Thorn::UHCI {
 		printf("Finished resetting UHCI controller.\n");
 	}
 
+	void Controller::resetPorts() {
+		int count = countPorts();
+		for (int port = 0; port < count; ++port) {
+			int status = portStatus(port);
+			status |= 1 << 9;
+			setPortStatus(port, status);
+			Kernel::wait(5, 100);
+			status &= ~(1 << 9);
+			setPortStatus(port, status);
+			Kernel::wait(1, 100);
+			printf("Port %d: low speed? %y\n", port, (portStatus(port) & (1 << 8)) != 0);
+		}
+	}
+
 	void Controller::enableInterrupts() {
 		Ports::outw(address + INTERRUPTS, 0xf);
 	}
 
 	uint16_t Controller::portStatus(int port) {
 		return Ports::inw(address + PORT_STATUS + 2 * port);
+	}
+
+	void Controller::setPortStatus(int port, uint16_t status) {
+		Ports::outw(address + PORT_STATUS + 2 * port, status);
 	}
 
 	int Controller::countPorts() {
