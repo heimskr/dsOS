@@ -1,9 +1,8 @@
 #ifndef TERMINAL_H_
 #define TERMINAL_H_
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 namespace Thorn {
 	struct Terminal {

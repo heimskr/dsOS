@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "Terminal.h"
 #include "ThornUtil.h"
 #include "hardware/Serial.h"
@@ -11,9 +13,7 @@ namespace Thorn {
 
 	void Terminal::clear() {
 		Serial::write("\e[2m[clear]\e[22m");
-		for (size_t y = 0; y < VGA_HEIGHT; ++y)
-			for (size_t x = 0; x < VGA_WIDTH; ++x)
-				buffer[y * VGA_WIDTH + x] = vgaEntry(' ', color);
+		memset(buffer, 0, VGA_HEIGHT * VGA_WIDTH);
 		row = column = 0;
 	}
 
@@ -53,11 +53,11 @@ namespace Thorn {
 	}
 
 	void Terminal::scrollUp(unsigned char lines) {
-		for (unsigned char i = 0; i < lines; ++i) {
-			for (size_t j = 0; j < (VGA_HEIGHT - 1) * VGA_WIDTH; ++j)
-				buffer[j] = buffer[j + VGA_WIDTH];
+		for (uint8_t i = 0; i < lines; ++i) {
+			for (uint8_t j = 0; j < VGA_HEIGHT - 1; ++j)
+				memcpy(&buffer[j * VGA_WIDTH], &buffer[(j + 1) * VGA_WIDTH], VGA_WIDTH * sizeof(buffer[0]));
 			for (size_t j = (VGA_HEIGHT - 1) * VGA_WIDTH; j < VGA_HEIGHT * VGA_WIDTH; ++j)
-				buffer[j] = vgaEntry(' ', static_cast<unsigned char>(VGAColor::LightGray));
+				buffer[j] = vgaEntry(' ', vgaEntryColor(VGAColor::LightGray, VGAColor::Black));
 		}
 	}
 
