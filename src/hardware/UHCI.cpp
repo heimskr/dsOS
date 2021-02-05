@@ -94,6 +94,16 @@ namespace Thorn::UHCI {
 		Ports::outw(address + INTERRUPTS, 0xf);
 	}
 
+	uint16_t Controller::portStatus(int port) {
+		return Ports::inw(address + PORT_STATUS + 2 * port);
+	}
+
+	int Controller::countPorts() {
+		int port;
+		for (port = 0; portStatus(port) & 0x80; ++port);
+		return port;
+	}
+
 	void init() {
 		controllers = new std::list<Controller>();
 	}

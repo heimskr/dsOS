@@ -22,6 +22,8 @@ namespace Thorn::UHCI {
 		void init();
 		void reset();
 		void enableInterrupts();
+		uint16_t portStatus(int port);
+		int countPorts();
 	};
 
 	void init();

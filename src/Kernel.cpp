@@ -161,6 +161,9 @@ namespace Thorn {
 			printf("0x10: %x\n", inw(bar4 + 0x10));
 			printf("0x12: %x\n", inw(bar4 + 0x12));
 			printf("0x34: %x\n", inb(bar4 + 0x34));
+			printf("portstatus(0) = 0x%x\n", controller.portStatus(0));
+			printf("portstatus(1) = 0x%x\n", controller.portStatus(1));
+			printf("Port count: %d\n", controller.countPorts());
 		}
 #endif
 
