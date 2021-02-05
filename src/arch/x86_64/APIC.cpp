@@ -46,6 +46,12 @@ namespace x86_64::APIC {
 		apic_base[REGISTER_TIMER_INITCNT] = timer_reload_value;
 	}
 
+	void reloadTimer(uint32_t initcnt) {
+		apic_base[REGISTER_LVT_TIMER] = BSP_VECTOR_APIC_TIMER | SELECT_TMR_PERIODIC;
+		apic_base[REGISTER_TIMER_DIV] = TIMER_SELECT_DIVIDER;
+		apic_base[REGISTER_TIMER_INITCNT] = initcnt;
+	}
+
 	uint32_t calibrateTimer() {
 		using namespace Thorn::Ports;
 		apic_base[REGISTER_LVT_TIMER] = BSP_VECTOR_APIC_TIMER;

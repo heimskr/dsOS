@@ -61,6 +61,7 @@ namespace x86_64::APIC {
 
 	void init(Thorn::Kernel &);
 	void initTimer(uint32_t frequency);
+	void reloadTimer(uint32_t initcnt);
 	uint32_t calibrateTimer();
 	void disableTimer();
 }
