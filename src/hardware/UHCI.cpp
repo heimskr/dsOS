@@ -1,4 +1,5 @@
 #include "hardware/UHCI.h"
+#include "hardware/Ports.h"
 #include "Kernel.h"
 
 namespace Thorn::UHCI {
@@ -22,6 +23,8 @@ namespace Thorn::UHCI {
 	}
 
 	void Controller::init() {
+		reset();
+
 		device->writeInt(0x34, 0);
 		device->writeInt(0x38, 0);
 
@@ -31,6 +34,64 @@ namespace Thorn::UHCI {
 		device->writeWord(PCI::COMMAND, 5);
 		// Disable legacy support for keyboards and mice.
 		device->writeWord(0xc0, 0x8f00);
+
+		enableInterrupts();
+		Ports::outw(address + FRAME_NUMBER, 0);
+		auto &pager = Kernel::getPager();
+		void *physical = pager.allocateFreePhysicalAddress();
+		if (0xffffffff < reinterpret_cast<uintptr_t>(physical)) {
+			printf("[UHCI::Controller::init] Allocated page can't be represented with 32 bits!\n");
+			return;
+		}
+
+		Ports::outl(address + FRAME_BASE, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(physical)));
+		Ports::outw(address + START_OF_FRAME, 0x40); // Just in case!
+		Ports::outw(address + STATUS, 0xffff);
+
+		uint16_t command = Ports::inw(address + COMMAND);
+		command &= ~(1 << 7);
+		command |= 1;
+		Ports::outw(address + COMMAND, command);
+	}
+
+	void Controller::reset() {
+		using namespace Thorn::Ports;
+		printf("Resetting UHCI controller.\n");
+
+		for (int i = 0; i < 5; ++i) {
+			outw(address + COMMAND, 0x0004);
+			Kernel::wait(11, 1000);
+			outw(address + COMMAND, 0x0004);
+		}
+
+		uint16_t command = inw(address + COMMAND);
+		if (command != 0) {
+			printf("Command (0x%x) isn't zero!\n", command);
+		}
+
+		const uint16_t status = inw(address + STATUS);
+		if (status != 0x20) {
+			printf("Status (0x%x) isn't 0x20!\n", status);
+		}
+
+		outw(address + STATUS, 0xff);
+		const uint16_t sof = inw(address + START_OF_FRAME);
+		if (sof != 0x40) {
+			printf("SOF (0x%x) isn't 0x40!\n", sof);
+		}
+
+		outw(address + COMMAND, 2);
+		Kernel::wait(42, 1000);
+		command = inw(address + COMMAND);
+		if (command & 2) {
+			printf("Command (0x%x) & 2 is true!\n", command);
+		}
+
+		printf("Finished resetting UHCI controller.\n");
+	}
+
+	void Controller::enableInterrupts() {
+		Ports::outw(address + INTERRUPTS, 0xf);
 	}
 
 	void init() {

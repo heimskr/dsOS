@@ -96,7 +96,7 @@ namespace Thorn {
 
 		// These three lines are incredibly janky. Fixing them is important.
 		uintptr_t bitmap_base = 0xa00000UL;
-		uintptr_t physical_start = (bitmap_base + 1'000'000UL) & ~0xfff; // 1 MB is enough to map over 30 GB.
+		uintptr_t physical_start = (bitmap_base + 5'000'000UL) & ~0xfff; // 5 MB is enough to map over 150 GB.
 		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
 
 		pager.assignSelf();
@@ -139,7 +139,7 @@ namespace Thorn {
 			printf("Found %d UHCI controller%s.\n", UHCI::controllers->size(), UHCI::controllers->size() == 1? "" : "s");
 			UHCI::Controller &controller = UHCI::controllers->front();
 			printf("First controller: %x:%x:%x\n", controller.device->bdf.bus, controller.device->bdf.device, controller.device->bdf.function);
-			// controller.init();
+			controller.init();
 
 			using namespace Thorn::Ports;
 
@@ -161,14 +161,6 @@ namespace Thorn {
 			printf("0x10: %x\n", inw(bar4 + 0x10));
 			printf("0x12: %x\n", inw(bar4 + 0x12));
 			printf("0x34: %x\n", inb(bar4 + 0x34));
-
-
-			// printf("60: %x\n", controller.device->readByte(0x60));
-			// printf("34: %x\n", controller.device->readByte(0x34));
-			// printf("dc: %x\n", controller.device->readByte(0xdc));
-			// printf("dd: %x\n", controller.device->readByte(0xdd));
-			// printf("e0: %x\n", controller.device->readWord(0xe0));
-
 		}
 #endif
 
