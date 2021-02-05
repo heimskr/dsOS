@@ -93,7 +93,7 @@ namespace Thorn::UHCI {
 
 	void Controller::resetPorts() {
 		int count = countPorts();
-		for (int port = 0; port < count; ++port) {
+		for (uint8_t port = 0; port < count; ++port) {
 			int status = portStatus(port);
 			status |= 1 << 9;
 			setPortStatus(port, status);
@@ -109,17 +109,37 @@ namespace Thorn::UHCI {
 		Ports::outw(address + INTERRUPTS, 0xf);
 	}
 
-	uint16_t Controller::portStatus(int port) {
+	uint16_t Controller::portStatus(uint8_t port) {
 		return Ports::inw(address + PORT_STATUS + 2 * port);
 	}
 
-	void Controller::setPortStatus(int port, uint16_t status) {
+	void Controller::setPortStatus(uint8_t port, uint16_t status) {
 		Ports::outw(address + PORT_STATUS + 2 * port, status);
 	}
 
+	bool Controller::portValid(uint8_t port) {
+		Ports::port_t addr = address + PORT_STATUS + 2 * port;
+		if ((Ports::inw(addr) & 0x80) == 0)
+			return false;
+
+		Ports::outw(addr, Ports::inw(addr) & ~0x80);
+		if ((Ports::inw(addr) & 0x80) == 0)
+			return false;
+
+		Ports::outw(addr, Ports::inw(addr) | 0x80);
+		if ((Ports::inw(addr) & 0x80) == 0)
+			return false;
+
+		Ports::outw(addr, Ports::inw(addr) | 0xa);
+		if (Ports::inw(addr) & 0xa)
+			return false;
+
+		return true;
+	}
+
 	int Controller::countPorts() {
-		int port;
-		for (port = 0; portStatus(port) & 0x80; ++port);
+		uint8_t port;
+		for (port = 0; portValid(port); ++port);
 		return port;
 	}
 

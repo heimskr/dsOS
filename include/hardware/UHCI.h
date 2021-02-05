@@ -26,8 +26,9 @@ namespace Thorn::UHCI {
 			Controller(PCI::Device *);
 			void init();
 			void enableInterrupts();
-			uint16_t portStatus(int port);
-			void setPortStatus(int port, uint16_t status);
+			uint16_t portStatus(uint8_t port);
+			void setPortStatus(uint8_t port, uint16_t status);
+			bool portValid(uint8_t port);
 			int countPorts();
 	};
 
