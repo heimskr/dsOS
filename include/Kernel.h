@@ -13,7 +13,6 @@ namespace Thorn {
 		private:
 			uintptr_t memoryLow = 0;
 			uintptr_t memoryHigh = 0;
-			uint64_t ticksPerMillisecond = 0;
 			Memory memory;
 
 			/** The area where page descriptors are stored. */

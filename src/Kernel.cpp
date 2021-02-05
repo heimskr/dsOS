@@ -120,19 +120,6 @@ namespace Thorn {
 
 		// printf("map size: %lu\n", map.size());
 
-
-		printf("cr4: 0x%lx\n", x86_64::getCR4());
-		uint32_t tsc_high_initial, tsc_low_initial;
-		asm volatile("rdtsc" : "=d"(tsc_high_initial), "=a"(tsc_low_initial));
-		wait(1, 1000);
-		uint32_t tsc_high_final, tsc_low_final;
-		asm volatile("rdtsc" : "=d"(tsc_high_final), "=a"(tsc_low_final));
-		uint64_t tsc_initial = tsc_low_initial | (static_cast<uint64_t>(tsc_high_initial) << 32);
-		uint64_t tsc_final = tsc_low_final | (static_cast<uint64_t>(tsc_high_final) << 32);
-		printf("%lu\n%lu\n", tsc_initial, tsc_final);
-		printf("Tick difference: %lu\n", tsc_final - tsc_initial);
-		ticksPerMillisecond = tsc_final - tsc_initial;
-
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
 
