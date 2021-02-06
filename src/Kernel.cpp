@@ -101,8 +101,13 @@ namespace Thorn {
 		x86_64::PIC::clearIRQ(14);
 		x86_64::PIC::clearIRQ(15);
 
-		UHCI::init();
-		IDE::init();
+		x86_64::APIC::initTimer(2);
+		x86_64::APIC::disableTimer();
+
+		std::string str(10000, 'a');
+
+		// UHCI::init();
+		// IDE::init();
 
 		PCI::printDevices();
 

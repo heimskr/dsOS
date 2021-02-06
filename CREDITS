@@ -391,7 +391,7 @@ the LLVM project (https://llvm.org):
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
 
-/include/hardware/PCI.h is based on code from Lemon OS:
+Some code is derived from Lemon OS:
 	Copyright (c) 2018-2020, JJ Roberts-White
 	All rights reserved.
 

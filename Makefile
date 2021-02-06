@@ -14,10 +14,10 @@ QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none,format=raw -device ahci,id=
 # QEMU_EXTRA   ?= -drive format=raw,file=disk.img
 
 # QEMU_EXTRA   := $(QEMU_EXTRA) -no-shutdown -d cpu_reset
-QEMU_EXTRA   := $(QEMU_EXTRA) -usb -device usb-kbd
+# QEMU_EXTRA   := $(QEMU_EXTRA) -device qemu-xhci -device usb-kbd
 # QEMU_EXTRA   := $(QEMU_EXTRA) -device usb-mouse
 # QEMU_EXTRA   := $(QEMU_EXTRA) -enable-kvm
-QEMU_EXTRA   := $(QEMU_EXTRA) -M accel=tcg
+# QEMU_EXTRA   := $(QEMU_EXTRA) -M accel=tcg
 # QEMU_EXTRA   := $(QEMU_EXTRA) -machine q35,kernel-irqchip=split,accel=kvm
 # QEMU_EXTRA   := $(QEMU_EXTRA) -cpu host -smp cpus=1,cores=12,maxcpus=12
 # QEMU_EXTRA   := $(QEMU_EXTRA) -S

@@ -79,6 +79,7 @@ isr_push_\id :
 	isr_common \fn
 isr_iretq_\id :
 	add $4, %rsp
+	sti
 	iretq
 .endm
 
@@ -93,6 +94,7 @@ isr_push_\id :
 	pushw $0
 	isr_common \fn
 isr_iretq_\id :
+	sti
 	iretq
 .endm
 
@@ -133,6 +135,13 @@ r12fmt: .asciz "%%r12: 0x%lx\n"
 r13fmt: .asciz "%%r13: 0x%lx\n"
 r14fmt: .asciz "%%r14: 0x%lx\n"
 r15fmt: .asciz "%%r15: 0x%lx\n"
+rbpfmt: .asciz "%%rbp: 0x%lx\n"
+rspfmt: .asciz "%%rsp: 0x%lx\n"
+csfmt: .asciz "%%cs: 0x%x\n"
+dsfmt: .asciz "%%ds: 0x%x\n"
+esfmt: .asciz "%%es: 0x%x\n"
+fsfmt: .asciz "%%fs: 0x%x\n"
+gsfmt: .asciz "%%gs: 0x%x\n"
 addrfmt: .asciz "addr: 0x%lx\n"
 gpffmt: .asciz "General protection fault!\n"
 
@@ -147,11 +156,9 @@ timer_max: .8byte -1
 .section .text
 	isr_noerrc  0, div0
 	isr_errc    8, double_fault
-	// isr_errc   14, page_interrupt
-	// isr_noerrc 33, irq1
 	isr_noerrc 39, spurious_interrupt
 	isr_noerrc 43, irq11
-	// isr_noerrc 46, irq14
+	isr_noerrc 46, irq14
 	isr_noerrc 47, irq15
 
 .global isr_13
@@ -189,6 +196,13 @@ isr_13:
 	print1 $r13fmt, 16(%rsp)
 	print1 $r14fmt, 8(%rsp)
 	print1 $r15fmt, 0(%rsp)
+	print1 $rbpfmt, %rbp
+	print1 $rspfmt, %rsp
+	print1 $csfmt, %cs
+	print1 $dsfmt, %ds
+	print1 $esfmt, %es
+	print1 $fsfmt, %fs
+	print1 $gsfmt, %gs
 	pop %r15
 	pop %r14
 	pop %r13
@@ -247,20 +261,23 @@ isr_32:
 
 isr_32_timer_check_done:
 	pop %rax
+	sti
 	iretq
 
 .global isr_33
 .type isr_33, @function
 isr_33:
 	cli
+	pushall
 	call irq1
-isr_iretq_33:
+	popall
+	sti
 	iretq
 
-.global isr_46
-.type isr_46, @function
-isr_46:
-	cli
-	call irq14
-isr_iretq_46:
-	iretq
+// .global isr_46
+// .type isr_46, @function
+// isr_46:
+// 	cli
+// 	call irq14
+// isr_iretq_46:
+// 	iretq

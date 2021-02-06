@@ -23,7 +23,7 @@ SECTIONS {
 	/* Read-write data (uninitialized) and stack */
 	.bss BLOCK(4K) : ALIGN(4K) {
 		*(COMMON)
-		*(.bss)
+		*(.bss*)
 	}
 
 	_kernel_virtual_end = .;
