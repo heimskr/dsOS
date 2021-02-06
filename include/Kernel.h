@@ -4,9 +4,10 @@
 #include <stddef.h>
 
 #include "kernel_core.h"
-#include "memory/Memory.h"
 #include "arch/x86_64/PageMeta.h"
 #include "arch/x86_64/PageTableWrapper.h"
+#include "hardware/Keyboard.h"
+#include "memory/Memory.h"
 
 namespace Thorn {
 	class Kernel {
@@ -42,6 +43,7 @@ namespace Thorn {
 			x86_64::PageMeta4K pager;
 
 			static Kernel *instance;
+			static Kernel & getInstance();
 
 			Kernel() = delete;
 			Kernel(const x86_64::PageTableWrapper &pml4_);
@@ -52,6 +54,8 @@ namespace Thorn {
 			static void perish();
 
 			void schedule();
+
+			void onKey(Keyboard::InputKey, bool down);
 
 			static void backtrace();
 			static x86_64::PageMeta4K & getPager();

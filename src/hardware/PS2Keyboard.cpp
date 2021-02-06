@@ -12,272 +12,17 @@
 uint8_t last_scancode = 0;
 
 namespace Thorn::PS2Keyboard {
-	const Scanmap scanmapNormal[0x80] = {
-		/* 0x00 */ {},
-		/* 0x01 */ {InputPage::Keyboard, InputKey::KeyEscape},
-		/* 0x02 */ {InputPage::Keyboard, InputKey::Key1},
-		/* 0x03 */ {InputPage::Keyboard, InputKey::Key2},
-		/* 0x04 */ {InputPage::Keyboard, InputKey::Key3},
-		/* 0x05 */ {InputPage::Keyboard, InputKey::Key4},
-		/* 0x06 */ {InputPage::Keyboard, InputKey::Key5},
-		/* 0x07 */ {InputPage::Keyboard, InputKey::Key6},
-		/* 0x08 */ {InputPage::Keyboard, InputKey::Key7},
-		/* 0x09 */ {InputPage::Keyboard, InputKey::Key8},
-		/* 0x0a */ {InputPage::Keyboard, InputKey::Key9},
-		/* 0x0b */ {InputPage::Keyboard, InputKey::Key0},
-		/* 0x0c */ {InputPage::Keyboard, InputKey::KeyDash},
-		/* 0x0d */ {InputPage::Keyboard, InputKey::KeyEqual},
-		/* 0x0e */ {InputPage::Keyboard, InputKey::KeyBackspace},
-		/* 0x0f */ {InputPage::Keyboard, InputKey::KeyTab},
-		/* 0x10 */ {InputPage::Keyboard, InputKey::KeyQ},
-		/* 0x11 */ {InputPage::Keyboard, InputKey::KeyW},
-		/* 0x12 */ {InputPage::Keyboard, InputKey::KeyE},
-		/* 0x13 */ {InputPage::Keyboard, InputKey::KeyR},
-		/* 0x14 */ {InputPage::Keyboard, InputKey::KeyT},
-		/* 0x15 */ {InputPage::Keyboard, InputKey::KeyY},
-		/* 0x16 */ {InputPage::Keyboard, InputKey::KeyU},
-		/* 0x17 */ {InputPage::Keyboard, InputKey::KeyI},
-		/* 0x18 */ {InputPage::Keyboard, InputKey::KeyO},
-		/* 0x19 */ {InputPage::Keyboard, InputKey::KeyP},
-		/* 0x1a */ {InputPage::Keyboard, InputKey::KeyOpenBracket},
-		/* 0x1b */ {InputPage::Keyboard, InputKey::KeyCloseBracket},
-		/* 0x1c */ {InputPage::Keyboard, InputKey::KeyEnter},
-		/* 0x1d */ {InputPage::Keyboard, InputKey::KeyLeftCtrl},
-		/* 0x1e */ {InputPage::Keyboard, InputKey::KeyA},
-		/* 0x1f */ {InputPage::Keyboard, InputKey::KeyS},
-		/* 0x20 */ {InputPage::Keyboard, InputKey::KeyD},
-		/* 0x21 */ {InputPage::Keyboard, InputKey::KeyF},
-		/* 0x22 */ {InputPage::Keyboard, InputKey::KeyG},
-		/* 0x23 */ {InputPage::Keyboard, InputKey::KeyH},
-		/* 0x24 */ {InputPage::Keyboard, InputKey::KeyJ},
-		/* 0x25 */ {InputPage::Keyboard, InputKey::KeyK},
-		/* 0x26 */ {InputPage::Keyboard, InputKey::KeyL},
-		/* 0x27 */ {InputPage::Keyboard, InputKey::KeySemicolon},
-		/* 0x28 */ {InputPage::Keyboard, InputKey::KeyApostrophe},
-		/* 0x29 */ {InputPage::Keyboard, InputKey::KeyGraveAccent},
-		/* 0x2a */ {InputPage::Keyboard, InputKey::KeyLeftShift},
-		/* 0x2b */ {InputPage::Keyboard, InputKey::KeyBackslash},
-		/* 0x2c */ {InputPage::Keyboard, InputKey::KeyZ},
-		/* 0x2d */ {InputPage::Keyboard, InputKey::KeyX},
-		/* 0x2e */ {InputPage::Keyboard, InputKey::KeyC},
-		/* 0x2f */ {InputPage::Keyboard, InputKey::KeyV},
-		/* 0x30 */ {InputPage::Keyboard, InputKey::KeyB},
-		/* 0x31 */ {InputPage::Keyboard, InputKey::KeyN},
-		/* 0x32 */ {InputPage::Keyboard, InputKey::KeyM},
-		/* 0x33 */ {InputPage::Keyboard, InputKey::KeyComma},
-		/* 0x34 */ {InputPage::Keyboard, InputKey::KeyPeriod},
-		/* 0x35 */ {InputPage::Keyboard, InputKey::KeySlash},
-		/* 0x36 */ {InputPage::Keyboard, InputKey::KeyRightShift},
-		/* 0x37 */ {InputPage::Keyboard, InputKey::KeyKpStar},
-		/* 0x38 */ {InputPage::Keyboard, InputKey::KeyLeftAlt},
-		/* 0x39 */ {InputPage::Keyboard, InputKey::KeySpacebar},
-		/* 0x3a */ {InputPage::Keyboard, InputKey::KeyCapsLock},
-		/* 0x3b */ {InputPage::Keyboard, InputKey::KeyF1},
-		/* 0x3c */ {InputPage::Keyboard, InputKey::KeyF2},
-		/* 0x3d */ {InputPage::Keyboard, InputKey::KeyF3},
-		/* 0x3e */ {InputPage::Keyboard, InputKey::KeyF4},
-		/* 0x3f */ {InputPage::Keyboard, InputKey::KeyF5},
-		/* 0x40 */ {InputPage::Keyboard, InputKey::KeyF6},
-		/* 0x41 */ {InputPage::Keyboard, InputKey::KeyF7},
-		/* 0x42 */ {InputPage::Keyboard, InputKey::KeyF8},
-		/* 0x43 */ {InputPage::Keyboard, InputKey::KeyF9},
-		/* 0x44 */ {InputPage::Keyboard, InputKey::KeyF10},
-		/* 0x45 */ {InputPage::Keyboard, InputKey::KeyNumLock},
-		/* 0x46 */ {InputPage::Keyboard, InputKey::KeyScrollLock},
-		/* 0x47 */ {InputPage::Keyboard, InputKey::KeyKp7},
-		/* 0x48 */ {InputPage::Keyboard, InputKey::KeyKp8},
-		/* 0x49 */ {InputPage::Keyboard, InputKey::KeyKp9},
-		/* 0x4a */ {InputPage::Keyboard, InputKey::KeyKpDash},
-		/* 0x4b */ {InputPage::Keyboard, InputKey::KeyKp4},
-		/* 0x4c */ {InputPage::Keyboard, InputKey::KeyKp5},
-		/* 0x4d */ {InputPage::Keyboard, InputKey::KeyKp6},
-		/* 0x4e */ {InputPage::Keyboard, InputKey::KeyKpPlus},
-		/* 0x4f */ {InputPage::Keyboard, InputKey::KeyKp1},
-		/* 0x50 */ {InputPage::Keyboard, InputKey::KeyKp2},
-		/* 0x51 */ {InputPage::Keyboard, InputKey::KeyKp3},
-		/* 0x52 */ {InputPage::Keyboard, InputKey::KeyKp0},
-		/* 0x53 */ {InputPage::Keyboard, InputKey::KeyKpPeriod},
-		/* 0x54 */ {InputPage::Keyboard, InputKey::KeySysReq},
-		/* 0x55 */ {},
-		/* 0x56 */ {InputPage::Keyboard, InputKey::KeyEurope2},
-		/* 0x57 */ {InputPage::Keyboard, InputKey::KeyF11},
-		/* 0x58 */ {InputPage::Keyboard, InputKey::KeyF12},
-		/* 0x59 */ {InputPage::Keyboard, InputKey::KeyKpEqual},
-		/* 0x5a */ {},
-		/* 0x5b */ {},
-		/* 0x5c */ {InputPage::Keyboard, InputKey::KeyI10L2},
-		/* 0x5d */ {},
-		/* 0x5e */ {},
-		/* 0x5f */ {},
-		/* 0x60 */ {},
-		/* 0x61 */ {},
-		/* 0x62 */ {},
-		/* 0x63 */ {},
-		/* 0x64 */ {InputPage::Keyboard, InputKey::KeyF13},
-		/* 0x65 */ {InputPage::Keyboard, InputKey::KeyF14},
-		/* 0x66 */ {InputPage::Keyboard, InputKey::KeyF15},
-		/* 0x67 */ {InputPage::Keyboard, InputKey::KeyF16},
-		/* 0x68 */ {InputPage::Keyboard, InputKey::KeyF17},
-		/* 0x69 */ {InputPage::Keyboard, InputKey::KeyF18},
-		/* 0x6a */ {InputPage::Keyboard, InputKey::KeyF19},
-		/* 0x6b */ {InputPage::Keyboard, InputKey::KeyF20},
-		/* 0x6c */ {InputPage::Keyboard, InputKey::KeyF21},
-		/* 0x6d */ {InputPage::Keyboard, InputKey::KeyF22},
-		/* 0x6e */ {InputPage::Keyboard, InputKey::KeyF23},
-		/* 0x6f */ {},
-		/* 0x70 */ {InputPage::Keyboard, InputKey::KeyI10L2},
-		/* 0x71 */ {InputPage::Keyboard, InputKey::KeyLang1}, // Release-only
-		/* 0x72 */ {InputPage::Keyboard, InputKey::KeyLang1}, // Release-only
-		/* 0x73 */ {InputPage::Keyboard, InputKey::KeyI10L1},
-		/* 0x74 */ {},
-		/* 0x75 */ {},
-		/* 0x76 */ {InputPage::Keyboard, InputKey::KeyF24}, // Either F24 or LANG_5
-		/* 0x77 */ {InputPage::Keyboard, InputKey::KeyLang4},
-		/* 0x78 */ {InputPage::Keyboard, InputKey::KeyLang3},
-		/* 0x79 */ {InputPage::Keyboard, InputKey::KeyI10L4},
-		/* 0x7a */ {},
-		/* 0x7b */ {InputPage::Keyboard, InputKey::KeyI10L5},
-		/* 0x7c */ {},
-		/* 0x7d */ {InputPage::Keyboard, InputKey::KeyI10L3},
-		/* 0x7e */ {InputPage::Keyboard, InputKey::KeyEqualSign},
-		/* 0x7f */ {}
-	};
-
-	const char *keyNames[0x80] = {
-		/* 0x00 */ "Invalid",
-		/* 0x01 */ "Escape",
-		/* 0x02 */ "1",
-		/* 0x03 */ "2",
-		/* 0x04 */ "3",
-		/* 0x05 */ "4",
-		/* 0x06 */ "5",
-		/* 0x07 */ "6",
-		/* 0x08 */ "7",
-		/* 0x09 */ "8",
-		/* 0x0a */ "9",
-		/* 0x0b */ "0",
-		/* 0x0c */ "Dash",
-		/* 0x0d */ "Equal",
-		/* 0x0e */ "Backspace",
-		/* 0x0f */ "Tab",
-		/* 0x10 */ "Q",
-		/* 0x11 */ "W",
-		/* 0x12 */ "E",
-		/* 0x13 */ "R",
-		/* 0x14 */ "T",
-		/* 0x15 */ "Y",
-		/* 0x16 */ "U",
-		/* 0x17 */ "I",
-		/* 0x18 */ "O",
-		/* 0x19 */ "P",
-		/* 0x1a */ "OpenBracket",
-		/* 0x1b */ "CloseBracket",
-		/* 0x1c */ "Enter",
-		/* 0x1d */ "LeftCtrl",
-		/* 0x1e */ "A",
-		/* 0x1f */ "S",
-		/* 0x20 */ "D",
-		/* 0x21 */ "F",
-		/* 0x22 */ "G",
-		/* 0x23 */ "H",
-		/* 0x24 */ "J",
-		/* 0x25 */ "K",
-		/* 0x26 */ "L",
-		/* 0x27 */ "Semicolon",
-		/* 0x28 */ "Apostrophe",
-		/* 0x29 */ "GraveAccent",
-		/* 0x2a */ "LeftShift",
-		/* 0x2b */ "Backslash",
-		/* 0x2c */ "Z",
-		/* 0x2d */ "X",
-		/* 0x2e */ "C",
-		/* 0x2f */ "V",
-		/* 0x30 */ "B",
-		/* 0x31 */ "N",
-		/* 0x32 */ "M",
-		/* 0x33 */ "Comma",
-		/* 0x34 */ "Period",
-		/* 0x35 */ "Slash",
-		/* 0x36 */ "RightShift",
-		/* 0x37 */ "KpStar",
-		/* 0x38 */ "LeftAlt",
-		/* 0x39 */ "Spacebar",
-		/* 0x3a */ "CapsLock",
-		/* 0x3b */ "F1",
-		/* 0x3c */ "F2",
-		/* 0x3d */ "F3",
-		/* 0x3e */ "F4",
-		/* 0x3f */ "F5",
-		/* 0x40 */ "F6",
-		/* 0x41 */ "F7",
-		/* 0x42 */ "F8",
-		/* 0x43 */ "F9",
-		/* 0x44 */ "F10",
-		/* 0x45 */ "NumLock",
-		/* 0x46 */ "ScrollLock",
-		/* 0x47 */ "Kp7",
-		/* 0x48 */ "Kp8",
-		/* 0x49 */ "Kp9",
-		/* 0x4a */ "KpDash",
-		/* 0x4b */ "Kp4",
-		/* 0x4c */ "Kp5",
-		/* 0x4d */ "Kp6",
-		/* 0x4e */ "KpPlus",
-		/* 0x4f */ "Kp1",
-		/* 0x50 */ "Kp2",
-		/* 0x51 */ "Kp3",
-		/* 0x52 */ "Kp0",
-		/* 0x53 */ "KpPeriod",
-		/* 0x54 */ "SysReq",
-		/* 0x55 */ "Invalid",
-		/* 0x56 */ "Europe2",
-		/* 0x57 */ "F11",
-		/* 0x58 */ "F12",
-		/* 0x59 */ "KpEqual",
-		/* 0x5a */ "Invalid",
-		/* 0x5b */ "Invalid",
-		/* 0x5c */ "I10L2",
-		/* 0x5d */ "Invalid",
-		/* 0x5e */ "Invalid",
-		/* 0x5f */ "Invalid",
-		/* 0x60 */ "Invalid",
-		/* 0x61 */ "Invalid",
-		/* 0x62 */ "Invalid",
-		/* 0x63 */ "Invalid",
-		/* 0x64 */ "F13",
-		/* 0x65 */ "F14",
-		/* 0x66 */ "F15",
-		/* 0x67 */ "F16",
-		/* 0x68 */ "F17",
-		/* 0x69 */ "F18",
-		/* 0x6a */ "F19",
-		/* 0x6b */ "F20",
-		/* 0x6c */ "F21",
-		/* 0x6d */ "F22",
-		/* 0x6e */ "F23",
-		/* 0x6f */ "Invalid",
-		/* 0x70 */ "I10L2",
-		/* 0x71 */ "Lang1",
-		/* 0x72 */ "Lang1",
-		/* 0x73 */ "I10L1",
-		/* 0x74 */ "Invalid",
-		/* 0x75 */ "Invalid",
-		/* 0x76 */ "F24/Lang5",
-		/* 0x77 */ "Lang4",
-		/* 0x78 */ "Lang3",
-		/* 0x79 */ "I10L4",
-		/* 0x7a */ "Invalid",
-		/* 0x7b */ "I10L5",
-		/* 0x7c */ "Invalid",
-		/* 0x7d */ "I10L3",
-		/* 0x7e */ "EqualSign",
-		/* 0x7f */ "Invalid"
-	};
+	Scanmap scanmapNormal[0x80];
 
 	void onIRQ1() {
 		x86_64::PIC::sendEOI(1);
 		uint8_t scancode = Thorn::Ports::inb(0x60);
+		Keyboard::InputKey key = scanmapNormal[scancode & ~0x80].key;
+		if (key == Keyboard::InputKey::Invalid)
+			scancode &= 0x80;
 		last_scancode = scancode;
+
+		Keyboard::onKey(key, (scancode & 0x80) == 0);
 
 #ifdef PS2_KEYBOARD_DEBUG
 		if (scancode & 0x80)
@@ -286,4 +31,135 @@ namespace Thorn::PS2Keyboard {
 			printf("%s (0x%x) down\n", keyNames[scancode], scancode);
 #endif
 	}
+
+	void init() {
+		scanmapNormal[0x00] = Scanmap();
+		scanmapNormal[0x01] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyEscape);
+		scanmapNormal[0x02] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key1);
+		scanmapNormal[0x03] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key2);
+		scanmapNormal[0x04] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key3);
+		scanmapNormal[0x05] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key4);
+		scanmapNormal[0x06] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key5);
+		scanmapNormal[0x07] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key6);
+		scanmapNormal[0x08] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key7);
+		scanmapNormal[0x09] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key8);
+		scanmapNormal[0x0a] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key9);
+		scanmapNormal[0x0b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::Key0);
+		scanmapNormal[0x0c] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyDash);
+		scanmapNormal[0x0d] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyEqual);
+		scanmapNormal[0x0e] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyBackspace);
+		scanmapNormal[0x0f] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyTab);
+		scanmapNormal[0x10] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyQ);
+		scanmapNormal[0x11] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyW);
+		scanmapNormal[0x12] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyE);
+		scanmapNormal[0x13] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyR);
+		scanmapNormal[0x14] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyT);
+		scanmapNormal[0x15] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyY);
+		scanmapNormal[0x16] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyU);
+		scanmapNormal[0x17] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyI);
+		scanmapNormal[0x18] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyO);
+		scanmapNormal[0x19] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyP);
+		scanmapNormal[0x1a] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyOpenBracket);
+		scanmapNormal[0x1b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyCloseBracket);
+		scanmapNormal[0x1c] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyEnter);
+		scanmapNormal[0x1d] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLeftCtrl);
+		scanmapNormal[0x1e] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyA);
+		scanmapNormal[0x1f] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyS);
+		scanmapNormal[0x20] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyD);
+		scanmapNormal[0x21] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF);
+		scanmapNormal[0x22] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyG);
+		scanmapNormal[0x23] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyH);
+		scanmapNormal[0x24] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyJ);
+		scanmapNormal[0x25] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyK);
+		scanmapNormal[0x26] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyL);
+		scanmapNormal[0x27] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeySemicolon);
+		scanmapNormal[0x28] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyApostrophe);
+		scanmapNormal[0x29] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyGraveAccent);
+		scanmapNormal[0x2a] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLeftShift);
+		scanmapNormal[0x2b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyBackslash);
+		scanmapNormal[0x2c] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyZ);
+		scanmapNormal[0x2d] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyX);
+		scanmapNormal[0x2e] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyC);
+		scanmapNormal[0x2f] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyV);
+		scanmapNormal[0x30] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyB);
+		scanmapNormal[0x31] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyN);
+		scanmapNormal[0x32] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyM);
+		scanmapNormal[0x33] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyComma);
+		scanmapNormal[0x34] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyPeriod);
+		scanmapNormal[0x35] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeySlash);
+		scanmapNormal[0x36] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyRightShift);
+		scanmapNormal[0x37] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKpStar);
+		scanmapNormal[0x38] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLeftAlt);
+		scanmapNormal[0x39] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeySpacebar);
+		scanmapNormal[0x3a] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyCapsLock);
+		scanmapNormal[0x3b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF1);
+		scanmapNormal[0x3c] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF2);
+		scanmapNormal[0x3d] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF3);
+		scanmapNormal[0x3e] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF4);
+		scanmapNormal[0x3f] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF5);
+		scanmapNormal[0x40] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF6);
+		scanmapNormal[0x41] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF7);
+		scanmapNormal[0x42] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF8);
+		scanmapNormal[0x43] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF9);
+		scanmapNormal[0x44] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF10);
+		scanmapNormal[0x45] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyNumLock);
+		scanmapNormal[0x46] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyScrollLock);
+		scanmapNormal[0x47] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp7);
+		scanmapNormal[0x48] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp8);
+		scanmapNormal[0x49] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp9);
+		scanmapNormal[0x4a] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKpDash);
+		scanmapNormal[0x4b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp4);
+		scanmapNormal[0x4c] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp5);
+		scanmapNormal[0x4d] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp6);
+		scanmapNormal[0x4e] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKpPlus);
+		scanmapNormal[0x4f] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp1);
+		scanmapNormal[0x50] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp2);
+		scanmapNormal[0x51] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp3);
+		scanmapNormal[0x52] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKp0);
+		scanmapNormal[0x53] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKpPeriod);
+		scanmapNormal[0x54] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeySysReq);
+		scanmapNormal[0x55] = Scanmap();
+		scanmapNormal[0x56] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyEurope2);
+		scanmapNormal[0x57] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF11);
+		scanmapNormal[0x58] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF12);
+		scanmapNormal[0x59] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyKpEqual);
+		scanmapNormal[0x5a] = Scanmap();
+		scanmapNormal[0x5b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLeftMeta);
+		scanmapNormal[0x5c] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyI10L2);
+		scanmapNormal[0x5d] = Scanmap();
+		scanmapNormal[0x5e] = Scanmap();
+		scanmapNormal[0x5f] = Scanmap();
+		scanmapNormal[0x60] = Scanmap();
+		scanmapNormal[0x61] = Scanmap();
+		scanmapNormal[0x62] = Scanmap();
+		scanmapNormal[0x63] = Scanmap();
+		scanmapNormal[0x64] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF13);
+		scanmapNormal[0x65] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF14);
+		scanmapNormal[0x66] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF15);
+		scanmapNormal[0x67] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF16);
+		scanmapNormal[0x68] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF17);
+		scanmapNormal[0x69] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF18);
+		scanmapNormal[0x6a] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF19);
+		scanmapNormal[0x6b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF20);
+		scanmapNormal[0x6c] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF21);
+		scanmapNormal[0x6d] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF22);
+		scanmapNormal[0x6e] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF23);
+		scanmapNormal[0x6f] = Scanmap();
+		scanmapNormal[0x70] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyI10L2);
+		scanmapNormal[0x71] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLang1); // Release-only
+		scanmapNormal[0x72] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLang1); // Release-only
+		scanmapNormal[0x73] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyI10L1);
+		scanmapNormal[0x74] = Scanmap();
+		scanmapNormal[0x75] = Scanmap();
+		scanmapNormal[0x76] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyF24); // Either F24 or LANG_5
+		scanmapNormal[0x77] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLang4);
+		scanmapNormal[0x78] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyLang3);
+		scanmapNormal[0x79] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyI10L4);
+		scanmapNormal[0x7a] = Scanmap();
+		scanmapNormal[0x7b] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyI10L5);
+		scanmapNormal[0x7c] = Scanmap();
+		scanmapNormal[0x7d] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyI10L3);
+		scanmapNormal[0x7e] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyEqualSign);
+		scanmapNormal[0x7f] = Scanmap();
+	};
 }

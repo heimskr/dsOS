@@ -121,7 +121,6 @@ void spurious_interrupt() {
 void irq1() {
 	Thorn::Ports::outb(0xa0, 0x20);
 	x86_64::PIC::sendEOI(1);
-	printf("IRQ1\n");
 	Thorn::PS2Keyboard::onIRQ1();
 }
 

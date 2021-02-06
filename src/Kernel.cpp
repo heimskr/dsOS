@@ -108,6 +108,7 @@ namespace Thorn {
 
 		// UHCI::init();
 		// IDE::init();
+		PS2Keyboard::init();
 
 		PCI::printDevices();
 
@@ -115,6 +116,15 @@ namespace Thorn {
 
 		runTests();
 		perish();
+	}
+
+	Kernel & Kernel::getInstance() {
+		if (!instance) {
+			printf("Kernel instance is null!\n");
+			for (;;) asm("hlt");
+		}
+
+		return *instance;
 	}
 
 	void Kernel::backtrace() {
@@ -132,6 +142,13 @@ namespace Thorn {
 		backtrace();
 	}
 
+	void Kernel::onKey(Keyboard::InputKey key, bool down) {
+		if (!down)
+			return;
+		printf("Key: %s %s + %s\n", Keyboard::toString(key).c_str(), down? "down" : "up",
+			Keyboard::modifierString().c_str());
+	}
+
 	void Kernel::detectMemory() {
 		struct multiboot_tag *tag;
 		unsigned long addr = (unsigned long) multiboot_data;
@@ -146,14 +163,14 @@ namespace Thorn {
 			return;
 		}
 
-		for (tag = (struct multiboot_tag *) (addr + 8);
+		for (tag = (multiboot_tag *) (addr + 8);
 			tag->type != MULTIBOOT_TAG_TYPE_END;
-			tag = (struct multiboot_tag *) ((multiboot_uint8_t *) tag + ((tag->size + 7) & ~7))) {
+			tag = (multiboot_tag *) ((multiboot_uint8_t *) tag + ((tag->size + 7) & ~7))) {
 
 			switch (tag->type) {
 				case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
-					memoryLow  = ((struct multiboot_tag_basic_meminfo *) tag)->mem_lower * 1024;
-					memoryHigh = ((struct multiboot_tag_basic_meminfo *) tag)->mem_upper * 1024;
+					memoryLow  = ((multiboot_tag_basic_meminfo *) tag)->mem_lower * 1024;
+					memoryHigh = ((multiboot_tag_basic_meminfo *) tag)->mem_upper * 1024;
 
 					// If the kernel is in the memory space given by multiboot, increase memoryLow to just past it.
 					if (memoryLow <= (uintptr_t) this && (uintptr_t) this < memoryHigh)
@@ -164,18 +181,18 @@ namespace Thorn {
 
 #ifdef DEBUG_MMAP
 					printf("mem_lower = %uKB, mem_upper = %uKB\n",
-						((struct multiboot_tag_basic_meminfo *) tag)->mem_lower,
-						((struct multiboot_tag_basic_meminfo *) tag)->mem_upper);
+						((multiboot_tag_basic_meminfo *) tag)->mem_lower,
+						((multiboot_tag_basic_meminfo *) tag)->mem_upper);
 #endif
 					break;
 #ifdef DEBUG_MMAP
 				case MULTIBOOT_TAG_TYPE_MMAP: {
 					multiboot_memory_map_t *mmap;
 					// printf("mmap\n");
-					for (mmap = ((struct multiboot_tag_mmap *) tag)->entries;
+					for (mmap = ((multiboot_tag_mmap *) tag)->entries;
 						(multiboot_uint8_t *) mmap < (multiboot_uint8_t *) tag + tag->size;
 						mmap = (multiboot_memory_map_t *)
-								((unsigned long) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
+								((uintptr_t) mmap + ((struct multiboot_tag_mmap *) tag)->entry_size)) {
 						// uint64_t addr_high = (uint64_t) mmap->addr_high << 32;
 						// uint64_t len_high = (uint64_t) mmap->len_high << 32;
 						// printf(" base_addr = 0x%lx, length = 0x%lx, type = %u\n", (uint64_t) mmap->addr_low | addr_high, (uint64_t) mmap->len_low | len_high, mmap->type);
