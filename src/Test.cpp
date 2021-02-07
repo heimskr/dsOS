@@ -454,13 +454,32 @@ namespace Thorn {
 	void list(const std::vector<std::string> &pieces, InputContext &context) {
 		if (pieces.size() < 2) {
 			printf("Not enough arguments.\n");
-			return;
-		}
-
-		if (pieces[1] == "ahci") {
+		} else if (pieces[1] == "ahci") {
 			listAHCI(pieces, context);
 		} else if (pieces[1] == "gpt") {
 			listGPT(pieces, context);
+		} else if (pieces[1] == "port" || pieces[1] == "ports") {
+			listPorts(pieces, context);
+		} else {
+			printf("Usage:\n- list ahci\n- list gpt\n- list port\n");
+		}
+	}
+
+	void listPorts(const std::vector<std::string> &pieces, InputContext &context) {
+		if (!context.controller) {
+			printf("No controller is selected.\n");
+			return;
+		}
+
+		for (int i = 0; i < 32; ++i) {
+			if (context.controller->ports[i]) {
+				printf("[%d] %s: \"", i, AHCI::deviceTypes[static_cast<int>(context.controller->ports[i]->type)]);
+				ATA::DeviceInfo info;
+				context.controller->ports[i]->identify(info);
+				char model[41];
+				info.copyModel(model);
+				printf("%s\"\n", model);
+			}
 		}
 	}
 

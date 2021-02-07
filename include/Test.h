@@ -40,6 +40,7 @@ namespace Thorn {
 	void select(const std::vector<std::string> &, InputContext &);
 	void selectPartition(size_t partition_index, InputContext &);
 	void list(const std::vector<std::string> &, InputContext &);
+	void listPorts(const std::vector<std::string> &, InputContext &);
 	void listGPT(const std::vector<std::string> &, InputContext &);
 	void listAHCI(const std::vector<std::string> &, InputContext &);
 	void make(const std::vector<std::string> &, InputContext &);
