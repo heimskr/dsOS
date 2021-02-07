@@ -46,6 +46,8 @@ namespace Thorn {
 		static void putEntryAt(char c, uint8_t color, size_t x, size_t y);
 		static void putChar(char);
 		static void nextLine();
+		static void left(uint8_t = 1, bool wrap = true);
+		static void right(uint8_t = 1, bool wrap = true);
 		static void scrollUp(unsigned char lines);
 		static void write(const char *, size_t);
 		static void write(const char *);

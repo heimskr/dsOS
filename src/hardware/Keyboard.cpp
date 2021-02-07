@@ -4,12 +4,16 @@
 namespace Thorn::Keyboard {
 	uint8_t modifiers = 0;
 	bool capslock = false;
+	bool numlock = true;
 
 	void onKey(InputKey key, bool down) {
 		if (key == InputKey::Invalid)
 			return;
+
 		if (key == InputKey::KeyCapsLock && down)
 			capslock = !capslock;
+		if (key == InputKey::KeyNumLock && down)
+			numlock = !numlock;
 
 		if (down) {
 			switch (key) {
@@ -107,6 +111,21 @@ namespace Thorn::Keyboard {
 	}
 
 	InputKey transform(InputKey key) {
+		if (numlock) {
+			switch (key) {
+				case InputKey::KeyKp0: key = InputKey::KeyInsert; break;
+				case InputKey::KeyKp1: key = InputKey::KeyEnd; break;
+				case InputKey::KeyKp2: key = InputKey::KeyDownArrow; break;
+				case InputKey::KeyKp3: key = InputKey::KeyPageDown; break;
+				case InputKey::KeyKp4: key = InputKey::KeyLeftArrow; break;
+				case InputKey::KeyKp6: key = InputKey::KeyRightArrow; break;
+				case InputKey::KeyKp7: key = InputKey::KeyHome; break;
+				case InputKey::KeyKp8: key = InputKey::KeyUpArrow; break;
+				case InputKey::KeyKp9: key = InputKey::KeyPageUp; break;
+				default: break;
+			}
+		}
+
 		if (hasModifier(Modifier::Shift)) {
 			switch (key) {
 				case InputKey::KeyGraveAccent: return InputKey::KeyTilde;

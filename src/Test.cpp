@@ -27,7 +27,6 @@
 
 namespace Thorn {
 	void runTests() {
-		printf("Hello.\n");
 		// testUHCI();
 		// testAHCI();
 		testPS2Keyboard();

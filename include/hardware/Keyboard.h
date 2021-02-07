@@ -66,6 +66,7 @@ namespace Thorn::Keyboard {
 
 	extern uint8_t modifiers;
 	extern bool capslock;
+	extern bool numlock;
 
 	/** Applies shift/capslock transforms to an InputKey. */
 	InputKey transform(InputKey);

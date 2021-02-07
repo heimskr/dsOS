@@ -52,6 +52,34 @@ namespace Thorn {
 		}
 	}
 
+	void Terminal::left(uint8_t amount, bool wrap) {
+		if (wrap) {
+			uint8_t move_up = amount / VGA_WIDTH;
+			amount %= VGA_WIDTH;
+			if (column < amount) {
+				++move_up;
+				column += VGA_WIDTH - amount;
+			} else
+				column -= amount;
+			row = move_up <= row? row - move_up : 0;
+		} else
+			column = amount <= column? column - amount : 0;
+	}
+
+	void Terminal::right(uint8_t amount, bool wrap) {
+		if (wrap) {
+			uint8_t move_down = amount / VGA_WIDTH;
+			amount %= VGA_WIDTH;
+			if (VGA_WIDTH <= column + amount) {
+				++move_down;
+				column += amount - VGA_WIDTH;
+			} else
+				column += amount;
+			row = VGA_HEIGHT <= row + move_down? VGA_HEIGHT - 1: (row + move_down);
+		} else
+			column = VGA_WIDTH <= column + amount? VGA_WIDTH - 1 : (column + amount);
+	}
+
 	void Terminal::scrollUp(unsigned char lines) {
 		for (uint8_t i = 0; i < lines; ++i) {
 			for (uint8_t j = 0; j < VGA_HEIGHT - 1; ++j)
