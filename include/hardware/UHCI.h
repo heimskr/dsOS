@@ -33,24 +33,24 @@ namespace Thorn::UHCI {
 	};
 
 	struct TransferDescriptor {
-		bool terminate: 1;
-		bool queue: 1;
-		uint8_t rsv0: 2;
+		uint32_t terminate: 1;
+		uint32_t queue: 1;
+		uint32_t rsv0: 2;
 		uint32_t linkPointer: 28;
-		uint16_t actualLength: 11;
-		uint8_t rsv1: 5;
-		uint8_t status: 8;
-		bool interruptOnComplete: 1;
-		bool isochronousSelect: 1;
-		bool lowSpeed: 1;
-		uint8_t errorCount: 2;
-		bool shortPacketDetect: 1;
-		uint8_t rsv2: 2;
-		uint8_t packetIdentification: 8; // IN (0x69), OUT (0xe1) or SETUP (0x2d)
-		uint8_t deviceAddress: 7;
-		uint8_t endPointer: 4;
-		bool dataToggle: 1;
-		uint8_t rsv3: 1;
+		uint32_t actualLength: 11;
+		uint32_t rsv1: 5;
+		uint32_t status: 8;
+		uint32_t interruptOnComplete: 1;
+		uint32_t isochronousSelect: 1;
+		uint32_t lowSpeed: 1;
+		uint32_t errorCount: 2;
+		uint32_t shortPacketDetect: 1;
+		uint32_t rsv2: 2;
+		uint32_t packetIdentification: 8; // IN (0x69), OUT (0xe1) or SETUP (0x2d)
+		uint32_t deviceAddress: 7;
+		uint32_t endPointer: 4;
+		uint32_t dataToggle: 1;
+		uint32_t rsv3: 1;
 		uint16_t maxLength: 11;
 		uint32_t bufferPointer;
 		uint32_t rsv4;
