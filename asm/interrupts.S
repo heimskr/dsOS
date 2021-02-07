@@ -144,6 +144,7 @@ gpffmt: .asciz "General protection fault!\n"
 .data
 ticks: .8byte 0
 timer_max: .8byte -1
+rbp13: .8byte 0
 // last_scancode: .byte 0
 .global ticks
 .global timer_max
@@ -163,6 +164,7 @@ timer_max: .8byte -1
 .type isr_13, @function
 isr_13:
 	cli
+	mov %rbp, (rbp13)
 	push %rax
 	push %rbx
 	push %rcx
@@ -177,6 +179,9 @@ isr_13:
 	push %r13
 	push %r14
 	push %r15
+
+	mov (rbp13), %rdi
+	call _ZN5Thorn6Kernel9backtraceEPm
 
 	print0 $gpffmt
 	print1 $addrfmt, 120(%rsp)
@@ -216,7 +221,7 @@ isr_13:
 	pop %rcx
 	pop %rbx
 	pop %rax
-	1: jmp 1b
+	1: hlt; jmp 1b
 	iretq
 
 .global isr_14

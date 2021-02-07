@@ -1,8 +1,8 @@
 #ifndef LIB_PRINTF_H_
 #define LIB_PRINTF_H_
 #include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 extern "C" {
 	extern bool printf_putc;

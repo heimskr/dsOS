@@ -2,6 +2,8 @@
 
 CC           := clang -target x86_64-elf
 CPP          := clang++ -target x86_64-elf
+# CC           := x86_64-elf-gcc
+# CPP          := x86_64-elf-g++
 AS           := x86_64-elf-g++
 SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -fno-pie -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
@@ -19,7 +21,7 @@ QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none,format=raw -device ahci,id=
 QEMU_EXTRA   := $(QEMU_EXTRA) -enable-kvm
 QEMU_EXTRA   := $(QEMU_EXTRA) -cpu host -smp cpus=1,cores=12,maxcpus=12
 # QEMU_EXTRA   := $(QEMU_EXTRA) -M accel=tcg
-QEMU_EXTRA   := $(QEMU_EXTRA) -machine q35,kernel-irqchip=split,accel=kvm
+# QEMU_EXTRA   := $(QEMU_EXTRA) -machine q35,kernel-irqchip=split,accel=kvm
 # QEMU_EXTRA   := $(QEMU_EXTRA) -S
 # QEMU_EXTRA   := $(QEMU_EXTRA) disk.img
 

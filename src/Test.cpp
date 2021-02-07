@@ -28,6 +28,7 @@
 namespace Thorn {
 	void runTests() {
 		// testUHCI();
+		// initAHCI();
 		// testAHCI();
 		testPS2Keyboard();
 	}
@@ -69,9 +70,7 @@ namespace Thorn {
 		}
 	}
 
-	void testAHCI() {
-		AHCI::Controller *last_controller = nullptr;
-
+	void initAHCI() {
 		for (uint32_t bus = 0; bus < 256; ++bus)
 			for (uint32_t device = 0; device < 32; ++device)
 				for (uint32_t function = 0; function < 8; ++function) {
@@ -87,19 +86,18 @@ namespace Thorn {
 					AHCI::controllers->push_back(AHCI::Controller(PCI::initDevice({bus, device, function})));
 					AHCI::Controller &controller = AHCI::controllers->back();
 					if (!Kernel::instance) {
-						printf("[testAHCI] Kernel instance is null!\n");
+						printf("[initAHCI] Kernel instance is null!\n");
 						return;
 					}
 					controller.init(*Kernel::instance);
-					last_controller = &controller;
 					volatile AHCI::HBAMemory *abar = controller.abar;
 					printf("Controller at %x:%x:%x (abar = 0x%llx):", bus, device, function, abar);
 					printf(" %dL.%dP ", controller.device->getInterruptLine(), controller.device->getInterruptPin());
 					printf(" cap=%b", abar->cap);
 					printf("\n");
-					// wait(1);
 
 					for (int i = 0; i < 32; ++i) {
+						printf("Hello. %d\n", i);
 						volatile AHCI::HBAPort &port = abar->ports[i];
 						if (port.clb == 0)
 							continue;
@@ -108,102 +106,109 @@ namespace Thorn {
 						controller.ports[i]->init();
 						ATA::DeviceInfo info;
 						controller.ports[i]->identify(info);
-						// wait(5);
 
 						char model[41];
 						info.copyModel(model);
 						printf("Model: \"%s\"\n", model);
 						printf("%d done.\n", i);
 					}
-					printf("\nNext.\n");
+					printf("Loop done.\n");
 				}
-		printf("Done.\n");
+		Serial::write("[[finished initializing ahci]]\n");
+		printf("Finished initializing AHCI.\n");
+	}
 
-		if (last_controller) {
-			MBR mbr;
-			AHCI::Port *port = nullptr;
-			for (int i = 0; i < 32; ++i)
-				if (last_controller->ports[i]) {
-					port = last_controller->ports[i];
-					break;
-				}
-			if (port) {
-				port->read(0, 512, &mbr);
-				if (mbr.indicatesGPT()) {
-					GPT::Header gpt;
-					port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
-					printf("Signature:   0x%lx\n", gpt.signature);
-					printf("Revision:    %d\n", gpt.revision);
-					printf("Header size: %d\n", gpt.headerSize);
-					printf("Current LBA: %ld\n", gpt.currentLBA);
-					printf("Other LBA:   %ld\n", gpt.otherLBA);
-					printf("First LBA:   %ld\n", gpt.firstLBA);
-					printf("Last LBA:    %ld\n", gpt.lastLBA);
-					printf("Start LBA:   %ld\n", gpt.startLBA);
-					printf("Partitions:  %d\n", gpt.partitionCount);
-					printf("Entry size:  %d\n", gpt.partitionEntrySize);
-					size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA;
-					gpt.guid.print(true);
-					if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
-						printf("Unsupported partition entry size.\n");
-					} else {
-						GPT::PartitionEntry first_entry;
-						for (unsigned i = 0; i < gpt.partitionCount; ++i) {
-							GPT::PartitionEntry entry;
-							port->readBytes(gpt.partitionEntrySize, offset, &entry);
-							if (entry.typeGUID) {
-								printf("Partition %d: \"", i);
-								entry.printName(false);
-								printf("\", type GUID[%s], partition GUID[%s], first[%ld], last[%ld]\n",
-									std::string(entry.typeGUID).c_str(), std::string(entry.partitionGUID).c_str(),
-									entry.firstLBA, entry.lastLBA);
-								if (!first_entry.typeGUID)
-									first_entry = entry;
-							}
-							offset += gpt.partitionEntrySize;
+	void testAHCI() {
+		if (AHCI::controllers->empty()) {
+			printf("[testAHCI] No AHCI controllers found.\n");
+			return;
+		}
+
+		AHCI::Controller &last_controller = AHCI::controllers->back();
+
+		MBR mbr;
+		AHCI::Port *port = nullptr;
+		for (int i = 0; i < 32; ++i)
+			if (last_controller.ports[i]) {
+				port = last_controller.ports[i];
+				break;
+			}
+		if (port) {
+			port->read(0, 512, &mbr);
+			if (mbr.indicatesGPT()) {
+				GPT::Header gpt;
+				port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
+				printf("Signature:   0x%lx\n", gpt.signature);
+				printf("Revision:    %d\n", gpt.revision);
+				printf("Header size: %d\n", gpt.headerSize);
+				printf("Current LBA: %ld\n", gpt.currentLBA);
+				printf("Other LBA:   %ld\n", gpt.otherLBA);
+				printf("First LBA:   %ld\n", gpt.firstLBA);
+				printf("Last LBA:    %ld\n", gpt.lastLBA);
+				printf("Start LBA:   %ld\n", gpt.startLBA);
+				printf("Partitions:  %d\n", gpt.partitionCount);
+				printf("Entry size:  %d\n", gpt.partitionEntrySize);
+				size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA;
+				gpt.guid.print(true);
+				if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
+					printf("Unsupported partition entry size.\n");
+				} else {
+					GPT::PartitionEntry first_entry;
+					for (unsigned i = 0; i < gpt.partitionCount; ++i) {
+						GPT::PartitionEntry entry;
+						port->readBytes(gpt.partitionEntrySize, offset, &entry);
+						if (entry.typeGUID) {
+							printf("Partition %d: \"", i);
+							entry.printName(false);
+							printf("\", type GUID[%s], partition GUID[%s], first[%ld], last[%ld]\n",
+								std::string(entry.typeGUID).c_str(), std::string(entry.partitionGUID).c_str(),
+								entry.firstLBA, entry.lastLBA);
+							if (!first_entry.typeGUID)
+								first_entry = entry;
 						}
+						offset += gpt.partitionEntrySize;
+					}
 
-						if (first_entry.typeGUID) {
-							printf("Using partition \"%s\".\n", std::string(first_entry).c_str());
-							Device::AHCIDevice device(port);
-							FS::Partition partition(&device, first_entry.firstLBA * AHCI::Port::BLOCKSIZE,
-								(first_entry.lastLBA - first_entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
-							using namespace FS::ThornFAT;
-							auto driver = std::make_unique<ThornFATDriver>(&partition);
-							driver->make(sizeof(DirEntry) * 5);
-							printf("Made a ThornFAT partition.\n");
-							int status;
+					if (first_entry.typeGUID) {
+						printf("Using partition \"%s\".\n", std::string(first_entry).c_str());
+						Device::AHCIDevice device(port);
+						FS::Partition partition(&device, first_entry.firstLBA * AHCI::Port::BLOCKSIZE,
+							(first_entry.lastLBA - first_entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
+						using namespace FS::ThornFAT;
+						auto driver = std::make_unique<ThornFATDriver>(&partition);
+						driver->make(sizeof(DirEntry) * 5);
+						printf("Made a ThornFAT partition.\n");
+						int status;
 
-							printf("\e[32;1;4mFirst readdir.\e[0m\n");
-							status = driver->readdir("/", [](const char *path, off_t offset) {
-								printf("\"%s\" @ %ld\n", path, offset); });
-							if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+						printf("\e[32;1;4mFirst readdir.\e[0m\n");
+						status = driver->readdir("/", [](const char *path, off_t offset) {
+							printf("\"%s\" @ %ld\n", path, offset); });
+						if (status != 0) printf("readdir failed: %s\n", strerror(-status));
 
-							printf("\e[32;1;4mCreating foo.\e[0m\n");
-							status = driver->create("/foo", 0666);
-							if (status != 0) printf("create failed: %s\n", strerror(-status));
+						printf("\e[32;1;4mCreating foo.\e[0m\n");
+						status = driver->create("/foo", 0666);
+						if (status != 0) printf("create failed: %s\n", strerror(-status));
 
-							printf("\e[32;1;4mReaddir after creating foo.\e[0m\n");
-							status = driver->readdir("/", [](const char *path, off_t offset) {
-								printf("\"%s\" @ %ld\n", path, offset); });
-							if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+						printf("\e[32;1;4mReaddir after creating foo.\e[0m\n");
+						status = driver->readdir("/", [](const char *path, off_t offset) {
+							printf("\"%s\" @ %ld\n", path, offset); });
+						if (status != 0) printf("readdir failed: %s\n", strerror(-status));
 
-							printf("\e[32;1;4mCreating bar.\e[0m\n");
-							status = driver->create("/bar", 0666);
-							if (status != 0) printf("create failed: %s\n", strerror(-status));
+						printf("\e[32;1;4mCreating bar.\e[0m\n");
+						status = driver->create("/bar", 0666);
+						if (status != 0) printf("create failed: %s\n", strerror(-status));
 
-							printf("\e[32;1;4mReaddir after creating bar.\e[0m\n");
-							status = driver->readdir("/", [](const char *path, off_t offset) {
-								printf("\"%s\" @ %ld\n", path, offset); });
-							if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+						printf("\e[32;1;4mReaddir after creating bar.\e[0m\n");
+						status = driver->readdir("/", [](const char *path, off_t offset) {
+							printf("\"%s\" @ %ld\n", path, offset); });
+						if (status != 0) printf("readdir failed: %s\n", strerror(-status));
 
-							printf("\e[32;1;4mDone.\e[0m\n");
-							driver->superblock.print();
-						}
+						printf("\e[32;1;4mDone.\e[0m\n");
+						driver->superblock.print();
 					}
 				}
-			} else printf(":[\n");
-		} else printf(":(\n");
+			}
+		} else printf(":[\n");
 	}
 
 	void testPS2Keyboard() {
@@ -334,8 +339,32 @@ namespace Thorn {
 
 		printf("\n");
 
+		using namespace FS::ThornFAT;
+
+		static FS::Partition *partition = nullptr;
+		static ThornFATDriver *driver = nullptr;
+		static AHCI::Controller *controller = nullptr;
+
 		if (pieces[0] == "hello") {
 			printf("How are you?\n");
+		} else if (pieces[0] == "list") {
+			if (pieces.size() < 2) {
+				printf("Not enough arguments.\n");
+			} else if (pieces[1] == "ahci") {
+				
+			}
+		} else if (pieces[0] == "init") {
+			if (pieces.size() < 2) {
+				printf("Not enough arguments.\n");
+			} else if (pieces[1] == "ahci") {
+				initAHCI();
+			}
+		} else if (pieces[0] == "make") {
+			if (!driver) {
+				printf("Error: Driver isn't ready.\n");
+			} else {
+				driver->make(sizeof(DirEntry) * 5);
+			}
 		} else {
 			printf("Unknown command.\n");
 		}
