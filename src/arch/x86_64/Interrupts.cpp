@@ -116,30 +116,29 @@ void page_interrupt() {
 
 void spurious_interrupt() {
 	printf("Spurious interrupt\n");
+	x86_64::PIC::sendEOI(7);
 }
 
 void irq1() {
-	x86_64::PIC::sendEOI(1);
 	scancodes_fifo.push(Thorn::Ports::inb(0x60));
-	// if (scancode_index < 8)
-	// 	scancodes[scancode_index++] = Thorn::Ports::inb(0x60);
+	x86_64::PIC::sendEOI(1);
 }
 
 void irq11() {
-	x86_64::PIC::sendEOI(11);
 	printf("IRQ11\n");
+	x86_64::PIC::sendEOI(11);
 }
 
 void irq14() {
-	x86_64::PIC::sendEOI(14);
 	printf("IRQ14\n");
+	x86_64::PIC::sendEOI(14);
 	for (;;) asm("hlt");
 	// irqInvoked = 1;
 }
 
 void irq15() {
-	x86_64::PIC::sendEOI(15);
 	printf("IRQ15\n");
+	x86_64::PIC::sendEOI(15);
 	for (;;) asm("hlt");
 	// irqInvoked = 1;
 }
