@@ -71,6 +71,8 @@ namespace Thorn {
 	}
 
 	void initAHCI() {
+		AHCI::controllers.clear();
+
 		for (uint32_t bus = 0; bus < 256; ++bus)
 			for (uint32_t device = 0; device < 32; ++device)
 				for (uint32_t function = 0; function < 8; ++function) {
@@ -83,8 +85,8 @@ namespace Thorn {
 					if (baseclass != 1 || subclass != 6)
 						continue;
 
-					AHCI::controllers->push_back(AHCI::Controller(PCI::initDevice({bus, device, function})));
-					AHCI::Controller &controller = AHCI::controllers->back();
+					AHCI::controllers.push_back(AHCI::Controller(PCI::initDevice({bus, device, function})));
+					AHCI::Controller &controller = AHCI::controllers.back();
 					if (!Kernel::instance) {
 						printf("[initAHCI] Kernel instance is null!\n");
 						return;
@@ -97,7 +99,6 @@ namespace Thorn {
 					printf("\n");
 
 					for (int i = 0; i < 32; ++i) {
-						printf("Hello. %d\n", i);
 						volatile AHCI::HBAPort &port = abar->ports[i];
 						if (port.clb == 0)
 							continue;
@@ -112,19 +113,17 @@ namespace Thorn {
 						printf("Model: \"%s\"\n", model);
 						printf("%d done.\n", i);
 					}
-					printf("Loop done.\n");
 				}
-		Serial::write("[[finished initializing ahci]]\n");
 		printf("Finished initializing AHCI.\n");
 	}
 
 	void testAHCI() {
-		if (AHCI::controllers->empty()) {
+		if (AHCI::controllers.empty()) {
 			printf("[testAHCI] No AHCI controllers found.\n");
 			return;
 		}
 
-		AHCI::Controller &last_controller = AHCI::controllers->back();
+		AHCI::Controller &last_controller = AHCI::controllers.back();
 
 		MBR mbr;
 		AHCI::Port *port = nullptr;
@@ -351,7 +350,22 @@ namespace Thorn {
 			if (pieces.size() < 2) {
 				printf("Not enough arguments.\n");
 			} else if (pieces[1] == "ahci") {
-				
+				if (AHCI::controllers.empty()) {
+					printf("No AHCI controllers found.\n");
+				} else {
+					printf("AHCI controllers:\n", AHCI::controllers.size());
+					size_t i = 0;
+					for (AHCI::Controller &controller: AHCI::controllers) {
+						const auto &bdf = controller.device->bdf;
+						printf("[%d] %x:%x:%x: ports =", i, bdf.bus, bdf.device, bdf.function);
+						for (int i = 0; i < 32; ++i)
+							if (controller.ports[i])
+								printf(" %d", i);
+						printf("\n");
+						++i;
+					}
+					printf("Done.\n");
+				}
 			}
 		} else if (pieces[0] == "init") {
 			if (pieces.size() < 2) {

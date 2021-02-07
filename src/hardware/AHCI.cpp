@@ -6,7 +6,7 @@
 #include "lib/printf.h"
 
 namespace Thorn::AHCI {
-	std::vector<Controller> *controllers;
+	std::vector<Controller> controllers;
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};
 
@@ -16,6 +16,7 @@ namespace Thorn::AHCI {
 
 	void Controller::init(Kernel &kernel) {
 		uint16_t command = device->getCommand();
+		memset(ports, 0, sizeof(ports));
 		command = (command & ~PCI::COMMAND_INT_DISABLE) | PCI::COMMAND_MEMORY | PCI::COMMAND_MASTER;
 		device->setCommand(command);
 		abar = (HBAMemory *) (uintptr_t) (device->getBAR(5) & ~0xf);

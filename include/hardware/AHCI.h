@@ -409,5 +409,5 @@ namespace Thorn::AHCI {
 			void init(Kernel &);
 	};
 
-	extern std::vector<Controller> *controllers;
+	extern std::vector<Controller> controllers;
 }

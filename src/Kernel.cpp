@@ -92,7 +92,6 @@ namespace Thorn {
 		pager.assignSelf();
 		pager.clear();
 
-		AHCI::controllers = new std::vector<AHCI::Controller>();
 		x86_64::APIC::init(*this);
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);

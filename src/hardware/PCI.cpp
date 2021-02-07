@@ -323,7 +323,7 @@ namespace Thorn::PCI {
 					const uint32_t interface = getProgIF(bus, device, function);
 
 					if (baseclass == 1 && subclass == 6) {
-						AHCI::controllers->push_back(AHCI::Controller(initDevice({bus, device, function})));
+						AHCI::controllers.push_back(AHCI::Controller(initDevice({bus, device, function})));
 						printf("Found AHCI controller at %x:%x:%x.\n", bus, device, function);
 					} else if (baseclass == 12 && subclass == 3 && interface == 0) {
 						// Bizarrely, this prevents a general protection fault caused by a return to an invalid address.
