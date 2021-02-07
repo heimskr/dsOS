@@ -148,8 +148,10 @@ gpffmt: .asciz "General protection fault!\n"
 .data
 ticks: .8byte 0
 timer_max: .8byte -1
+last_scancode: .byte 0
 .global ticks
 .global timer_max
+.global last_scancode
 
 
 
@@ -268,9 +270,16 @@ isr_32_timer_check_done:
 .type isr_33, @function
 isr_33:
 	cli
-	pushall
-	call irq1
-	popall
+	push %rax
+
+	// Send EOI
+	movb $0x61, %al
+	outb %al, $0x20
+
+	inb $0x60, %al
+	movb %al, (last_scancode)
+
+	pop %rax
 	sti
 	iretq
 

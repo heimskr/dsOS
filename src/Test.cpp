@@ -1,4 +1,3 @@
-
 #include "Kernel.h"
 #include "Terminal.h"
 #include "Test.h"
@@ -212,9 +211,52 @@ namespace Thorn {
 			uint8_t scancode = last_scancode;
 			last_scancode = 0;
 			Keyboard::InputKey key = PS2Keyboard::scanmapNormal[scancode & ~0x80].key;
+			bool down = (scancode & 0x80) == 0;
 			if (key == Keyboard::InputKey::Invalid)
 				scancode &= 0x80;
+
 			Keyboard::onKey(key, (scancode & 0x80) == 0);
+			key = Keyboard::transform(key);
+
+			if (down) {
+				switch (key) {
+					case Keyboard::InputKey::KeyLeftArrow:
+						Terminal::left();
+						break;
+					case Keyboard::InputKey::KeyRightArrow:
+						Terminal::right();
+						break;
+					case Keyboard::InputKey::KeyBackspace:
+						Terminal::left();
+						printf(" ");
+						Terminal::left();
+						break;
+					case Keyboard::InputKey::KeyEnter:
+						printf("\n");
+						break;
+					case Keyboard::InputKey::KeyLeftShift:
+					case Keyboard::InputKey::KeyRightShift:
+					case Keyboard::InputKey::KeyLeftAlt:
+					case Keyboard::InputKey::KeyRightAlt:
+					case Keyboard::InputKey::KeyLeftCtrl:
+					case Keyboard::InputKey::KeyRightCtrl:
+					case Keyboard::InputKey::KeyLeftMeta:
+					case Keyboard::InputKey::KeyRightMeta:
+					case Keyboard::InputKey::Invalid:
+						break;
+					default:
+						printf("%c", Keyboard::toString(key).front());
+				}
+			}
+
+
+
+
+
+
+
+
+
 
 #if 0
 			if (scancode == (0x2c | 0x80)) { // z

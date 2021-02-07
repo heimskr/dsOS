@@ -143,18 +143,18 @@ namespace Thorn {
 	}
 
 	void Kernel::onKey(Keyboard::InputKey key, bool down) {
-		if (!down)
-			return;
-		switch (key) {
-			case Keyboard::InputKey::KeyLeftArrow:
-				Terminal::left();
-				break;
-			case Keyboard::InputKey::KeyRightArrow:
-				Terminal::right();
-				break;
-			default:
-				printf("%c", Keyboard::toString(key).front());
-		}
+		// if (!down)
+		// 	return;
+		// switch (key) {
+		// 	case Keyboard::InputKey::KeyLeftArrow:
+		// 		Terminal::left();
+		// 		break;
+		// 	case Keyboard::InputKey::KeyRightArrow:
+		// 		Terminal::right();
+		// 		break;
+		// 	default:
+		// 		printf("%c", Keyboard::toString(key).front());
+		// }
 		// printf("Key: %s %s + %s\n", Keyboard::toString(key).c_str(), down? "down" : "up",
 		// 	Keyboard::modifierString().c_str());
 	}

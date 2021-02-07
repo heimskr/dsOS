@@ -119,28 +119,24 @@ void spurious_interrupt() {
 }
 
 void irq1() {
-	// Thorn::Ports::outb(0xa0, 0x20);
 	x86_64::PIC::sendEOI(1);
 	last_scancode = Thorn::Ports::inb(0x60);
 }
 
 void irq11() {
-	Thorn::Ports::outb(0xa0, 0x20);
-	x86_64::PIC::sendEOI(1);
+	x86_64::PIC::sendEOI(11);
 	printf("IRQ11\n");
 }
 
 void irq14() {
-	Thorn::Ports::outb(0xa0, 0x20);
-	x86_64::PIC::sendEOI(1);
+	x86_64::PIC::sendEOI(14);
 	printf("IRQ14\n");
 	for (;;) asm("hlt");
 	// irqInvoked = 1;
 }
 
 void irq15() {
-	Thorn::Ports::outb(0xa0, 0x20);
-	x86_64::PIC::sendEOI(1);
+	x86_64::PIC::sendEOI(15);
 	printf("IRQ15\n");
 	for (;;) asm("hlt");
 	// irqInvoked = 1;

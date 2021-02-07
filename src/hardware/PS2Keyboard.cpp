@@ -9,8 +9,6 @@
 
 // #define PS2_KEYBOARD_DEBUG
 
-volatile uint8_t last_scancode = 0;
-
 namespace Thorn::PS2Keyboard {
 	Scanmap scanmapNormal[0x80];
 
