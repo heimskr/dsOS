@@ -11,6 +11,7 @@ namespace Thorn::FS {
 
 namespace Thorn::AHCI {
 	class Controller;
+	class Port;
 }
 
 namespace Thorn {
@@ -25,11 +26,14 @@ namespace Thorn {
 		FS::Partition *partition = nullptr;
 		FS::ThornFAT::ThornFATDriver *driver = nullptr;
 		AHCI::Controller *controller = nullptr;
+		AHCI::Port *port = nullptr;
 		size_t ahciIndex = -1;
 	};
 
 	void init(const std::vector<std::string> &, InputContext &);
+	void select(const std::vector<std::string> &, InputContext &);
 	void list(const std::vector<std::string> &, InputContext &);
+	void listGPT(const std::vector<std::string> &, InputContext &);
 	void listAHCI(const std::vector<std::string> &, InputContext &);
 	void make(const std::vector<std::string> &, InputContext &);
 }

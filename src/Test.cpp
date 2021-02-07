@@ -346,6 +346,8 @@ namespace Thorn {
 			list(pieces, context);
 		} else if (pieces[0] == "init") {
 			init(pieces, context);
+		} else if (pieces[0] == "select" || pieces[0] == "sel") {
+			select(pieces, context);
 		} else if (pieces[0] == "make") {
 			make(pieces, context);
 		} else {
@@ -361,11 +363,115 @@ namespace Thorn {
 		}
 	}
 
+	void select(const std::vector<std::string> &pieces, InputContext &context) {
+		auto usage = [] { printf("Usage:\n- select controller <#>\n- select port <#>\n- select partition <#>\n"); };
+
+		if (pieces.size() == 3) {
+			if (pieces[1] == "controller") {
+				size_t controller_index;
+				if (!Util::parseUlong(pieces[2], controller_index)) {
+					usage();
+				} else if (AHCI::controllers.size() <= controller_index) {
+					printf("Controller index out of range.\n");
+				} else {
+					context.controller = &AHCI::controllers[controller_index];
+					printf("Selected controller %lu.\n", controller_index);
+				}
+			} else if (pieces[1] == "port") {
+				if (!context.controller) {
+					printf("No controller is selected.\n");
+					return;
+				}
+
+				AHCI::Controller &controller = *context.controller;
+				size_t port_index;
+				if (!Util::parseUlong(pieces[2], port_index)) {
+					usage();
+				} else if (32 <= port_index) {
+					printf("Port index out of range.\n");
+				} else if (!controller.ports[port_index]) {
+					printf("Invalid port.\n");
+				} else {
+					context.port = controller.ports[port_index];
+				}
+			} else {
+				usage();
+			}
+		} else {
+			usage();
+		}
+	}
+
 	void list(const std::vector<std::string> &pieces, InputContext &context) {
 		if (pieces.size() < 2) {
 			printf("Not enough arguments.\n");
-		} else if (pieces[1] == "ahci") {
+			return;
+		}
+
+		if (pieces[1] == "ahci") {
 			listAHCI(pieces, context);
+		} else if (pieces[1] == "gpt") {
+			listGPT(pieces, context);
+		}
+	}
+
+	void listGPT(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() != 4) {
+			printf("Usage: list gpt <controller> <port>\n");
+			return;
+		}
+
+		size_t controller_index;
+		if (!Util::parseUlong(pieces[2], controller_index) || AHCI::controllers.size() <= controller_index) {
+			printf("Invalid controller index: %s\n", pieces[2].c_str());
+			return;
+		}
+
+		AHCI::Controller &controller = AHCI::controllers[controller_index];
+		size_t port_index;
+		if (!Util::parseUlong(pieces[3], port_index) || !controller.ports[port_index]) {
+			printf("Invalid port index: %s\n", pieces[3].c_str());
+			return;
+		}
+
+		AHCI::Port *port = controller.ports[port_index];
+		MBR mbr;
+		port->read(0, 512, &mbr);
+		if (!mbr.indicatesGPT()) {
+			printf("MBR doesn't indicate the presence of a GPT.\n");
+			return;
+		}
+
+		GPT::Header gpt;
+		port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
+		printf("Signature:   0x%lx\n", gpt.signature);
+		printf("Revision:    %d\n",    gpt.revision);
+		printf("Header size: %d\n",    gpt.headerSize);
+		printf("Current LBA: %ld\n",   gpt.currentLBA);
+		printf("Other LBA:   %ld\n",   gpt.otherLBA);
+		printf("First LBA:   %ld\n",   gpt.firstLBA);
+		printf("Last LBA:    %ld\n",   gpt.lastLBA);
+		printf("Start LBA:   %ld\n",   gpt.startLBA);
+		printf("Partitions:  %d\n",    gpt.partitionCount);
+		printf("Entry size:  %d\n",    gpt.partitionEntrySize);
+		size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA;
+		printf("GUID:        %s\n", std::string(gpt.guid).c_str());
+		if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
+			printf("Unsupported partition entry size.\n");
+			return;
+		}
+
+		for (unsigned i = 0; i < gpt.partitionCount; ++i) {
+			GPT::PartitionEntry entry;
+			port->readBytes(gpt.partitionEntrySize, offset, &entry);
+			if (entry.typeGUID) {
+				printf("Partition %d: \"", i);
+				entry.printName(false);
+				printf("\"\n  Type GUID: %s\n  Partition GUID: %s\n  First = %ld, last = %ld\n",
+					std::string(entry.typeGUID).c_str(), std::string(entry.partitionGUID).c_str(), entry.firstLBA,
+					entry.lastLBA);
+			}
+			offset += gpt.partitionEntrySize;
 		}
 	}
 
@@ -406,6 +512,8 @@ namespace Thorn {
 					}
 				}
 			}
+		} else {
+			printf("Usage:\n- list ahci\n- list ahci <controller>\n");
 		}
 	}
 

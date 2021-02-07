@@ -9,6 +9,9 @@ namespace Thorn::Util {
 	bool parseLong(const std::string &, long &out, int base = 10);
 	bool parseLong(const std::string *, long &out, int base = 10);
 	bool parseLong(const char *, long &out, int base = 10);
+	bool parseUlong(const std::string &, unsigned long &out, int base = 10);
+	bool parseUlong(const std::string *, unsigned long &out, int base = 10);
+	bool parseUlong(const char *, unsigned long &out, int base = 10);
 
 	template <typename T>
 	inline T upalign(T number, int alignment) {
