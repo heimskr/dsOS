@@ -119,9 +119,9 @@ void spurious_interrupt() {
 }
 
 void irq1() {
-	Thorn::Ports::outb(0xa0, 0x20);
+	// Thorn::Ports::outb(0xa0, 0x20);
 	x86_64::PIC::sendEOI(1);
-	Thorn::PS2Keyboard::onIRQ1();
+	last_scancode = Thorn::Ports::inb(0x60);
 }
 
 void irq11() {

@@ -154,10 +154,9 @@ namespace Thorn {
 				break;
 			default:
 				printf("%c", Keyboard::toString(key).front());
-				// printf("%s", Keyboard::toString(key).c_str());
-				// printf("Key: %s %s + %s\n", Keyboard::toString(key).c_str(), down? "down" : "up",
-				// 	Keyboard::modifierString().c_str());
 		}
+		// printf("Key: %s %s + %s\n", Keyboard::toString(key).c_str(), down? "down" : "up",
+		// 	Keyboard::modifierString().c_str());
 	}
 
 	void Kernel::detectMemory() {

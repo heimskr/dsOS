@@ -9,20 +9,14 @@
 
 // #define PS2_KEYBOARD_DEBUG
 
-uint8_t last_scancode = 0;
+volatile uint8_t last_scancode = 0;
 
 namespace Thorn::PS2Keyboard {
 	Scanmap scanmapNormal[0x80];
 
 	void onIRQ1() {
-		x86_64::PIC::sendEOI(1);
 		uint8_t scancode = Thorn::Ports::inb(0x60);
-		Keyboard::InputKey key = scanmapNormal[scancode & ~0x80].key;
-		if (key == Keyboard::InputKey::Invalid)
-			scancode &= 0x80;
 		last_scancode = scancode;
-
-		Keyboard::onKey(key, (scancode & 0x80) == 0);
 
 #ifdef PS2_KEYBOARD_DEBUG
 		if (scancode & 0x80)

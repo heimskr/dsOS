@@ -208,7 +208,16 @@ namespace Thorn {
 
 	void testPS2Keyboard() {
 		for (;;) {
-			if (last_scancode == (0x2c | 0x80)) { // z
+			// asm volatile("cli");
+			uint8_t scancode = last_scancode;
+			last_scancode = 0;
+			Keyboard::InputKey key = PS2Keyboard::scanmapNormal[scancode & ~0x80].key;
+			if (key == Keyboard::InputKey::Invalid)
+				scancode &= 0x80;
+			Keyboard::onKey(key, (scancode & 0x80) == 0);
+
+#if 0
+			if (scancode == (0x2c | 0x80)) { // z
 				last_scancode = 0;
 				printf("Hello!\n");
 				std::string str(50000, 'A');
@@ -224,7 +233,7 @@ namespace Thorn {
 				}
 				printf(")\n");
 				printf("[%s:%d]\n", __FILE__, __LINE__);
-			} else if (last_scancode == (0x2b | 0x80)) { // backslash
+			} else if (scancode == (0x2b | 0x80)) { // backslash
 				// last_scancode = 0;
 				// char buffer[2048] = {0};
 				// printf(":: 0x%lx\n", &irqInvoked);
@@ -240,6 +249,8 @@ namespace Thorn {
 				// printf_putc = true;
 				// printf("\"%s\"\n", buffer);
 			}
+#endif
+			// asm volatile("sti");
 			asm volatile("hlt");
 		}
 	}
