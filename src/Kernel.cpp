@@ -96,8 +96,6 @@ namespace Thorn {
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
 
-		printf(" _ctors_end = 0x%lx\n&_ctors_end = 0x%lx\n", _ctors_end, &_ctors_end);
-
 		// Initialize global variables.
 		unsigned ctor_count = ((uintptr_t) &_ctors_end - (uintptr_t) &_ctors_start) / sizeof(void *);
 		for (unsigned i = 0; i < ctor_count; ++i)
@@ -111,15 +109,15 @@ namespace Thorn {
 		x86_64::APIC::initTimer(2);
 		x86_64::APIC::disableTimer();
 
-		std::string str(10000, 'a');
+		// std::string str(10000, 'a');
 
 		// UHCI::init();
 		// IDE::init();
 		PS2Keyboard::init();
 
-		PCI::printDevices();
+		// PCI::printDevices();
 
-		PCI::scan();
+		// PCI::scan();
 
 		runTests();
 		perish();

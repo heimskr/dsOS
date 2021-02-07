@@ -49,13 +49,17 @@ namespace Thorn::AHCI {
 		for (int i = 0; i < 32; ++i) {
 			if ((pi >> i) & 1) {
 				volatile HBAPort &port = abar->ports[i];
+
 				if (((port.ssts >> 8) & 0x0f) != HBA_PORT_IPM_ACTIVE || (port.ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_PRESENT) {
-					printf("Skipping port %d\n", i);
+					printf("Skipping port %d (%y %y)\n", i, ((port.ssts >> 8) & 0x0f) != HBA_PORT_IPM_ACTIVE,
+						(port.ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_PRESENT);
+					printf("SATA status: 0x%x\n", port.ssts);
 					continue;
 				}
 
 				if (!(port.sig == SIG_ATAPI || port.sig == SIG_PM || port.sig == SIG_SEMB)) {
 					printf("Found SATA drive on port %d\n", i);
+					printf("SATA status: 0x%x\n", port.ssts);
 				}
 			}
 		}
