@@ -35,6 +35,7 @@ header_end:
 .comm multiboot_magic, 4
 .comm multiboot_data, 8
 .comm page_tables, (PAGE_TABLE_SIZE * 1024), PAGE_TABLE_ALIGNMENT
+.comm __dso_handle, 8
 
 .data
 .align GDT_TABLE_ALIGNMENT

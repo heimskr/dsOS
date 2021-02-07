@@ -33,7 +33,7 @@ namespace Thorn::UHCI {
 		// Enable bus mastering and IO access.
 		device->writeWord(PCI::COMMAND, 5);
 		// Disable legacy support for keyboards and mice.
-		device->writeWord(0xc0, 0x8f00);
+		// device->writeWord(0xc0, 0x8f00);
 
 		enableInterrupts();
 		Ports::outw(address + FRAME_NUMBER, 0);

@@ -8,6 +8,10 @@ SECTIONS {
 	.text BLOCK(4K) : ALIGN(4K) {
 		*(.multiboot)
 		*(.text)
+		. = ALIGN(8);
+        _ctors_start = .;
+        KEEP(*(.init_array .ctors))
+        _ctors_end = .;
 	}
 
 	/* Read-only data. */

@@ -120,7 +120,9 @@ void spurious_interrupt() {
 
 void irq1() {
 	x86_64::PIC::sendEOI(1);
-	last_scancode = Thorn::Ports::inb(0x60);
+	scancodes_fifo.push(Thorn::Ports::inb(0x60));
+	// if (scancode_index < 8)
+	// 	scancodes[scancode_index++] = Thorn::Ports::inb(0x60);
 }
 
 void irq11() {

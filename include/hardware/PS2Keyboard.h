@@ -1,10 +1,12 @@
 #pragma once
 
+#include <queue>
+
 #include "hardware/Keyboard.h"
 
 // Based on code from MINIX3.
 
-extern volatile uint8_t last_scancode;
+extern std::queue<uint8_t> scancodes_fifo;
 
 namespace Thorn::PS2Keyboard {
 	void onIRQ1();

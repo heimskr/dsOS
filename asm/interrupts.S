@@ -73,11 +73,9 @@
 .type isr_\id , @function
 isr_\id :
 	cli
-isr_push_\id :
 	pushw $0
 	pushw $\id
 	isr_common \fn
-isr_iretq_\id :
 	add $4, %rsp
 	sti
 	iretq
@@ -90,10 +88,8 @@ isr_iretq_\id :
 .type isr_\id , @function
 isr_\id :
 	cli
-isr_push_\id :
 	pushw $0
 	isr_common \fn
-isr_iretq_\id :
 	sti
 	iretq
 .endm
@@ -148,10 +144,10 @@ gpffmt: .asciz "General protection fault!\n"
 .data
 ticks: .8byte 0
 timer_max: .8byte -1
-last_scancode: .byte 0
+// last_scancode: .byte 0
 .global ticks
 .global timer_max
-.global last_scancode
+// .global last_scancode
 
 
 
@@ -239,9 +235,6 @@ isr_32:
 	push %rsi
 	incq (ticks)
 
-	// print1 $timerfmt, (ticks)
-	// print1 $timerfmt, %rax
-
 	movq (apic_base), %rax
 	add $0xb0, %rax
 	movl $0, (%rax)
@@ -266,27 +259,29 @@ isr_32_timer_check_done:
 	sti
 	iretq
 
+// .global isr_33
+// .type isr_33, @function
+// isr_33:
+// 	cli
+// 	push %rax
+
+// 	inb $0x60, %al
+// 	movb %al, (last_scancode)
+
+// 	// Send EOI
+// 	movb $0x61, %al
+// 	outb %al, $0x20
+
+// 	pop %rax
+// 	sti
+// 	iretq
+
 .global isr_33
 .type isr_33, @function
 isr_33:
 	cli
-	push %rax
-
-	// Send EOI
-	movb $0x61, %al
-	outb %al, $0x20
-
-	inb $0x60, %al
-	movb %al, (last_scancode)
-
-	pop %rax
+	pushall
+	call irq1
+	popall
 	sti
 	iretq
-
-// .global isr_46
-// .type isr_46, @function
-// isr_46:
-// 	cli
-// 	call irq14
-// isr_iretq_46:
-// 	iretq

@@ -13,7 +13,7 @@ namespace Thorn {
 
 	void Terminal::clear() {
 		Serial::write("\e[2m[clear]\e[22m");
-		memset(buffer, 0, VGA_HEIGHT * VGA_WIDTH);
+		memset(buffer, 0, VGA_HEIGHT * VGA_WIDTH * 2);
 		row = column = 0;
 	}
 

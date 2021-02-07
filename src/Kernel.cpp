@@ -27,6 +27,7 @@
 #include "hardware/SATA.h"
 #include "hardware/Serial.h"
 #include "hardware/UHCI.h"
+#include "lib/globals.h"
 #include "memory/memset.h"
 #include "multiboot2.h"
 #include "arch/x86_64/APIC.h"
@@ -96,6 +97,11 @@ namespace Thorn {
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
 
+		// Initialize global variables.
+		unsigned ctor_count = ((uintptr_t) &_ctors_end - (uintptr_t) &_ctors_start) / sizeof(void *);
+		for (unsigned i = 0; i < ctor_count; ++i)
+			_ctors_start[i]();
+
 		x86_64::PIC::clearIRQ(1);
 		x86_64::PIC::clearIRQ(11);
 		x86_64::PIC::clearIRQ(14);
@@ -143,6 +149,8 @@ namespace Thorn {
 	}
 
 	void Kernel::onKey(Keyboard::InputKey key, bool down) {
+		(void) key;
+		(void) down;
 		// if (!down)
 		// 	return;
 		// switch (key) {
