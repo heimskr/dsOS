@@ -338,71 +338,82 @@ namespace Thorn {
 
 		printf("\n");
 
-		using namespace FS::ThornFAT;
-
-		static FS::Partition *partition = nullptr;
-		static ThornFATDriver *driver = nullptr;
-		static AHCI::Controller *controller = nullptr;
-		static size_t ahci_index = -1;
+		static InputContext context;
 
 		if (pieces[0] == "hello") {
 			printf("How are you?\n");
 		} else if (pieces[0] == "list") {
-			if (pieces.size() < 2) {
-				printf("Not enough arguments.\n");
-			} else if (pieces[1] == "ahci") {
-				if (pieces.size() == 2) {
-					if (AHCI::controllers.empty()) {
-						printf("No AHCI controllers found.\n");
-					} else {
-						printf("AHCI controllers:\n", AHCI::controllers.size());
-						size_t i = 0;
-						for (AHCI::Controller &controller: AHCI::controllers) {
-							const auto &bdf = controller.device->bdf;
-							printf("[%d] %x:%x:%x: ports =", i, bdf.bus, bdf.device, bdf.function);
-							for (int i = 0; i < 32; ++i)
-								if (controller.ports[i])
-									printf(" %d", i);
-							printf("\n");
-							++i;
-						}
-						printf("Done.\n");
-					}
-				} else if (pieces.size() == 3) {
-					long index;
-					if (!Util::parseLong(pieces[2], index)) {
-						printf("Invalid number: %s\n", pieces[2].c_str());
-					} else if (AHCI::controllers.size() <= static_cast<size_t>(index)) {
-						printf("Invalid index: %ld\n", index);
-					} else {
-						AHCI::Controller &controller = AHCI::controllers[index];
-						for (int i = 0; i < 32; ++i) {
-							if (controller.ports[i]) {
-								printf("[%d] %s: \"", i, AHCI::deviceTypes[static_cast<int>(controller.ports[i]->type)]);
-								ATA::DeviceInfo info;
-								controller.ports[i]->identify(info);
-								char model[41];
-								info.copyModel(model);
-								printf("%s\"\n", model);
-							}
-						}
+			list(pieces, context);
+		} else if (pieces[0] == "init") {
+			init(pieces, context);
+		} else if (pieces[0] == "make") {
+			make(pieces, context);
+		} else {
+			printf("Unknown command.\n");
+		}
+	}
+
+	void init(const std::vector<std::string> &pieces, InputContext &) {
+		if (pieces.size() < 2) {
+			printf("Not enough arguments.\n");
+		} else if (pieces[1] == "ahci") {
+			initAHCI();
+		}
+	}
+
+	void list(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() < 2) {
+			printf("Not enough arguments.\n");
+		} else if (pieces[1] == "ahci") {
+			listAHCI(pieces, context);
+		}
+	}
+
+	void listAHCI(const std::vector<std::string> &pieces, InputContext &) {
+		if (pieces.size() == 2) {
+			if (AHCI::controllers.empty()) {
+				printf("No AHCI controllers found.\n");
+			} else {
+				printf("AHCI controllers:\n", AHCI::controllers.size());
+				size_t i = 0;
+				for (AHCI::Controller &controller: AHCI::controllers) {
+					const auto &bdf = controller.device->bdf;
+					printf("[%d] %x:%x:%x: ports =", i, bdf.bus, bdf.device, bdf.function);
+					for (int i = 0; i < 32; ++i)
+						if (controller.ports[i])
+							printf(" %d", i);
+					printf("\n");
+					++i;
+				}
+				printf("Done.\n");
+			}
+		} else if (pieces.size() == 3) {
+			long index;
+			if (!Util::parseLong(pieces[2], index)) {
+				printf("Invalid number: %s\n", pieces[2].c_str());
+			} else if (AHCI::controllers.size() <= static_cast<size_t>(index)) {
+				printf("Invalid index: %ld\n", index);
+			} else {
+				AHCI::Controller &controller = AHCI::controllers[index];
+				for (int i = 0; i < 32; ++i) {
+					if (controller.ports[i]) {
+						printf("[%d] %s: \"", i, AHCI::deviceTypes[static_cast<int>(controller.ports[i]->type)]);
+						ATA::DeviceInfo info;
+						controller.ports[i]->identify(info);
+						char model[41];
+						info.copyModel(model);
+						printf("%s\"\n", model);
 					}
 				}
 			}
-		} else if (pieces[0] == "init") {
-			if (pieces.size() < 2) {
-				printf("Not enough arguments.\n");
-			} else if (pieces[1] == "ahci") {
-				initAHCI();
-			}
-		} else if (pieces[0] == "make") {
-			if (!driver) {
-				printf("Error: Driver isn't ready.\n");
-			} else {
-				driver->make(sizeof(DirEntry) * 5);
-			}
+		}
+	}
+
+	void make(const std::vector<std::string> &, InputContext &context) {
+		if (!context.driver) {
+			printf("Error: Driver isn't ready.\n");
 		} else {
-			printf("Unknown command.\n");
+			context.driver->make(sizeof(FS::ThornFAT::DirEntry) * 5);
 		}
 	}
 }
