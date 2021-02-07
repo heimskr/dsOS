@@ -6,6 +6,9 @@
 
 namespace Thorn::Util {
 	std::vector<std::string> split(const std::string &str, const std::string &delimiter, bool condense = true);
+	bool parseLong(const std::string &, long &out, int base = 10);
+	bool parseLong(const std::string *, long &out, int base = 10);
+	bool parseLong(const char *, long &out, int base = 10);
 
 	template <typename T>
 	inline T upalign(T number, int alignment) {

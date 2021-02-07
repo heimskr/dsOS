@@ -115,7 +115,7 @@ namespace Thorn::AHCI {
 		FISRegH2D *cfis = (FISRegH2D *) table->cfis;
 		memset(cfis, 0, sizeof(FISRegH2D));
 
-		printf("[Port::identify] Type: %s\n", deviceTypes[(int) identifyDevice()]);
+		// printf("[Port::identify] Type: %s\n", deviceTypes[(int) identifyDevice()]);
 
 		// A lot of these are probably redundant because of the memset.
 		cfis->type = FISType::RegH2D;
