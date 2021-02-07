@@ -348,17 +348,17 @@ namespace Thorn::PCI {
 					if (vendor == INVALID_VENDOR)
 						continue;
 
-					const uint32_t deviceID  = getDeviceID(bus, device, function);
+					const uint32_t device_id  = getDeviceID(bus, device, function);
 					const uint32_t baseclass = getBaseClass(bus, device, function);
 					const uint32_t subclass  = getSubclass(bus, device, function);
 					const uint32_t interface = getProgIF(bus, device, function);
 
-					if (ID::IDSet *pci_ids = ID::getDeviceIDs(vendor, deviceID, 0, 0))
+					if (ID::IDSet *pci_ids = ID::getDeviceIDs(vendor, device_id, 0, 0))
 						printf("%lu %x:%x:%x Device: %s (%x %x %x) ",
-							device_count++, bus, device, function, pci_ids->device_name, baseclass, subclass, interface);
+							device_count++, bus, device, function, pci_ids->deviceName, baseclass, subclass, interface);
 					else
 						printf("%lu %x:%x:%x Vendor: %x, device: %x, class: %x, subclass: %x ",
-							device_count++, bus, device, function, vendor, deviceID, baseclass, subclass);
+							device_count++, bus, device, function, vendor, device_id, baseclass, subclass);
 					if (Serial::ready)
 						Serial::write('\n');
 

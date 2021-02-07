@@ -11,6 +11,7 @@
 #include "hardware/GPT.h"
 #include "hardware/MBR.h"
 #include "hardware/PCI.h"
+#include "hardware/PCIIDs.h"
 #include "hardware/Ports.h"
 #include "hardware/PS2Keyboard.h"
 #include "hardware/SATA.h"
@@ -350,16 +351,86 @@ namespace Thorn {
 			select(pieces, context);
 		} else if (pieces[0] == "make") {
 			make(pieces, context);
+		} else if (pieces[0] == "find") {
+			find(pieces, context);
 		} else {
 			printf("Unknown command.\n");
 		}
 	}
 
-	void init(const std::vector<std::string> &pieces, InputContext &) {
+	void find(const std::vector<std::string> &pieces, InputContext &) {
+		auto usage = [] { printf("Usage:\n- find pci [class] [subclass] [interface]\n"); };
+		if (pieces.size() < 2) {
+			usage();
+		} else if (pieces[1] == "pci") {
+			if (5 < pieces.size()) {
+				printf("Too many arguments.\n");
+				usage();
+				return;
+			}
+			long target_baseclass = -1, target_subclass = -1, target_interface = -1;
+			if (3 <= pieces.size() && !Util::parseLong(pieces[2], target_baseclass)) {
+				printf("Invalid class: %s\n", pieces[2].c_str());
+				return;
+			}
+			if (4 <= pieces.size() && !Util::parseLong(pieces[3], target_subclass)) {
+				printf("Invalid subclass: %s\n", pieces[3].c_str());
+				return;
+			}
+			if (5 <= pieces.size() && !Util::parseLong(pieces[4], target_interface)) {
+				printf("Invalid interface: %s\n", pieces[4].c_str());
+				return;
+			}
+
+			for (uint32_t bus = 0; bus < 256; ++bus)
+				for (uint32_t device = 0; device < 32; ++device)
+					for (uint32_t function = 0; function < 8; ++function) {
+						const uint32_t vendor = PCI::getVendorID(bus, device, function);
+						if (vendor == PCI::INVALID_VENDOR || vendor == 0)
+							continue;
+						const uint32_t device_id = PCI::getDeviceID(bus, device, function);
+						const uint32_t baseclass = PCI::getBaseClass(bus, device, function);
+						const uint32_t subclass  = PCI::getSubclass(bus, device, function);
+						const uint32_t interface = PCI::getProgIF(bus, device, function);
+						if (target_baseclass != -1 && target_baseclass != baseclass)
+							continue;
+						if (target_subclass != -1 && target_subclass != subclass)
+							continue;
+						if (target_interface != -1 && target_interface != interface)
+							continue;
+						if (PCI::ID::IDSet *pci_ids = PCI::ID::getDeviceIDs(vendor, device_id, 0, 0)) {
+							if (target_baseclass != -1 && target_subclass != -1 && target_interface != -1)
+								printf("[%x:%x:%x] %s\n", bus, device, function, pci_ids->deviceName);
+							else
+								printf("[%x:%x:%x] (%x/%x/%x) %s\n", bus, device, function, baseclass, subclass,
+									interface, pci_ids->deviceName);
+						}
+					}
+		} else {
+			usage();
+		}
+	}
+
+	void init(const std::vector<std::string> &pieces, InputContext &context) {
 		if (pieces.size() < 2) {
 			printf("Not enough arguments.\n");
 		} else if (pieces[1] == "ahci") {
+			context.controller = nullptr;
+			context.port = nullptr;
+			if (context.partition)
+				delete context.partition;
+			context.partition = nullptr;
+			if (context.ahciDevice)
+				delete context.ahciDevice;
+			context.ahciDevice = nullptr;
+			if (context.driver)
+				delete context.driver;
+			context.driver = nullptr;
 			initAHCI();
+		} else if (pieces[1] == "ide") {
+			IDE::init();
+		} else {
+			printf("Usage:\n- init ahci\n- init ide\n");
 		}
 	}
 
@@ -452,27 +523,30 @@ namespace Thorn {
 	}
 
 	void list(const std::vector<std::string> &pieces, InputContext &context) {
+		auto usage = [] { printf("Usage:\n- list ahci\n- list gpt\n- list port\n"); };
 		if (pieces.size() < 2) {
-			printf("Not enough arguments.\n");
+			usage();
 		} else if (pieces[1] == "ahci") {
-			listAHCI(pieces, context);
+			listAHCI(context);
 		} else if (pieces[1] == "gpt") {
-			listGPT(pieces, context);
+			listGPT(context);
 		} else if (pieces[1] == "port" || pieces[1] == "ports") {
-			listPorts(pieces, context);
+			listPorts(context);
 		} else {
-			printf("Usage:\n- list ahci\n- list gpt\n- list port\n");
+			usage();
 		}
 	}
 
-	void listPorts(const std::vector<std::string> &pieces, InputContext &context) {
+	void listPorts(InputContext &context) {
 		if (!context.controller) {
 			printf("No controller is selected.\n");
 			return;
 		}
 
+		bool any_found = false;
 		for (int i = 0; i < 32; ++i) {
 			if (context.controller->ports[i]) {
+				any_found = true;
 				printf("[%d] %s: \"", i, AHCI::deviceTypes[static_cast<int>(context.controller->ports[i]->type)]);
 				ATA::DeviceInfo info;
 				context.controller->ports[i]->identify(info);
@@ -481,28 +555,18 @@ namespace Thorn {
 				printf("%s\"\n", model);
 			}
 		}
+
+		if (!any_found)
+			printf("No valid ports found.\n");
 	}
 
-	void listGPT(const std::vector<std::string> &pieces, InputContext &context) {
-		if (pieces.size() != 4) {
-			printf("Usage: list gpt <controller> <port>\n");
+	void listGPT(InputContext &context) {
+		AHCI::Port *port = context.port;
+		if (!port) {
+			printf("No port is selected.\n");
 			return;
 		}
 
-		size_t controller_index;
-		if (!Util::parseUlong(pieces[2], controller_index) || AHCI::controllers.size() <= controller_index) {
-			printf("Invalid controller index: %s\n", pieces[2].c_str());
-			return;
-		}
-
-		AHCI::Controller &controller = AHCI::controllers[controller_index];
-		size_t port_index;
-		if (!Util::parseUlong(pieces[3], port_index) || !controller.ports[port_index]) {
-			printf("Invalid port index: %s\n", pieces[3].c_str());
-			return;
-		}
-
-		AHCI::Port *port = controller.ports[port_index];
 		MBR mbr;
 		port->read(0, 512, &mbr);
 		if (!mbr.indicatesGPT()) {
@@ -543,45 +607,22 @@ namespace Thorn {
 		}
 	}
 
-	void listAHCI(const std::vector<std::string> &pieces, InputContext &) {
-		if (pieces.size() == 2) {
-			if (AHCI::controllers.empty()) {
-				printf("No AHCI controllers found.\n");
-			} else {
-				printf("AHCI controllers:\n", AHCI::controllers.size());
-				size_t i = 0;
-				for (AHCI::Controller &controller: AHCI::controllers) {
-					const auto &bdf = controller.device->bdf;
-					printf("[%d] %x:%x:%x: ports =", i, bdf.bus, bdf.device, bdf.function);
-					for (int i = 0; i < 32; ++i)
-						if (controller.ports[i])
-							printf(" %d", i);
-					printf("\n");
-					++i;
-				}
-				printf("Done.\n");
-			}
-		} else if (pieces.size() == 3) {
-			long index;
-			if (!Util::parseLong(pieces[2], index)) {
-				printf("Invalid number: %s\n", pieces[2].c_str());
-			} else if (AHCI::controllers.size() <= static_cast<size_t>(index)) {
-				printf("Invalid index: %ld\n", index);
-			} else {
-				AHCI::Controller &controller = AHCI::controllers[index];
-				for (int i = 0; i < 32; ++i) {
-					if (controller.ports[i]) {
-						printf("[%d] %s: \"", i, AHCI::deviceTypes[static_cast<int>(controller.ports[i]->type)]);
-						ATA::DeviceInfo info;
-						controller.ports[i]->identify(info);
-						char model[41];
-						info.copyModel(model);
-						printf("%s\"\n", model);
-					}
-				}
-			}
+	void listAHCI(InputContext &) {
+		if (AHCI::controllers.empty()) {
+			printf("No AHCI controllers found.\n");
 		} else {
-			printf("Usage:\n- list ahci\n- list ahci <controller>\n");
+			printf("AHCI controllers:\n", AHCI::controllers.size());
+			size_t i = 0;
+			for (AHCI::Controller &controller: AHCI::controllers) {
+				const auto &bdf = controller.device->bdf;
+				printf("[%d] %x:%x:%x: ports =", i, bdf.bus, bdf.device, bdf.function);
+				for (int i = 0; i < 32; ++i)
+					if (controller.ports[i])
+						printf(" %d", i);
+				printf("\n");
+				++i;
+			}
+			printf("Done.\n");
 		}
 	}
 

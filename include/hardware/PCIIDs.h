@@ -32755,9 +32755,9 @@ namespace Thorn::PCI::ID {
 		uint32_t device;
 		uint32_t subvendor;
 		uint32_t subdevice;
-		const char *vendor_name;
-		const char *device_name;
-		const char *subsystem_name;
+		const char *vendorName;
+		const char *deviceName;
+		const char *subsystemName;
 	} __attribute__((packed));
 
 	extern IDSet pci_database[32748];
@@ -32970,9 +32970,9 @@ namespace Thorn::PCI::ID {
 		uint32_t baseclass;
 		uint32_t subclass;
 		uint32_t progif;
-		const char *baseclass_name;
-		const char *subclass_name;
-		const char *progif_name;
+		const char *baseclassName;
+		const char *subclassName;
+		const char *progifName;
 	} __attribute__((packed));
 
 	extern DeviceClass pci_device_classes[203];

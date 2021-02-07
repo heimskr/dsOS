@@ -30,18 +30,19 @@ namespace Thorn {
 	struct InputContext {
 		AHCI::Controller *controller = nullptr;
 		AHCI::Port *port = nullptr;
-		FS::Partition *partition = nullptr;
 		Device::AHCIDevice *ahciDevice = nullptr;
+		FS::Partition *partition = nullptr;
 		FS::ThornFAT::ThornFATDriver *driver = nullptr;
-		size_t ahciIndex = -1;
 	};
 
+	void find(const std::vector<std::string> &, InputContext &);
+	// void findPCI(const std::vector<std::string> &, InputContext &);
 	void init(const std::vector<std::string> &, InputContext &);
 	void select(const std::vector<std::string> &, InputContext &);
 	void selectPartition(size_t partition_index, InputContext &);
 	void list(const std::vector<std::string> &, InputContext &);
-	void listPorts(const std::vector<std::string> &, InputContext &);
-	void listGPT(const std::vector<std::string> &, InputContext &);
-	void listAHCI(const std::vector<std::string> &, InputContext &);
+	void listPorts(InputContext &);
+	void listGPT(InputContext &);
+	void listAHCI(InputContext &);
 	void make(const std::vector<std::string> &, InputContext &);
 }
