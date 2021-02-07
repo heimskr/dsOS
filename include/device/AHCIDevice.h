@@ -8,6 +8,7 @@ namespace Thorn::Device {
 		AHCI::Port *port;
 		AHCIDevice() = delete;
 		AHCIDevice(AHCI::Port *port_): port(port_) {}
+		virtual ~AHCIDevice() {}
 
 		virtual int read(void *buffer, size_t size, size_t offset) override;
 		virtual int write(const void *buffer, size_t size, size_t offset) override;

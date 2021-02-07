@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 namespace Thorn::FS {
@@ -14,6 +15,10 @@ namespace Thorn::AHCI {
 	class Port;
 }
 
+namespace Thorn::Device {
+	struct AHCIDevice;
+}
+
 namespace Thorn {
 	void runTests();
 	void testUHCI();
@@ -23,15 +28,17 @@ namespace Thorn {
 	void handleInput(std::string);
 
 	struct InputContext {
-		FS::Partition *partition = nullptr;
-		FS::ThornFAT::ThornFATDriver *driver = nullptr;
 		AHCI::Controller *controller = nullptr;
 		AHCI::Port *port = nullptr;
+		FS::Partition *partition = nullptr;
+		Device::AHCIDevice *ahciDevice = nullptr;
+		FS::ThornFAT::ThornFATDriver *driver = nullptr;
 		size_t ahciIndex = -1;
 	};
 
 	void init(const std::vector<std::string> &, InputContext &);
 	void select(const std::vector<std::string> &, InputContext &);
+	void selectPartition(size_t partition_index, InputContext &);
 	void list(const std::vector<std::string> &, InputContext &);
 	void listGPT(const std::vector<std::string> &, InputContext &);
 	void listAHCI(const std::vector<std::string> &, InputContext &);

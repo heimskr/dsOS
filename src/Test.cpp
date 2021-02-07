@@ -375,6 +375,13 @@ namespace Thorn {
 					printf("Controller index out of range.\n");
 				} else {
 					context.controller = &AHCI::controllers[controller_index];
+					context.port = nullptr;
+					if (context.partition)
+						delete context.partition;
+					context.partition = nullptr;
+					if (context.driver)
+						delete context.driver;
+					context.driver = nullptr;
 					printf("Selected controller %lu.\n", controller_index);
 				}
 			} else if (pieces[1] == "port") {
@@ -393,6 +400,17 @@ namespace Thorn {
 					printf("Invalid port.\n");
 				} else {
 					context.port = controller.ports[port_index];
+					printf("Selected port %lu.\n", port_index);
+				}
+			} else if (pieces[1] == "part" || pieces[1] == "partition") {
+				if (!context.port) {
+					printf("No port selected.\n");
+				} else {
+					size_t partition_index;
+					if (!Util::parseUlong(pieces[2], partition_index))
+						printf("Unable to parse partition index: %s\n", pieces[2].c_str());
+					else
+						selectPartition(partition_index, context);
 				}
 			} else {
 				usage();
@@ -400,6 +418,37 @@ namespace Thorn {
 		} else {
 			usage();
 		}
+	}
+
+	void selectPartition(size_t partition_index, InputContext &context) {
+		MBR mbr;
+		context.port->read(0, 512, &mbr);
+		if (!mbr.indicatesGPT()) {
+			printf("MBR doesn't indicate the presence of a GPT.\n");
+			return;
+		}
+
+		GPT::Header gpt;
+		context.port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
+		if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
+			printf("Unsupported partition entry size.\n");
+			return;
+		}
+		size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA + gpt.partitionEntrySize * partition_index;
+		GPT::PartitionEntry entry;
+		context.port->readBytes(gpt.partitionEntrySize, offset, &entry);
+		if (!entry.typeGUID) {
+			printf("Invalid partition.\n");
+			return;
+		}
+
+		if (context.ahciDevice)
+			delete context.ahciDevice;
+
+		context.ahciDevice = new Device::AHCIDevice(context.port);
+		context.partition = new FS::Partition(context.ahciDevice, entry.firstLBA * AHCI::Port::BLOCKSIZE,
+				(entry.lastLBA - entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
+		printf("Selected partition \"%s\".\n", std::string(entry).c_str());
 	}
 
 	void list(const std::vector<std::string> &pieces, InputContext &context) {
