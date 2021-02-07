@@ -1,7 +1,7 @@
 # Based on code by Ring Zero and Lower: http://ringzeroandlower.com/2017/08/08/x86-64-kernel-boot.html
 
-CC           := x86_64-elf-gcc #-target x86_64-elf
-CPP          := x86_64-elf-g++ #-target x86_64-elf
+CC           := clang -target x86_64-elf
+CPP          := clang++ -target x86_64-elf
 AS           := x86_64-elf-g++
 SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -fno-pie -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE

@@ -22,8 +22,9 @@ namespace Thorn::FS::ThornFAT {
 
 	int ThornFATDriver::readSuperblock(Superblock &out) {
 		int status = partition->read(&out, sizeof(Superblock), 0);
-		if (status != 0)
+		if (status != 0) {
 			DEBUG("[ThornFATDriver::readSuperblock] Reading failed: %s\n", strerror(status));
+		}
 		return -status;
 	}
 

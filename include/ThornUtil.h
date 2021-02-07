@@ -1,8 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace Thorn::Util {
+	std::vector<std::string> split(const std::string &str, const std::string &delimiter, bool condense = true);
+
 	template <typename T>
 	inline T upalign(T number, int alignment) {
 		return number + ((alignment - (number % alignment)) % alignment);

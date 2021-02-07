@@ -58,6 +58,7 @@ namespace Thorn {
 			void onKey(Keyboard::InputKey, bool down);
 
 			static void backtrace();
+			static void backtrace(uintptr_t *);
 			static x86_64::PageMeta4K & getPager();
 
 			friend void runTests();

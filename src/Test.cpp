@@ -23,6 +23,7 @@
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
+#include "lib/printf.h"
 
 namespace Thorn {
 	void runTests() {
@@ -228,28 +229,38 @@ namespace Thorn {
 				if (down) {
 					switch (key) {
 						case Keyboard::InputKey::KeyLeftArrow:
-							Terminal::left();
-							if (0 < index)
+							if (0 < index) {
+								Terminal::left();
 								--index;
+							}
 							break;
 						case Keyboard::InputKey::KeyRightArrow:
-							Terminal::right();
-							if (index < text.size())
+							if (index < text.size()) {
+								Terminal::right();
 								++index;
+							}
 							break;
 						case Keyboard::InputKey::KeyBackspace:
-							Terminal::left();
-							printf(" ");
-							Terminal::left();
-							if (0 < index)
+							if (0 < index) {
+								Terminal::left();
+								printf(" ");
+								Terminal::left();
 								text.erase(--index);
+							}
 							break;
 						case Keyboard::InputKey::KeyEnter:
-							// printf("\n");
 							Terminal::clear();
+							Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Green, Terminal::VGAColor::Black);
+							printf("> ");
+							Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::LightGray, Terminal::VGAColor::Black);
+							if (!Keyboard::hasModifier(Keyboard::Modifier::Shift)) {
+								handleInput(text);
+								text.clear();
+								index = 0;
+							}
 							printf("%s", text.c_str());
-							Terminal::row = text.size() / Terminal::VGA_WIDTH;
-							Terminal::column = text.size() % Terminal::VGA_WIDTH;
+							Terminal::row = (2 + text.size()) / Terminal::VGA_WIDTH;
+							Terminal::column = (2 + text.size()) % Terminal::VGA_WIDTH;
 							break;
 						case Keyboard::InputKey::KeyLeftShift:
 						case Keyboard::InputKey::KeyRightShift:
@@ -267,15 +278,6 @@ namespace Thorn {
 					}
 				}
 			}
-
-
-
-
-
-
-
-
-
 
 #if 0
 			if (scancode == (0x2c | 0x80)) { // z
@@ -311,8 +313,31 @@ namespace Thorn {
 				// printf("\"%s\"\n", buffer);
 			}
 #endif
-			// asm volatile("sti");
-			// asm volatile("hlt");
+		}
+	}
+
+	void handleInput(std::string str) {
+		if (str.empty())
+			return;
+
+		const size_t first_non_space = str.find_first_not_of(" ");
+		if (first_non_space == std::string::npos)
+			return;
+
+		if (first_non_space)
+			str = str.substr(first_non_space);
+
+		while (!str.empty() && str.back() == ' ')
+			str.pop_back();
+
+		std::vector<std::string> pieces = Util::split(str, " ", true);
+
+		printf("\n");
+
+		if (pieces[0] == "hello") {
+			printf("How are you?\n");
+		} else {
+			printf("Unknown command.\n");
 		}
 	}
 }

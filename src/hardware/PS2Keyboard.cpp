@@ -16,18 +16,6 @@ std::queue<uint8_t> scancodes_fifo;
 namespace Thorn::PS2Keyboard {
 	Scanmap scanmapNormal[0x80];
 
-	void onIRQ1() {
-		// uint8_t scancode = Thorn::Ports::inb(0x60);
-		// last_scancode = scancode;
-
-// #ifdef PS2_KEYBOARD_DEBUG
-// 		if (scancode & 0x80)
-// 			printf("%s (0x%x) up\n", keyNames[scancode & ~0x80], scancode & ~0x80);
-// 		else
-// 			printf("%s (0x%x) down\n", keyNames[scancode], scancode);
-// #endif
-	}
-
 	void init() {
 		scanmapNormal[0x00] = Scanmap();
 		scanmapNormal[0x01] = Scanmap(InputPage::Keyboard, Keyboard::InputKey::KeyEscape);

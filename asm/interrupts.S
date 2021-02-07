@@ -163,7 +163,6 @@ timer_max: .8byte -1
 .type isr_13, @function
 isr_13:
 	cli
-	// call _ZN5Thorn6Kernel9backtraceEv
 	push %rax
 	push %rbx
 	push %rcx
@@ -178,6 +177,7 @@ isr_13:
 	push %r13
 	push %r14
 	push %r15
+
 	print0 $gpffmt
 	print1 $addrfmt, 120(%rsp)
 	print1 $raxfmt, 104(%rsp)
@@ -201,6 +201,7 @@ isr_13:
 	print1 $esfmt, %es
 	print1 $fsfmt, %fs
 	print1 $gsfmt, %gs
+
 	pop %r15
 	pop %r14
 	pop %r13
@@ -281,7 +282,9 @@ isr_32_timer_check_done:
 isr_33:
 	cli
 	pushall
+	push $0
 	call irq1
+	add $8, %rsp
 	popall
 	sti
 	iretq

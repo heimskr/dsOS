@@ -97,6 +97,8 @@ namespace Thorn {
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
 
+		printf(" _ctors_end = 0x%lx\n&_ctors_end = 0x%lx\n", _ctors_end, &_ctors_end);
+
 		// Initialize global variables.
 		unsigned ctor_count = ((uintptr_t) &_ctors_end - (uintptr_t) &_ctors_start) / sizeof(void *);
 		for (unsigned i = 0; i < ctor_count; ++i)
@@ -134,12 +136,28 @@ namespace Thorn {
 	}
 
 	void Kernel::backtrace() {
-		uint64_t *rbp;
+		uintptr_t *rbp;
 		asm volatile("mov %%rbp, %0" : "=r"(rbp));
 		printf("Backtrace:\n");
+		uintptr_t old = 0;
 		for (int i = 0; (uintptr_t) rbp != 0; ++i) {
+			if (old == *(rbp + 1))
+				return;
 			printf("[ 0x%lx ] (%d)\n", *(rbp + 1), i);
-			rbp = (uint64_t *) *rbp;
+			old = *(rbp + 1);
+			rbp = (uintptr_t *) *rbp;
+		}
+	}
+
+	void Kernel::backtrace(uintptr_t *rbp) {
+		printf("Backtrace:\n");
+		uintptr_t old = 0;
+		for (int i = 0; (uintptr_t) rbp != 0; ++i) {
+			if (old == *(rbp + 1))
+				return;
+			printf("[ 0x%lx ] (%d)\n", *(rbp + 1), i);
+			old = *(rbp + 1);
+			rbp = (uintptr_t *) *rbp;
 		}
 	}
 

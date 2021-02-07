@@ -9,7 +9,6 @@
 extern std::queue<uint8_t> scancodes_fifo;
 
 namespace Thorn::PS2Keyboard {
-	void onIRQ1();
 	void init();
 
 	enum class InputPage: unsigned char {
