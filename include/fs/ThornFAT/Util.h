@@ -342,7 +342,7 @@ static const char BigSegfault[] = BIG_SEGFAULT A_RESET SEGFAULT_EXTRA;
 #define WRENTRYH     DIMH("write_entry")
 #define RSUPERBLOCKH      "rsuperblock"
 #define ZEROOUTFREEH      "zerooutfree"
-#define FILEREADH           "file_read"
+#define FILEREADH           "readFile"
 #define FATFINDH     A_RESET ICHS("       find") A_DIM
 #define NEWFILEH     A_RESET  IPS("    newfile") A_DIM
 #define RESIZEH      A_RESET  ICS("     resize") A_DIM

@@ -272,8 +272,8 @@ namespace Thorn::FS::ThornFAT {
 	int ThornFATDriver::writeEntry(const DirEntry &dir, off_t offset) {
 		HELLO(dir.name.str);
 		ENTER;
-		DBGF(WRENTRYH, "Writing directory entry at offset " BLR " (" BLR DMS BLR DL BLR ") with filename " BSTR DM " length " BUR
-			DM " start block " BDR " (next: " BDR ")",
+		DBGF(WRENTRYH, "Writing directory entry at offset " BLR " (" BLR DMS BLR DL BLR ") with filename " BSTR DM
+			" length " BUR DM " start block " BDR " (next: " BDR ")",
 			offset, offset / superblock.blockSize, (offset % superblock.blockSize) / sizeof(DirEntry),
 			(offset % superblock.blockSize) % sizeof(DirEntry),  dir.name.str, dir.length, dir.startBlock,
 			readFAT(dir.startBlock));
@@ -305,7 +305,8 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		if (dir.startBlock == superblock.startBlock) {
-			// DBGF(WRENTRYH, "Writing root (" BDR SUDARR BDR "); dir %c= rootptr.", root.length, dir.length, &dir == &pcache.root? '=' : '!');
+			DBGF(WRENTRYH, "Writing root (" BDR SUDARR BDR "); dir %c= rootptr.", root.length, dir.length, &dir ==
+				&root? '=' : '!');
 			if (&dir != &root)
 				root.length = dir.length;
 		}
@@ -315,7 +316,8 @@ namespace Thorn::FS::ThornFAT {
 		// We're assuming the offset is still valid.
 		PathCacheEntry *found = pathCache.find(offset);
 		if (found && found->entry.length != dir.length) {
-			// DBGF(WRENTRYH, "Updating " IMS("pcache") " entry length for " BSR DLS BDR SUDARR BDR, found->path, found->entry.length, dir->length);
+			DBGF(WRENTRYH, "Updating " IMS("pcache") " entry length for " BSR DLS BDR SUDARR BDR, found->path,
+				found->entry.length, dir.length);
 			found->entry.length = dir.length;
 		}
 
@@ -452,9 +454,10 @@ namespace Thorn::FS::ThornFAT {
 
 	int ThornFATDriver::readFile(const DirEntry &file, std::vector<uint8_t> &out, size_t *count) {
 		ENTER;
-		DBGFE(FILEREADH, IDS("Reading file ") BSTR " of length " BDR, file.name.str, file.length);
-		// DBGF("readFile", "Reading file \"" BSR "\" of length " BULR " @ " BDR, file.name.str, file.length, file.startBlock * superblock.blockSize);
-		DBGF("readFile", "file.startBlock = " BDR ", superblock.blockSize = " BUR, file.startBlock, superblock.blockSize);
+		DBGF(FILEREADH, "Reading file \"" BSR "\" of length " BULR " @ " BDR, file.name.str, file.length,
+			file.startBlock * superblock.blockSize);
+		// DBGF("readFile", "file.startBlock = " BDR ", superblock.blockSize = " BUR, file.startBlock,
+		// 	superblock.blockSize);
 		if (file.length == 0) {
 			if (count)
 				*count = 0;
@@ -490,10 +493,13 @@ namespace Thorn::FS::ThornFAT {
 #endif
 
 					if (!shrink || !file.isDirectory()) {
-						WARN(FILEREADH, "%s " BSR " has no bytes left, but the file allocation table says more blocks are allocated to it.", file.isFile()? "File" : "Directory", file.name.str);
-						WARN(FILEREADH, SUB "remaining = " BDR DM " readFAT(" BDR ") = " BDR DM " bs = " BDR, remaining, block, readFAT(block), bs);
+						WARN(FILEREADH, "%s " BSR " has no bytes left, but the file allocation table says more blocks "
+							"are allocated to it.", file.isFile()? "File" : "Directory", file.name.str);
+						WARN(FILEREADH, SUB "remaining = " BDR DM " readFAT(" BDR ") = " BDR DM " bs = " BDR, remaining,
+							block, readFAT(block), bs);
 					} else {
-						WARN(FILEREADH, "%s " BSR " has extra FAT blocks; trimming.", file.isFile()? "File" : "Directory", file.name.str);
+						WARN(FILEREADH, "%s " BSR " has extra FAT blocks; trimming.",
+							file.isFile()? "File" : "Directory", file.name.str);
 						writeFAT(FINAL, block);
 						DBGF(FILEREADH, BDR " ← FINAL", block);
 						block_t shrinkblock = nextblock;
@@ -506,7 +512,8 @@ namespace Thorn::FS::ThornFAT {
 								DBG(FILEREADH, "Finished shrinking (0).");
 								break;
 							} else if ((block_t) superblock.fatBlocks <= nextblock) {
-								WARN(FILEREADH, "FAT[" BDR "] = " BDR ", outside of FAT (" BDR " block%s)", shrinkblock, nextblock, superblock.fatBlocks, superblock.fatBlocks == 1? "" : "s");
+								WARN(FILEREADH, "FAT[" BDR "] = " BDR ", outside of FAT (" BDR " block%s)", shrinkblock,
+									nextblock, superblock.fatBlocks, superblock.fatBlocks == 1? "" : "s");
 								break;
 							}
 
@@ -521,7 +528,8 @@ namespace Thorn::FS::ThornFAT {
 					// There's still more data that should be remaining after this block, but
 					// the file allocation table says the file doesn't continue past this block.
 
-					WARN(FILEREADH, "File still has " BDR " byte%s left, but the file allocation table doesn't have a next block after " BDR ".", remaining, PLURALS(remaining), block);
+					WARN(FILEREADH, "File still has " BDR " byte%s left, but the file allocation table doesn't have a "
+						"next block after " BDR ".", remaining, PLURALS(remaining), block);
 					EXIT;
 					return -EINVAL;
 				} else {
@@ -539,8 +547,9 @@ namespace Thorn::FS::ThornFAT {
 		return 0;
 	}
 
-	int ThornFATDriver::newFile(const char *path, uint32_t length, FileType type, const Times *times, DirEntry **dir_out,
-	                         off_t *offset_out, DirEntry **parent_dir_out, off_t *parent_offset_out, bool noalloc) {
+	int ThornFATDriver::newFile(const char *path, uint32_t length, FileType type, const Times *times,
+	                            DirEntry **dir_out, off_t *offset_out, DirEntry **parent_dir_out,
+	                            off_t *parent_offset_out, bool noalloc) {
 		HELLO(path);
 #ifndef DEBUG_NEWFILE
 		METHOD_OFF(INDEX_NEWFILE);
@@ -644,11 +653,11 @@ namespace Thorn::FS::ThornFAT {
 		const uint64_t block_c = Thorn::Util::updiv(static_cast<size_t>(length), bs);
 
 		// There are four different scenarios that we have to accommodate when we want to add a new directory entry.
-		// The first and easiest is when the parent directory has a slot that used to contain an entry but was later freed.
-		// The second is when the parent directory is less than a block long, so we take its first free slot.
-		// The third is when the parent directory spans multiple blocks and is fully block-aligned, so we have to go through
-		// the effort of adding a new block to it. The fourth is like the third, except the parent directory isn't
-		// block-aligned so we don't have to expend a lot of effort, much like the second scenario.
+		// The first and easiest is when the parent directory has a slot that used to contain an entry but was later
+		// freed. The second is when the parent directory is less than a block long, so we take its first free slot.
+		// The third is when the parent directory spans multiple blocks and is fully block-aligned, so we have to go
+		// through the effort of adding a new block to it. The fourth is like the third, except the parent directory
+		// isn't block-aligned so we don't have to expend a lot of effort, much like the second scenario.
 
 		int increase_parent_length = 1;
 
@@ -666,13 +675,16 @@ namespace Thorn::FS::ThornFAT {
 			SCHECK(NEWFILEH, "Couldn't add entry to parent directory");
 
 
-			DBGF(NEWFILEH, "[S1] parent->length" SDEQ BUR DMS "offset_index" SDEQ BULR DMS "parent->length / sizeof(DirEntry)" SDEQ BULR DMS "%s", parent->length, offset_index, parent->length / sizeof(DirEntry), parent == &root? "==" : "!=");
+			DBGF(NEWFILEH, "[S1] parent->length" SDEQ BUR DMS "offset_index" SDEQ BULR DMS "parent->length / "
+				"sizeof(DirEntry)" SDEQ BULR DMS "%s", parent->length, offset_index, parent->length / sizeof(DirEntry),
+				parent == &root? "==" : "!=");
 			if (offset_index < parent->length / sizeof(DirEntry)) {
 				// Don't increase the length if it already extends past this entry.
 				increase_parent_length = 0;
 			}
 		} else if (parent->length <= bs - sizeof(DirEntry)) {
-			// Scenario two: the parent directory has free space in its first block, which is also pretty easy to deal with.
+			// Scenario two: the parent directory has free space in its first block, which is also pretty easy to deal
+			// with.
 			CDBGS(A_CYAN, NEWFILEH, "Scenario two.");
 
 			if (!noalloc && !hasFree(block_c)) {
@@ -718,7 +730,8 @@ namespace Thorn::FS::ThornFAT {
 				// DEBUG("[ThornFATDriver::newFile]   ... %d more\n", skipped);
 				DBGF(NEWFILEH, "  " IDS("... %d more"), skipped);
 
-			// DBGF(NEWFILEH, "bs - sizeof(DirEntry) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " BLR " < " BLR, bs, sizeof(DirEntry), remaining, bs - sizeof(DirEntry), remaining);
+			DBGF(NEWFILEH, "bs - sizeof(DirEntry) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " 
+				BLR " < " BLR, bs, sizeof(DirEntry), remaining, bs - sizeof(DirEntry), remaining);
 
 			if (bs - sizeof(DirEntry) < remaining) {
 				// Scenario three, the worst one: there isn't enough free space left in the
@@ -799,7 +812,8 @@ namespace Thorn::FS::ThornFAT {
 			// Increase the size of the parent directory and write it back to its original offset.
 			// DEBUG("[ThornFATDriver::newFile] Increasing parent length.\n");
 			DBG(NEWFILEH, IMS("Increasing parent length."));
-			DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length + sizeof(DirEntry)));
+			DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length +
+				sizeof(DirEntry)));
 			parent->length += sizeof(DirEntry);
 			status = writeEntry(*parent, parent_offset);
 			// if (status < 0) {
@@ -811,7 +825,8 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		if (!noalloc) {
-			// If the file is more than one block in length, we need to allocate more entries in the file allocation table.
+			// If the file is more than one block in length, we need to allocate more entries in the file allocation
+			// table.
 			block_t block = newfile.startBlock;
 			for (auto size_left = length; bs < size_left; size_left -= bs) {
 				block_t another_free_block = findFreeBlock();
@@ -835,7 +850,8 @@ namespace Thorn::FS::ThornFAT {
 			writeFAT(FINAL, block);
 
 			// Attempt to insert the new item into the pcache.
-			DBGF(NEWFILEH, "About to insert into " IMS("pcache") DLS BSTR DMS "offset" DLS BLR, newfile.name.str, offset);
+			DBGF(NEWFILEH, "About to insert into " IMS("pcache") DLS BSTR DMS "offset" DLS BLR, newfile.name.str,
+				offset);
 			PathCacheEntry *item;
 			PCInsertStatus insert_status = pathCache.insert(path, newfile, offset, &item);
 			DBG(NEWFILEH, "Inserted.");
@@ -893,7 +909,8 @@ namespace Thorn::FS::ThornFAT {
 		// }
 		SCHECK(REMOVEH, "fat_find failed");
 
-		DBGF(REMOVEH, "Offset" DL " " BLR DM " start" DL " " BDR DM " next block" DL " " BDR, offset, found->startBlock, readFAT(found->startBlock));
+		DBGF(REMOVEH, "Offset" DL " " BLR DM " start" DL " " BDR DM " next block" DL " " BDR, offset, found->startBlock,
+			readFAT(found->startBlock));
 
 		forget(found->startBlock);
 		found->startBlock = 0;
@@ -930,7 +947,8 @@ namespace Thorn::FS::ThornFAT {
 		// 	return status;
 		// }
 		SCHECK("readFAT", "Reading failed");
-		DBGF("readFAT", "Adjusted offset: " BULR " " DARR " " BDR, superblock.blockSize + block_offset * sizeof(block_t), out);
+		DBGF("readFAT", "Adjusted offset: " BULR " " DARR " " BDR,
+			superblock.blockSize + block_offset * sizeof(block_t), out);
 		return out;
 	}
 
@@ -948,7 +966,9 @@ namespace Thorn::FS::ThornFAT {
 	void ThornFATDriver::initFAT(size_t table_size, size_t block_size) {
 		size_t written = 0;
 		DBGF("initFAT", "writeOffset = %lu, table_size = %lu", writeOffset, table_size);
-		DBGF("initFAT", "sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], Superblock[%lu]", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t), sizeof(DirEntry), sizeof(Superblock));
+		DBGF("initFAT", "sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], "
+			"Superblock[%lu]", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t),
+			sizeof(DirEntry), sizeof(Superblock));
 		// These blocks point to the FAT, so they're not valid regions to write data.
 		writeOffset = block_size;
 		DBGF("initFAT", "Writing UNUSABLE %lu times to %lu", table_size + 1, writeOffset);
@@ -959,7 +979,8 @@ namespace Thorn::FS::ThornFAT {
 		++written;
 		// Might be sensitize to sizeof(block_t).
 		size_t times = Util::blocks2count(table_size, block_size) - written;
-		DBGF("initFAT", "Writing 0 %lu times to %lu (table_size = %lu, written = %lu)", times, writeOffset, table_size, written);
+		DBGF("initFAT", "Writing 0 %lu times to %lu (table_size = %lu, written = %lu)", times, writeOffset, table_size,
+			written);
 		writeMany((block_t) 0, times);
 	}
 
@@ -1065,7 +1086,8 @@ namespace Thorn::FS::ThornFAT {
 			pathCache.erase(dest_offset);
 		} else if (status == -ENOENT) {
 			DBGFE(RENAMEH, IUS("Destination " BSR " doesn't exist."), destpath);
-			// If the destination doesn't exist, we need to try to add another directory entry to the destination directory.
+			// If the destination doesn't exist, we need to try to add another directory entry to the destination
+			// directory.
 
 			DirEntry *parent_entry;
 			off_t  parent_offset;
@@ -1296,7 +1318,8 @@ namespace Thorn::FS::ThornFAT {
 			// For other directories, it has to be added dynamically.
 			filler(".", 0);
 
-		// DEBUG("[ThornFATDriver::readdir] Found directory at offset %ld: %s\n", file_offset, std::string(*found).c_str());
+		// DEBUG("[ThornFATDriver::readdir] Found directory at offset %ld: %s\n",
+		// 	file_offset, std::string(*found).c_str());
 		DBGF(READDIRH, "Found directory at offset " BLR ": " BSR, file_offset, std::string(*found).c_str());
 
 		std::vector<DirEntry> entries;
@@ -1342,7 +1365,8 @@ namespace Thorn::FS::ThornFAT {
 			DBGF(READDIRH, "... " BULR " more", count - READDIR_MAX_INCLUDE);
 
 		if (READDIR_MAX_INCLUDE <= included)
-			// DEBUG("[ThornFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
+			// DEBUG("[ThornFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str,
+			// 	offsets[last_index]);
 			DBGF(READDIRH, "Including entry %s at offset %ld.", entries[last_index].name.str, offsets[last_index]);
 
 #endif
