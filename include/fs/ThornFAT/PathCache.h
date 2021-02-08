@@ -38,7 +38,7 @@ namespace Thorn::FS::ThornFAT {
 
 		public:
 			ThornFATDriver *parent;
-			std::unordered_map<const char *, PathCacheEntry> pathMap;
+			std::unordered_map<std::string, PathCacheEntry> pathMap;
 			std::unordered_map<off_t, PathCacheEntry *> offsetMap;
 
 			PathCache(ThornFATDriver *parent_): parent(parent_) {}
@@ -50,5 +50,6 @@ namespace Thorn::FS::ThornFAT {
 			bool erase(PathCacheEntry &);
 			bool erase(const char *);
 			bool erase(off_t);
+			void clear();
 	};
 }

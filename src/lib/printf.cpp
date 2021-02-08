@@ -80,6 +80,17 @@ extern "C" int printf(const char *format, ...) {
 	return printed;
 }
 
+extern "C" int serprintf(const char *format, ...) {
+	const bool old_putc = printf_putc;
+	printf_putc = false;
+	va_list list;
+	va_start(list, format);
+	const int printed = vsnprintf(nullptr, SIZE_MAX, format, list);
+	va_end(list);
+	printf_putc = old_putc;
+	return printed;
+}
+
 extern "C" int sprintf(char *out, const char *format, ...) {
 	va_list list;
 	va_start(list, format);

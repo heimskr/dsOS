@@ -32,23 +32,24 @@ namespace Thorn::AHCI {
 		uint8_t irq = device->allocateVector(PCI::Vector::Any);
 		if (irq == 0xff)
 			printf("[AHCI::Controller::init] Failed to allocate vector\n");
-		uint32_t pi = abar->pi;
 		while (!(abar->ghc & GHC_ENABLE)) {
 			abar->ghc = abar->ghc | GHC_ENABLE;
 			// TODO: how to wait without interfering with preemption?
 			Kernel::wait(1, 1000);
 		}
-		abar->ghc = abar->ghc | GHC_ENABLE | GHC_HR;
-		abar->ghc = abar->ghc | GHC_ENABLE;
+		// abar->ghc = abar->ghc | GHC_ENABLE | GHC_HR;
+		// abar->ghc = abar->ghc | GHC_ENABLE;
 		abar->ghc = abar->ghc | GHC_IE;
 		printf("[AHCI::Controller::init] Enabled: %y (0x%x)\n", abar->ghc & GHC_ENABLE, abar->ghc);
 		x86_64::IDT::add(irq, +[] { printf("SATA IRQ triggered\n"); });
 		abar->is = 0xffffffff;
+		uint32_t pi = abar->pi;
 
 		for (int i = 0; i < 32; ++i) {
 			if ((pi >> i) & 1) {
 				volatile HBAPort &port = abar->ports[i];
 
+				/*
 				// Disable transitions to partial or slumber state
 				port.sctl = port.sctl | SCTL_PORT_IPM_NOPART | SCTL_PORT_IPM_NOSLUM;
 				// Clear IRQ status bits
@@ -61,6 +62,7 @@ namespace Thorn::AHCI {
 				port.cmd = port.cmd | HBA_PxCMD_SUD;
 				// Activate link
 				port.cmd = (port.cmd & ~HBA_PxCMD_ICC) | HBA_PxCMD_ICC_ACTIVE;
+				//*/
 
 				if (((port.ssts >> 8) & 0x0f) != HBA_PORT_IPM_ACTIVE || (port.ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_PRESENT) {
 					printf("Skipping port %d (%y %y) %x %x\n", i, ((port.ssts >> 8) & 0x0f) != HBA_PORT_IPM_ACTIVE,
@@ -157,7 +159,7 @@ namespace Thorn::AHCI {
 		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 			Kernel::wait(1, 1000);
 
-		if (1'000'000 <= spin) {
+		if (0 <= spin) {
 			printf("[Port::identify] Port hung\n");
 			return;
 		}
@@ -169,12 +171,15 @@ namespace Thorn::AHCI {
 		registers->sact = registers->sact | (1 << slot);
 		registers->ci = registers->ci | (1 << slot);
 
-		while (registers->ci & (1 << slot))
+		spin = 100;
+		while ((registers->ci & (1 << slot)) && spin--) {
 			if (registers->is & HBA_PxIS_TFES) {  // Task file error
 				printf("[Port::identify] Disk error 1 (serr: %x)\n", registers->serr);
 				stop();
 				return;
 			}
+			Kernel::wait(1, 1000);
+		}
 
 		stop();
 
@@ -264,7 +269,7 @@ namespace Thorn::AHCI {
 			Kernel::wait(1, 100);
 
 			spin = 200;
-			while ((registers->ssts & HBA_PxSSTS_DET_PRESENT) != HBA_PxSSTS_DET_PRESENT && spin--)
+			while (((registers->ssts & HBA_PxSSTS_DET_PRESENT) != HBA_PxSSTS_DET_PRESENT) && spin--)
 				Kernel::wait(1, 1000);
 
 			if ((registers->tfd & 0xff) == 0xff)
@@ -274,7 +279,7 @@ namespace Thorn::AHCI {
 			registers->is = 0;
 
 			spin = 1000;
-			while (registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ) && spin--)
+			while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 				Kernel::wait(1, 1000);
 
 			if (spin <= 0)
@@ -394,9 +399,16 @@ namespace Thorn::AHCI {
 	void Port::stop() {
 		registers->cmd = registers->cmd & ~HBA_PxCMD_ST;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
-		for (;;)
+		int spin = 100;
+		while (spin--) {
 			if (!(registers->cmd & HBA_PxCMD_FR) && !(registers->cmd & HBA_PxCMD_CR))
 				break;
+			Kernel::wait(1, 1000);
+		}
+
+		if (spin <= 0)
+			printf("[Port::stop] Port hung\n");
+
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
 	}
 

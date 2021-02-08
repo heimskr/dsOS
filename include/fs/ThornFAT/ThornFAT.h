@@ -28,7 +28,7 @@ namespace Thorn::FS::ThornFAT {
 
 			int writeSuperblock(const Superblock &);
 			int readSuperblock(Superblock &);
-			void error(const std::string &);
+			// void error(const std::string &);
 
 			/** Attempts to find a file within the filesystem. 
 			 *  Note: can allocate new memory in *out or in **outptr.
@@ -111,6 +111,10 @@ namespace Thorn::FS::ThornFAT {
 			/** Attempts to find a free block in a file allocation table.
 			 *  @return Returns the index of the first free block if any were found; -1 otherwise. */
 			block_t findFreeBlock();
+
+			/** Updates a DirEntry's filename by zeroing out its old filename and copying the new filename over it. */
+			void updateName(DirEntry &, const char *);
+			void updateName(DirEntry &, const std::string &);
 
 			block_t readFAT(size_t block_offset);
 			int writeFAT(block_t block, size_t block_offset);

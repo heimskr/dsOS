@@ -154,4 +154,9 @@ namespace Thorn::FS::ThornFAT {
 		}
 		return false;
 	}
+
+	void PathCache::clear() {
+		pathMap.clear();
+		offsetMap.clear();
+	}
 }

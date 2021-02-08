@@ -356,8 +356,38 @@ namespace Thorn {
 			find(pieces, mainContext);
 		} else if (pieces[0] == "ls") {
 			ls(pieces, mainContext);
+		} else if (pieces[0] == "mkdir") {
+			mkdir(pieces, mainContext);
+		} else if (pieces[0] == "0") {
+			handleInput("init ahci");
+			handleInput("sel cont 0");
+			handleInput("sel port 0");
+			handleInput("sel part 0");
+			handleInput("init tfat");
+		} else if (pieces[0] == "clearpc") {
+			if (!mainContext.driver) printf("Driver isn't ready.\n");
+			else if (!mainContext.driver->verify()) printf("Driver couldn't verify filesystem validity.\n");
+			else {
+				mainContext.driver->pathCache.clear();
+				printf("Cleared pcache.\n");
+			}
 		} else
 			printf("Unknown command.\n");
+	}
+
+	void mkdir(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() != 2) {
+			printf("Usage:\n- mkdir <path>\n");
+		} else if (!context.driver) {
+			printf("Driver isn't ready.\n");
+		} else if (!context.driver->verify()) {
+			printf("Driver couldn't verify filesystem validity.\n");
+		}
+
+		const std::string path = FS::simplifyPath(context.path, pieces[1]);
+		int status = context.driver->mkdir(path.c_str(), 0777);
+		if (status != 0)
+			printf("mkdir failed: %s\n", strerror(-status));
 	}
 
 	void ls(const std::vector<std::string> &pieces, InputContext &context) {
@@ -382,7 +412,7 @@ namespace Thorn {
 
 		int status = context.driver->readdir(path.c_str(), [](const char *item, off_t) { printf("%s\n", item); });
 		if (status != 0)
-			printf("readdir failed: %s\n", strerror(-status));
+			printf("readdir(%s) failed: %s\n", path.c_str(), strerror(-status));
 	}
 
 	void find(const std::vector<std::string> &pieces, InputContext &) {

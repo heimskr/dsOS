@@ -38,6 +38,7 @@ namespace Thorn {
 
 	extern InputContext mainContext;
 
+	void mkdir(const std::vector<std::string> &, InputContext &);
 	void ls(const std::vector<std::string> &, InputContext &);
 	void find(const std::vector<std::string> &, InputContext &);
 	// void findPCI(const std::vector<std::string> &, InputContext &);

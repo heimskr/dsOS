@@ -67,8 +67,10 @@ namespace Thorn {
 		for (;;)
 			if (waiting)
 				asm("hlt");
-			else
+			else {
+				x86_64::APIC::disableTimer();
 				break;
+			}
 	}
 
 	void Kernel::main() {
