@@ -13,6 +13,4 @@ extern "C" {
 	int vsnprintf(char *out, size_t max, const char *format, va_list);
 }
 
-
-
 #endif

@@ -83,8 +83,6 @@ namespace Thorn {
 		x86_64::IDT::init();
 		initPageDescriptors();
 
-		printf("Memory: 0x%lx through 0x%lx\n", memoryLow, memoryHigh);
-		printf("Core count: %d\n", x86_64::coreCount());
 
 		// These three lines are incredibly janky. Fixing them is important.
 		uintptr_t bitmap_base = 0xa00000UL;
@@ -97,6 +95,9 @@ namespace Thorn {
 		x86_64::APIC::init(*this);
 
 		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
+
+		printf("Memory: 0x%lx through 0x%lx\n", memoryLow, memoryHigh);
+		printf("Core count: %d\n", x86_64::coreCount());
 
 		// Initialize global variables.
 		unsigned ctor_count = ((uintptr_t) &_ctors_end - (uintptr_t) &_ctors_start) / sizeof(void *);

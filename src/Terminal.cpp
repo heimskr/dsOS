@@ -98,4 +98,8 @@ namespace Thorn {
 		for (size_t i = 0; data[i]; ++i)
 			putChar(data[i]);
 	}
+
+	void Terminal::write(const std::string &str) {
+		write(str.c_str());
+	}
 }

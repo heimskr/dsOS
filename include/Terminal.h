@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace Thorn {
 	struct Terminal {
@@ -51,6 +52,7 @@ namespace Thorn {
 		static void scrollUp(unsigned char lines);
 		static void write(const char *, size_t);
 		static void write(const char *);
+		static void write(const std::string &);
 	};
 }
 
