@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-#define DEBUG_EVERYTHING
+// #define DEBUG_EVERYTHING
 #define DEBUG_EXTRA
 #define DEBUG_SETPTR
 #define DEBUG_FATFIND
@@ -140,7 +140,7 @@ namespace Thorn::FS::ThornFAT::Util {
 #define BASEINDENT ""
 #define LL BXV
 #define LR BXV
-#define DBGL { if (DEBUG_ENABLED) { serprintf(IDS("├─────────────┼──┼─────────────┤") "\n"); FLOG; } }
+#define DBGL { if (DEBUG_ENABLED) { serprintf(IDS("├─────────────────────────────────┼──┼─────────────┤") "\n"); FLOG; } }
 #define MKTAG(fs, ls)   IDS(LL)  fs "%" str(TAG_WIDTH) "s" A_RESET " " ls "%4d" A_RESET IDS(LR) // identifies location
 #define MKHEADER(style) IDS(LL " ") style "%" str(HEADER_WIDTH) "s" A_RESET " "         IDS(LR) // identifies function
 #define MKCTAG(color) MKTAG(A_BOLD color, color)

@@ -12,7 +12,7 @@ namespace Thorn {
 	uint16_t * Terminal::buffer = reinterpret_cast<uint16_t *>(0xB8000);
 
 	void Terminal::clear() {
-		Serial::write("\e[2m[clear]\e[22m");
+		// Serial::write("\e[2m[clear]\e[22m");
 		memset(buffer, 0, VGA_HEIGHT * VGA_WIDTH * 2);
 		row = column = 0;
 	}

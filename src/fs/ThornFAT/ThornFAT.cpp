@@ -367,7 +367,7 @@ namespace Thorn::FS::ThornFAT {
 			WARN("readDir", "Directory length " BDR " isn't a multiple of DirEntry size " BLR ".", dir.length,
 				sizeof(DirEntry));
 
-		serprintf("%s\n", std::string(dir).c_str());
+		DBGF("readDir", "%s", std::string(dir).c_str());
 
 		const size_t count = dir.length / sizeof(DirEntry);
 		entries.clear();

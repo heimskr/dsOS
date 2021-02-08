@@ -249,7 +249,7 @@ namespace Thorn {
 						case Keyboard::InputKey::KeyBackspace:
 							if (0 < index) {
 								Terminal::left();
-								printf(" ");
+								tprintf(" ");
 								Terminal::left();
 								text.erase(--index);
 							}
@@ -257,14 +257,14 @@ namespace Thorn {
 						case Keyboard::InputKey::KeyEnter:
 							Terminal::clear();
 							Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Green, Terminal::VGAColor::Black);
-							printf("> ");
+							tprintf("> ");
 							Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::LightGray, Terminal::VGAColor::Black);
 							if (!Keyboard::hasModifier(Keyboard::Modifier::Shift)) {
 								handleInput(text);
 								text.clear();
 								index = 0;
 							}
-							printf("%s", text.c_str());
+							tprintf("%s", text.c_str());
 							Terminal::row = (2 + text.size()) / Terminal::VGA_WIDTH;
 							Terminal::column = (2 + text.size()) % Terminal::VGA_WIDTH;
 							break;
@@ -280,7 +280,7 @@ namespace Thorn {
 							break;
 						default:
 							text.insert(index++, Keyboard::toString(key).substr(0, 1));
-							printf("%c", Keyboard::toString(key).front());
+							tprintf("%c", Keyboard::toString(key).front());
 					}
 				}
 			}
@@ -340,10 +340,10 @@ namespace Thorn {
 
 		std::vector<std::string> pieces = Util::split(str, " ", true);
 
-		printf("\n");
+		tprintf("\n");
 
 		if (pieces[0] == "hello") {
-			printf("How are you?\n");
+			tprintf("How are you?\n");
 		} else if (pieces[0] == "list") {
 			list(pieces, mainContext);
 		} else if (pieces[0] == "init") {
@@ -369,35 +369,35 @@ namespace Thorn {
 			else if (!mainContext.driver->verify()) printf("Driver couldn't verify filesystem validity.\n");
 			else {
 				mainContext.driver->pathCache.clear();
-				printf("Cleared pcache.\n");
+				tprintf("Cleared pcache.\n");
 			}
 		} else
-			printf("Unknown command.\n");
+			tprintf("Unknown command.\n");
 	}
 
 	void mkdir(const std::vector<std::string> &pieces, InputContext &context) {
 		if (pieces.size() != 2) {
-			printf("Usage:\n- mkdir <path>\n");
+			tprintf("Usage:\n- mkdir <path>\n");
 		} else if (!context.driver) {
-			printf("Driver isn't ready.\n");
+			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
-			printf("Driver couldn't verify filesystem validity.\n");
+			tprintf("Driver couldn't verify filesystem validity.\n");
 		}
 
 		const std::string path = FS::simplifyPath(context.path, pieces[1]);
 		int status = context.driver->mkdir(path.c_str(), 0777);
 		if (status != 0)
-			printf("mkdir failed: %s\n", strerror(-status));
+			tprintf("mkdir failed: %s\n", strerror(-status));
 	}
 
 	void ls(const std::vector<std::string> &pieces, InputContext &context) {
 		if (!context.driver) {
-			printf("Driver isn't ready.\n");
+			tprintf("Driver isn't ready.\n");
 			return;
 		}
 
 		if (!context.driver->verify()) {
-			printf("Driver couldn't verify filesystem validity.\n");
+			tprintf("Driver couldn't verify filesystem validity.\n");
 			return;
 		}
 
@@ -406,36 +406,36 @@ namespace Thorn {
 		if (pieces.size() == 2) {
 			path = FS::simplifyPath(path, pieces[1]);
 		} else if (pieces.size() != 1) {
-			printf("Usage:\n- ls [path]\n");
+			tprintf("Usage:\n- ls [path]\n");
 			return;
 		}
 
 		int status = context.driver->readdir(path.c_str(), [](const char *item, off_t) { tprintf("%s\n", item); });
 		if (status != 0)
-			printf("readdir(%s) failed: %s\n", path.c_str(), strerror(-status));
+			tprintf("readdir(%s) failed: %s\n", path.c_str(), strerror(-status));
 	}
 
 	void find(const std::vector<std::string> &pieces, InputContext &) {
-		auto usage = [] { printf("Usage:\n- find pci [class] [subclass] [interface]\n"); };
+		auto usage = [] { tprintf("Usage:\n- find pci [class] [subclass] [interface]\n"); };
 		if (pieces.size() < 2) {
 			usage();
 		} else if (pieces[1] == "pci") {
 			if (5 < pieces.size()) {
-				printf("Too many arguments.\n");
+				tprintf("Too many arguments.\n");
 				usage();
 				return;
 			}
 			long target_baseclass = -1, target_subclass = -1, target_interface = -1;
 			if (3 <= pieces.size() && !Util::parseLong(pieces[2], target_baseclass)) {
-				printf("Invalid class: %s\n", pieces[2].c_str());
+				tprintf("Invalid class: %s\n", pieces[2].c_str());
 				return;
 			}
 			if (4 <= pieces.size() && !Util::parseLong(pieces[3], target_subclass)) {
-				printf("Invalid subclass: %s\n", pieces[3].c_str());
+				tprintf("Invalid subclass: %s\n", pieces[3].c_str());
 				return;
 			}
 			if (5 <= pieces.size() && !Util::parseLong(pieces[4], target_interface)) {
-				printf("Invalid interface: %s\n", pieces[4].c_str());
+				tprintf("Invalid interface: %s\n", pieces[4].c_str());
 				return;
 			}
 
@@ -457,9 +457,9 @@ namespace Thorn {
 							continue;
 						if (PCI::ID::IDSet *pci_ids = PCI::ID::getDeviceIDs(vendor, device_id, 0, 0)) {
 							if (target_baseclass != -1 && target_subclass != -1 && target_interface != -1)
-								printf("[%x:%x:%x] %s\n", bus, device, function, pci_ids->deviceName);
+								tprintf("[%x:%x:%x] %s\n", bus, device, function, pci_ids->deviceName);
 							else
-								printf("[%x:%x:%x] (%x/%x/%x) %s\n", bus, device, function, baseclass, subclass,
+								tprintf("[%x:%x:%x] (%x/%x/%x) %s\n", bus, device, function, baseclass, subclass,
 									interface, pci_ids->deviceName);
 						}
 					}
@@ -469,7 +469,7 @@ namespace Thorn {
 	}
 
 	void init(const std::vector<std::string> &pieces, InputContext &context) {
-		auto usage = [] { printf("Usage:\n- init ahci\n- init ide\n- init thornfat\n"); };
+		auto usage = [] { tprintf("Usage:\n- init ahci\n- init ide\n- init thornfat\n"); };
 		if (pieces.size() < 2) {
 			usage();
 		} else if (pieces[1] == "ahci") {
@@ -487,20 +487,20 @@ namespace Thorn {
 			initAHCI();
 		} else if (pieces[1] == "ide") {
 			if (IDE::init() == 0)
-				printf("No IDE devices found.\n");
+				tprintf("No IDE devices found.\n");
 		} else if (pieces[1] == "thornfat" || pieces[1] == "tfat" || pieces[1] == "driver") {
 			if (!context.ahciDevice || !context.partition)
-				printf("No partition is selected.\n");
+				tprintf("No partition is selected.\n");
 			else {
 				context.driver = new FS::ThornFAT::ThornFATDriver(context.partition);
-				printf("Initialized ThornFAT driver.\n");
+				tprintf("Initialized ThornFAT driver.\n");
 			}
 		} else
 			usage();
 	}
 
 	void select(const std::vector<std::string> &pieces, InputContext &context) {
-		auto usage = [] { printf("Usage:\n- select controller <#>\n- select port <#>\n- select partition <#>\n"); };
+		auto usage = [] { tprintf("Usage:\n- select controller <#>\n- select port <#>\n- select partition <#>\n"); };
 
 		if (pieces.size() == 3) {
 			if (pieces[1] == "controller" || pieces[1] == "ahci" || pieces[1] == "cont") {
@@ -508,7 +508,7 @@ namespace Thorn {
 				if (!Util::parseUlong(pieces[2], controller_index)) {
 					usage();
 				} else if (AHCI::controllers.size() <= controller_index) {
-					printf("Controller index out of range.\n");
+					tprintf("Controller index out of range.\n");
 				} else {
 					context.controller = &AHCI::controllers[controller_index];
 					context.port = nullptr;
@@ -518,11 +518,11 @@ namespace Thorn {
 					if (context.driver)
 						delete context.driver;
 					context.driver = nullptr;
-					printf("Selected controller %lu.\n", controller_index);
+					tprintf("Selected controller %lu.\n", controller_index);
 				}
 			} else if (pieces[1] == "port") {
 				if (!context.controller) {
-					printf("No controller is selected.\n");
+					tprintf("No controller is selected.\n");
 					return;
 				}
 
@@ -531,20 +531,20 @@ namespace Thorn {
 				if (!Util::parseUlong(pieces[2], port_index)) {
 					usage();
 				} else if (32 <= port_index) {
-					printf("Port index out of range.\n");
+					tprintf("Port index out of range.\n");
 				} else if (!controller.ports[port_index]) {
-					printf("Invalid port.\n");
+					tprintf("Invalid port.\n");
 				} else {
 					context.port = controller.ports[port_index];
-					printf("Selected port %lu.\n", port_index);
+					tprintf("Selected port %lu.\n", port_index);
 				}
 			} else if (pieces[1] == "part" || pieces[1] == "partition") {
 				if (!context.port) {
-					printf("No port selected.\n");
+					tprintf("No port selected.\n");
 				} else {
 					size_t partition_index;
 					if (!Util::parseUlong(pieces[2], partition_index))
-						printf("Unable to parse partition index: %s\n", pieces[2].c_str());
+						tprintf("Unable to parse partition index: %s\n", pieces[2].c_str());
 					else
 						selectPartition(partition_index, context);
 				}
@@ -560,21 +560,21 @@ namespace Thorn {
 		MBR mbr;
 		context.port->read(0, 512, &mbr);
 		if (!mbr.indicatesGPT()) {
-			printf("MBR doesn't indicate the presence of a GPT.\n");
+			tprintf("MBR doesn't indicate the presence of a GPT.\n");
 			return;
 		}
 
 		GPT::Header gpt;
 		context.port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
 		if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
-			printf("Unsupported partition entry size.\n");
+			tprintf("Unsupported partition entry size.\n");
 			return;
 		}
 		size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA + gpt.partitionEntrySize * partition_index;
 		GPT::PartitionEntry entry;
 		context.port->readBytes(gpt.partitionEntrySize, offset, &entry);
 		if (!entry.typeGUID) {
-			printf("Invalid partition.\n");
+			tprintf("Invalid partition.\n");
 			return;
 		}
 
@@ -584,11 +584,11 @@ namespace Thorn {
 		context.ahciDevice = new Device::AHCIDevice(context.port);
 		context.partition = new FS::Partition(context.ahciDevice, entry.firstLBA * AHCI::Port::BLOCKSIZE,
 				(entry.lastLBA - entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
-		printf("Selected partition \"%s\".\n", std::string(entry).c_str());
+		tprintf("Selected partition \"%s\".\n", std::string(entry).c_str());
 	}
 
 	void list(const std::vector<std::string> &pieces, InputContext &context) {
-		auto usage = [] { printf("Usage:\n- list controller\n- list partition\n- list port\n"); };
+		auto usage = [] { tprintf("Usage:\n- list controller\n- list partition\n- list port\n"); };
 		if (pieces.size() < 2) {
 			usage();
 		} else if (pieces[1] == "ahci" || pieces[1] == "controllers" || pieces[1] == "controller" || pieces[1] == "cont") {
@@ -604,7 +604,7 @@ namespace Thorn {
 
 	void listPorts(InputContext &context) {
 		if (!context.controller) {
-			printf("No controller is selected.\n");
+			tprintf("No controller is selected.\n");
 			return;
 		}
 
@@ -612,49 +612,49 @@ namespace Thorn {
 		for (int i = 0; i < 32; ++i) {
 			if (context.controller->ports[i]) {
 				any_found = true;
-				printf("[%d] %s: \"", i, AHCI::deviceTypes[static_cast<int>(context.controller->ports[i]->type)]);
+				tprintf("[%d] %s: \"", i, AHCI::deviceTypes[static_cast<int>(context.controller->ports[i]->type)]);
 				ATA::DeviceInfo info;
 				context.controller->ports[i]->identify(info);
 				char model[41];
 				info.copyModel(model);
-				printf("%s\"\n", model);
+				tprintf("%s\"\n", model);
 			}
 		}
 
 		if (!any_found)
-			printf("No valid ports found.\n");
+			tprintf("No valid ports found.\n");
 	}
 
 	void listGPT(InputContext &context) {
 		AHCI::Port *port = context.port;
 		if (!port) {
-			printf("No port is selected.\n");
+			tprintf("No port is selected.\n");
 			return;
 		}
 
 		MBR mbr;
 		port->read(0, 512, &mbr);
 		if (!mbr.indicatesGPT()) {
-			printf("MBR doesn't indicate the presence of a GPT.\n");
+			tprintf("MBR doesn't indicate the presence of a GPT.\n");
 			return;
 		}
 
 		GPT::Header gpt;
 		port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
-		printf("Signature:   0x%lx\n", gpt.signature);
-		printf("Revision:    %d\n",    gpt.revision);
-		printf("Header size: %d\n",    gpt.headerSize);
-		printf("Current LBA: %ld\n",   gpt.currentLBA);
-		printf("Other LBA:   %ld\n",   gpt.otherLBA);
-		printf("First LBA:   %ld\n",   gpt.firstLBA);
-		printf("Last LBA:    %ld\n",   gpt.lastLBA);
-		printf("Start LBA:   %ld\n",   gpt.startLBA);
-		printf("Partitions:  %d\n",    gpt.partitionCount);
-		printf("Entry size:  %d\n",    gpt.partitionEntrySize);
+		tprintf("Signature:   0x%lx\n", gpt.signature);
+		tprintf("Revision:    %d\n",    gpt.revision);
+		tprintf("Header size: %d\n",    gpt.headerSize);
+		tprintf("Current LBA: %ld\n",   gpt.currentLBA);
+		tprintf("Other LBA:   %ld\n",   gpt.otherLBA);
+		tprintf("First LBA:   %ld\n",   gpt.firstLBA);
+		tprintf("Last LBA:    %ld\n",   gpt.lastLBA);
+		tprintf("Start LBA:   %ld\n",   gpt.startLBA);
+		tprintf("Partitions:  %d\n",    gpt.partitionCount);
+		tprintf("Entry size:  %d\n",    gpt.partitionEntrySize);
 		size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA;
-		printf("GUID:        %s\n", std::string(gpt.guid).c_str());
+		tprintf("GUID:        %s\n", std::string(gpt.guid).c_str());
 		if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
-			printf("Unsupported partition entry size.\n");
+			tprintf("Unsupported partition entry size.\n");
 			return;
 		}
 
@@ -662,9 +662,9 @@ namespace Thorn {
 			GPT::PartitionEntry entry;
 			port->readBytes(gpt.partitionEntrySize, offset, &entry);
 			if (entry.typeGUID) {
-				printf("Partition %d: \"", i);
+				tprintf("Partition %d: \"", i);
 				entry.printName(false);
-				printf("\"\n  Type GUID: %s\n  Partition GUID: %s\n  First = %ld, last = %ld\n",
+				tprintf("\"\n  Type GUID: %s\n  Partition GUID: %s\n  First = %ld, last = %ld\n",
 					std::string(entry.typeGUID).c_str(), std::string(entry.partitionGUID).c_str(), entry.firstLBA,
 					entry.lastLBA);
 			}
@@ -674,30 +674,30 @@ namespace Thorn {
 
 	void listAHCI(InputContext &) {
 		if (AHCI::controllers.empty()) {
-			printf("No AHCI controllers found.\n");
+			tprintf("No AHCI controllers found.\n");
 		} else {
-			printf("AHCI controllers:\n", AHCI::controllers.size());
+			tprintf("AHCI controllers:\n", AHCI::controllers.size());
 			size_t i = 0;
 			for (AHCI::Controller &controller: AHCI::controllers) {
 				const auto &bdf = controller.device->bdf;
-				printf("[%d] %x:%x:%x: ports =", i, bdf.bus, bdf.device, bdf.function);
+				tprintf("[%d] %x:%x:%x: ports =", i, bdf.bus, bdf.device, bdf.function);
 				for (int i = 0; i < 32; ++i)
 					if (controller.ports[i])
-						printf(" %d", i);
-				printf("\n");
+						tprintf(" %d", i);
+				tprintf("\n");
 				++i;
 			}
-			printf("Done.\n");
+			tprintf("Done.\n");
 		}
 	}
 
 	void make(const std::vector<std::string> &, InputContext &context) {
 		if (!context.driver) {
-			printf("Driver isn't ready. Try init driver.\n");
+			tprintf("Driver isn't ready. Try init driver.\n");
 		} else {
-			printf("Creating partition...\n");
+			tprintf("Creating partition...\n");
 			context.driver->make(sizeof(FS::ThornFAT::DirEntry) * 5);
-			printf("Initialized ThornFAT partition.\n");
+			tprintf("Initialized ThornFAT partition.\n");
 		}
 	}
 }
