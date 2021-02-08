@@ -97,7 +97,7 @@ struct Flags {
 };
 
 template <typename T>
-static void write_decimal(std::stringstream &ss, Flags &flags, Status &status, T n) {
+static void write_signed(std::stringstream &ss, const Flags &flags, const Status &status, T n) {
 	std::stringstream substream;
 
 	if (flags.apostrophe)
@@ -107,9 +107,6 @@ static void write_decimal(std::stringstream &ss, Flags &flags, Status &status, T
 		substream << std::hex;
 
 	substream << n;
-
-	// std::string stringified = long_flag?
-	// 	std::to_string(va_arg(list, long long int)) : std::to_string(va_arg(list, int));
 
 	std::string stringified = substream.str();
 
@@ -128,13 +125,62 @@ static void write_decimal(std::stringstream &ss, Flags &flags, Status &status, T
 	else
 		ss << std::setfill(' '); // Probably redundant.
 
-	// if (apostrophe_flag)
-		// ss.imbue(std::locale(""));
-
 	ss << std::setw(flags.width) << stringified;
+}
 
-	status = Status::Scan;
-	flags.reset();
+template <typename T>
+static void write_unsigned(std::stringstream &ss, const Flags &flags, const Status &status, T n) {
+	std::stringstream substream;
+
+	if (flags.apostrophe)
+		substream.imbue(std::locale(""));
+
+	if (status == Status::X)
+		substream << std::hex;
+
+	substream << n;
+
+	if (flags.minus)
+		ss << std::right;
+
+	if (flags.zero)
+		ss << std::setfill('0');
+	else
+		ss << std::setfill(' '); // Probably redundant.
+
+	ss << std::setw(flags.width) << substream.str();
+}
+
+
+template <typename T>
+static void write_binary(std::stringstream &ss, const Flags &flags, T n) {
+	if (n == 0) {
+		ss << '0';
+		return;
+	}
+
+	char buffer[64] = {0};
+	int i = 0;
+
+	while (0 < n) {
+		buffer[i++] = (n & 1)? '1' : '0';
+		n >>= 1;
+	}
+
+	std::stringstream substream;
+
+	for (int j = i - 1; 0 <= j; --j)
+		substream << buffer[j];
+
+	if (flags.minus)
+		ss << std::right;
+
+	if (flags.zero)
+		ss << std::setfill('0');
+	else
+		ss << std::setfill(' '); // Probably redundant.
+
+	ss << std::setw(flags.width) << substream.str();
 }
 
 extern "C" int printf(const char *format, ...) {
@@ -187,7 +233,6 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 	size_t printed = 0;
 	Status status = Status::Scan;
 
-	char *optr = out;
 	size_t i = 0;
 	Flags flags;
 
@@ -238,7 +283,6 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 			} else if (next == 'b') {
 				status = Status::B;
 			} else if (next == 'c') {
-				// APPEND(va_arg(list, int));
 				ss << static_cast<char>(va_arg(list, int));
 				status = Status::Scan;
 			} else if (next == 'y') {
@@ -261,27 +305,34 @@ extern "C" int vsnprintf(char *out, size_t max, const char *format, va_list list
 
 		if (status == Status::D || status == Status::X) { // signed
 			if (flags.isLong)
-				write_decimal(ss, flags, status, va_arg(list, long long int));
+				write_signed(ss, flags, status, va_arg(list, long long int));
 			else
-				write_decimal(ss, flags, status, va_arg(list, int));
+				write_signed(ss, flags, status, va_arg(list, int));
+			status = Status::Scan;
+			flags.reset();
 		} else if (status == Status::U) { // unsigned
 			if (flags.isLong)
-				unsigned_to_dec(out, optr, max, va_arg(list, long long unsigned int));
+				write_unsigned(ss, flags, status, va_arg(list, long long unsigned int));
 			else
-				unsigned_to_dec(out, optr, max, va_arg(list, unsigned int));
+				write_unsigned(ss, flags, status, va_arg(list, unsigned int));
 			status = Status::Scan;
 			flags.reset();
 		} else if (status == Status::B) { // boolean
 			if (flags.isLong)
-				num_to_bin(out, optr, max, va_arg(list, long long unsigned int));
+				write_binary(ss, flags, va_arg(list, long long unsigned int));
 			else
-				num_to_bin(out, optr, max, va_arg(list, unsigned int));
+				write_binary(ss, flags, va_arg(list, unsigned int));
 			status = Status::Scan;
 			flags.reset();
 		} else if (status == Status::S) { // string
 			const char *str_arg = va_arg(list, const char *);
-			for (size_t i = 0; str_arg[i]; ++i)
-				APPEND(str_arg[i]);
+			if (flags.zero)
+				ss << std::setfill('0');
+			else
+				ss << std::setfill(' ');
+			if (flags.minus)
+				ss << std::right;
+			ss << str_arg;
 			status = Status::Scan;
 			flags.reset();
 		}
