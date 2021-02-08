@@ -380,10 +380,9 @@ namespace Thorn {
 			return;
 		}
 
-		printf("Path: \"%s\"\n", path.c_str());
-			// int status = context.driver->readdir(, [](const char *path, off_t offset) {
-			// 	printf("\"%s\" @ %ld\n", path, offset); });
-			// if (status != 0) printf("readdir failed: %s\n", strerror(-status));
+		int status = context.driver->readdir(path.c_str(), [](const char *item, off_t) { printf("%s\n", item); });
+		if (status != 0)
+			printf("readdir failed: %s\n", strerror(-status));
 	}
 
 	void find(const std::vector<std::string> &pieces, InputContext &) {
