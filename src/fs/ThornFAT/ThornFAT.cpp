@@ -1369,7 +1369,6 @@ namespace Thorn::FS::ThornFAT {
 			// DEBUG("[ThornFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str,
 			// 	offsets[last_index]);
 			DBGF(READDIRH, "Including entry %s at offset %ld.", entries[last_index].name.str, offsets[last_index]);
-
 #endif
 
 		if (0 < excluded) {

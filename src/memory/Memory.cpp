@@ -3,7 +3,6 @@
 #include "memory/Memory.h"
 #include "memory/memset.h"
 #include "Options.h"
-#include "lib/basicprintf.h"
 
 Thorn::Memory *global_memory = nullptr;
 
@@ -17,7 +16,7 @@ namespace Thorn {
 
 	uintptr_t Memory::realign(uintptr_t val) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("realign(0x%lx)\n", val);
+		printf("realign(0x%lx)\n", val);
 #endif
 		size_t offset = (val + sizeof(BlockMeta)) % MEMORY_ALIGN;
 		if (offset)
@@ -27,7 +26,7 @@ namespace Thorn {
 
 	Memory::BlockMeta * Memory::findFreeBlock(BlockMeta * &last, size_t size) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("findFreeBlock(0x%lx, %lu)\n", last, size);
+		printf("findFreeBlock(0x%lx, %lu)\n", last, size);
 #endif
 		BlockMeta *current = base;
 		while (current && !(current->free && current->size >= size)) {
@@ -39,7 +38,7 @@ namespace Thorn {
 
 	Memory::BlockMeta * Memory::requestSpace(BlockMeta *last, size_t size) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("requestSpace(0x%lx, %lu)\n", last, size);
+		printf("requestSpace(0x%lx, %lu)\n", last, size);
 #endif
 		BlockMeta *block = (BlockMeta *) realign((uintptr_t) end);
 
@@ -57,7 +56,7 @@ namespace Thorn {
 
 	void * Memory::allocate(size_t size, size_t /* alignment */) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("allocate(%lu)\n", size);
+		printf("allocate(%lu)\n", size);
 #endif
 		BlockMeta *block = nullptr;
 
@@ -88,7 +87,7 @@ namespace Thorn {
 
 	void Memory::split(BlockMeta &block, size_t size) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("split(0x%lx, %lu)\n", &block, size);
+		printf("split(0x%lx, %lu)\n", &block, size);
 #endif
 		if (block.size > size + sizeof(BlockMeta)) {
 			// We have enough space to split the block, unless alignment takes up too much.
@@ -123,14 +122,14 @@ namespace Thorn {
 
 	Memory::BlockMeta * Memory::getBlock(void *ptr) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("getBlock(0x%lx)\n", ptr);
+		printf("getBlock(0x%lx)\n", ptr);
 #endif
 		return (BlockMeta *) ptr - 1;
 	}
 
 	void Memory::free(void *ptr) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("free(0x%lx)\n", ptr);
+		printf("free(0x%lx)\n", ptr);
 #endif
 		if (!ptr)
 			return;
@@ -143,7 +142,7 @@ namespace Thorn {
 
 	int Memory::merge() {
 #ifdef DEBUG_ALLOCATION
-		bprintf("merge()\n");
+		printf("merge()\n");
 #endif
 		int count = 0;
 		BlockMeta *current = base;
@@ -161,7 +160,7 @@ namespace Thorn {
 
 	void Memory::setBounds(char *new_start, char *new_high) {
 #ifdef DEBUG_ALLOCATION
-		bprintf("setBounds(0x%lx, 0x%lx)\n", new_start, new_high);
+		printf("setBounds(0x%lx, 0x%lx)\n", new_start, new_high);
 #endif
 		start = (char *) realign((uintptr_t) new_start);
 		high = new_high;
@@ -179,7 +178,7 @@ namespace Thorn {
 
 extern "C" void * malloc(size_t size) {
 #ifdef DEBUG_ALLOCATION
-	bprintf("malloc(0x%lx)\n", size);
+	printf("malloc(0x%lx)\n", size);
 #endif
 	if (global_memory == nullptr)
 		return nullptr;
