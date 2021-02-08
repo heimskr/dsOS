@@ -44,6 +44,7 @@ namespace Thorn::AHCI {
 
 	constexpr uint32_t GHC_ENABLE = 1 << 31;
 	constexpr uint32_t GHC_IE = 1 << 1; // Interrupts Enable
+	constexpr uint32_t GHC_HR = 1 << 0; // HBA Reset
 
 	constexpr uint32_t CAP_S64A = 1 << 31; // 64-bit addressing
 	constexpr uint32_t CAP_NCQ  = 1 << 30; // Support for Native Command Queueing
@@ -394,8 +395,6 @@ namespace Thorn::AHCI {
 
 		// 0x100–0x10ff: Port control registers
 		HBAPort ports[32];
-
-		// void probe() volatile;
 	};
 
 	class Controller {

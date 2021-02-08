@@ -428,7 +428,8 @@ namespace Thorn {
 			context.driver = nullptr;
 			initAHCI();
 		} else if (pieces[1] == "ide") {
-			IDE::init();
+			if (IDE::init() == 0)
+				printf("No IDE devices found.\n");
 		} else {
 			printf("Usage:\n- init ahci\n- init ide\n");
 		}

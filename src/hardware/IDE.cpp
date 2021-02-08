@@ -24,8 +24,8 @@ namespace Thorn::IDE {
 		asm volatile("cld; repne; insl" : "=D"(addr), "=c"(cnt) : "d"(port), "0"(addr), "1"(cnt) : "memory", "cc");
 	}
 
-	void init() {
-		init(0x1f0, 0x3f6, 0x170, 0x376, 0);
+	int init() {
+		return init(0x1f0, 0x3f6, 0x170, 0x376, 0);
 	}
 
 	int readSectors(uint8_t drive, uint8_t numsects, uint32_t lba, char *buffer) {
@@ -132,7 +132,7 @@ namespace Thorn::IDE {
 		for (size_t i = 0; i < 10 * ms; i++);
 	}
 
-	void init(uint32_t bar0, uint32_t bar1, uint32_t bar2, uint32_t bar3, uint32_t bar4) {
+	int init(uint32_t bar0, uint32_t bar1, uint32_t bar2, uint32_t bar3, uint32_t bar4) {
 		int count = 0;
 
 		// Detect I/O ports that interface the IDE controller
@@ -220,11 +220,14 @@ namespace Thorn::IDE {
 				count++;
 			}
 
-		// Print summary:
+		int printed = 0;
 		for (int i = 0; i < 4; i++)
-			if (devices[i].reserved)
-				printf("Slot %d: found %s Drive %dMB - %s\n",
+			if (devices[i].reserved) {
+				printf("Slot %d: found %s drive (%d MB): %s\n",
 					i, devices[i].type == 0? "ATA" : "ATAPI", devices[i].size / 2048, devices[i].model);
+				++printed;
+			}
+		return printed;
 	}
 
 	/* This function reads/writes sectors from ATA drives.

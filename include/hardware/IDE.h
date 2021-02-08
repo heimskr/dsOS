@@ -113,13 +113,13 @@ namespace Thorn::IDE {
 
 	extern Device devices[4];
 
-	void init();
+	int init();
 	int readSectors(uint8_t drive, uint8_t numsects, uint32_t lba, char *buffer);
 	int writeSectors(uint8_t drive, uint8_t numsects, uint32_t lba, const void *buffer);
 	int readBytes(uint8_t drive, size_t bytes, size_t offset, void *buffer);
 	int writeBytes(uint8_t drive, size_t bytes, size_t offset, const void *buffer);
 
-	void init(uint32_t bar0, uint32_t bar1, uint32_t bar2, uint32_t bar3, uint32_t bar4);
+	int init(uint32_t bar0, uint32_t bar1, uint32_t bar2, uint32_t bar3, uint32_t bar4);
 	uint8_t read(uint8_t channel, uint8_t reg);
 	void write(uint8_t channel, uint8_t reg, uint8_t data);
 	void readBuffer(uint8_t channel, uint8_t reg, void *buffer, uint32_t quads);

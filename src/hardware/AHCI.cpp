@@ -1,4 +1,5 @@
 // Some code is from https://github.com/fido2020/Lemon-OS
+// Some code is from Haiku (https://github.com/haiku/haiku)
 
 #include "arch/x86_64/Interrupts.h"
 #include "hardware/AHCI.h"
@@ -23,14 +24,11 @@ namespace Thorn::AHCI {
 		printf("abar: 0x%lx\n", abar);
 		kernel.pager.identityMap(abar, MMU_CACHE_DISABLED);
 		kernel.pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
-		printf("cap=%b", abar->cap);
-		printf(" caps=");
+		printf("cap=%x cap2=%x", abar->cap, abar->cap2);
+		printf(" caps =");
 		for (uint8_t capability: device->capabilities)
-			printf("0x%x ", capability);
-		printf("\n");
-		// abar->probe();
-		// abar->cap = abar->cap | (1 << 31);
-		// abar->ghc = abar->ghc | (1 << 31);
+			printf(" 0x%x", capability);
+		printf(", vs=%x\n", abar->vs);
 		uint8_t irq = device->allocateVector(PCI::Vector::Any);
 		if (irq == 0xff)
 			printf("[AHCI::Controller::init] Failed to allocate vector\n");
@@ -40,9 +38,10 @@ namespace Thorn::AHCI {
 			// TODO: how to wait without interfering with preemption?
 			Kernel::wait(1, 1000);
 		}
+		abar->ghc = abar->ghc | GHC_ENABLE | GHC_HR;
+		abar->ghc = abar->ghc | GHC_ENABLE;
 		abar->ghc = abar->ghc | GHC_IE;
-		printf("[AHCI::Controller::init] Enabled: %y\n", abar->ghc & GHC_ENABLE);
-
+		printf("[AHCI::Controller::init] Enabled: %y (0x%x)\n", abar->ghc & GHC_ENABLE, abar->ghc);
 		x86_64::IDT::add(irq, +[] { printf("SATA IRQ triggered\n"); });
 		abar->is = 0xffffffff;
 
@@ -50,16 +49,31 @@ namespace Thorn::AHCI {
 			if ((pi >> i) & 1) {
 				volatile HBAPort &port = abar->ports[i];
 
+				// Disable transitions to partial or slumber state
+				port.sctl = port.sctl | SCTL_PORT_IPM_NOPART | SCTL_PORT_IPM_NOSLUM;
+				// Clear IRQ status bits
+				port.is = port.is;
+				// Clear error bits
+				port.serr = port.serr;
+				// Power up device
+				port.cmd = port.cmd | HBA_PxCMD_POD;
+				// Spin up device
+				port.cmd = port.cmd | HBA_PxCMD_SUD;
+				// Activate link
+				port.cmd = (port.cmd & ~HBA_PxCMD_ICC) | HBA_PxCMD_ICC_ACTIVE;
+
 				if (((port.ssts >> 8) & 0x0f) != HBA_PORT_IPM_ACTIVE || (port.ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_PRESENT) {
-					printf("Skipping port %d (%y %y)\n", i, ((port.ssts >> 8) & 0x0f) != HBA_PORT_IPM_ACTIVE,
-						(port.ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_PRESENT);
-					printf("SATA status: 0x%x\n", port.ssts);
+					printf("Skipping port %d (%y %y) %x %x\n", i, ((port.ssts >> 8) & 0x0f) != HBA_PORT_IPM_ACTIVE,
+						(port.ssts & HBA_PxSSTS_DET) != HBA_PxSSTS_DET_PRESENT, port.ssts, port.serr);
+					// printf("SATA status: 0x%x\n", port.ssts);
+					// printf("SATA error: 0x%x\n", port.serr);
 					continue;
 				}
 
 				if (!(port.sig == SIG_ATAPI || port.sig == SIG_PM || port.sig == SIG_SEMB)) {
 					printf("Found SATA drive on port %d\n", i);
-					printf("SATA status: 0x%x\n", port.ssts);
+					// printf("SATA status: 0x%x\n", port.ssts);
+					// printf("SATA error: 0x%x\n", port.serr);
 				}
 			}
 		}
