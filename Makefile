@@ -8,7 +8,7 @@ AS           := x86_64-elf-g++
 SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -fno-pie -g -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
-CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -Iinclude/lib/libcxxabi -fno-exceptions -fno-rtti -std=c++2a -Drestrict=__restrict__
+CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++2a -Drestrict=__restrict__
 ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
 QEMU_MAIN    ?= -s -drive file=$(ISO_FILE),if=none,media=cdrom,format=raw,id=drive-sata-disk \
