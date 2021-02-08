@@ -5,7 +5,32 @@
 #include <vector>
 
 namespace Thorn::Util {
-	std::vector<std::string> split(const std::string &str, const std::string &delimiter, bool condense = true);
+	template <template <typename T> typename C = std::vector>
+	C<std::string> split(const std::string &str, const std::string &delimiter, bool condense = true) {
+		if (str.empty())
+			return C<std::string>();
+
+		size_t next = str.find(delimiter);
+		if (next == std::string::npos)
+			return C<std::string> {str};
+
+		C<std::string> out {};
+		const size_t delimiter_length = delimiter.size();
+		size_t last = 0;
+
+		out.push_back(str.substr(0, next));
+
+		while (next != std::string::npos) {
+			last = next;
+			next = str.find(delimiter, last + delimiter_length);
+			std::string sub = str.substr(last + delimiter_length, next - last - delimiter_length);
+			if (!sub.empty() || !condense)
+				out.push_back(std::move(sub));
+		}
+
+		return out;
+	}
+
 	bool parseLong(const std::string &, long &out, int base = 10);
 	bool parseLong(const std::string *, long &out, int base = 10);
 	bool parseLong(const char *, long &out, int base = 10);

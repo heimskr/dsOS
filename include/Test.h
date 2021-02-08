@@ -33,8 +33,12 @@ namespace Thorn {
 		Device::AHCIDevice *ahciDevice = nullptr;
 		FS::Partition *partition = nullptr;
 		FS::ThornFAT::ThornFATDriver *driver = nullptr;
+		std::string path = "/";
 	};
 
+	extern InputContext mainContext;
+
+	void ls(const std::vector<std::string> &, InputContext &);
 	void find(const std::vector<std::string> &, InputContext &);
 	// void findPCI(const std::vector<std::string> &, InputContext &);
 	void init(const std::vector<std::string> &, InputContext &);

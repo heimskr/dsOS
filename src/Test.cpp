@@ -6,6 +6,7 @@
 #include "device/IDEDevice.h"
 #include "fs/ThornFAT/ThornFAT.h"
 #include "fs/Partition.h"
+#include "fs/Util.h"
 #include "hardware/AHCI.h"
 #include "hardware/IDE.h"
 #include "hardware/GPT.h"
@@ -321,6 +322,8 @@ namespace Thorn {
 		}
 	}
 
+	InputContext mainContext;
+
 	void handleInput(std::string str) {
 		if (str.empty())
 			return;
@@ -339,23 +342,48 @@ namespace Thorn {
 
 		printf("\n");
 
-		static InputContext context;
-
 		if (pieces[0] == "hello") {
 			printf("How are you?\n");
 		} else if (pieces[0] == "list") {
-			list(pieces, context);
+			list(pieces, mainContext);
 		} else if (pieces[0] == "init") {
-			init(pieces, context);
+			init(pieces, mainContext);
 		} else if (pieces[0] == "select" || pieces[0] == "sel") {
-			select(pieces, context);
+			select(pieces, mainContext);
 		} else if (pieces[0] == "make") {
-			make(pieces, context);
+			make(pieces, mainContext);
 		} else if (pieces[0] == "find") {
-			find(pieces, context);
-		} else {
+			find(pieces, mainContext);
+		} else if (pieces[0] == "ls") {
+			ls(pieces, mainContext);
+		} else
 			printf("Unknown command.\n");
+	}
+
+	void ls(const std::vector<std::string> &pieces, InputContext &context) {
+		if (!context.driver) {
+			printf("Driver isn't ready.\n");
+			return;
 		}
+
+		if (!context.driver->verify()) {
+			printf("Driver couldn't verify filesystem validity.\n");
+			return;
+		}
+
+		std::string path = context.path;
+
+		if (pieces.size() == 2) {
+			path = FS::simplifyPath(path, pieces[1]);
+		} else if (pieces.size() != 1) {
+			printf("Usage:\n- ls [path]\n");
+			return;
+		}
+
+		printf("Path: \"%s\"\n", path.c_str());
+			// int status = context.driver->readdir(, [](const char *path, off_t offset) {
+			// 	printf("\"%s\" @ %ld\n", path, offset); });
+			// if (status != 0) printf("readdir failed: %s\n", strerror(-status));
 	}
 
 	void find(const std::vector<std::string> &pieces, InputContext &) {
@@ -412,8 +440,9 @@ namespace Thorn {
 	}
 
 	void init(const std::vector<std::string> &pieces, InputContext &context) {
+		auto usage = [] { printf("Usage:\n- init ahci\n- init ide\n- init thornfat\n"); };
 		if (pieces.size() < 2) {
-			printf("Not enough arguments.\n");
+			usage();
 		} else if (pieces[1] == "ahci") {
 			context.controller = nullptr;
 			context.port = nullptr;
@@ -430,16 +459,22 @@ namespace Thorn {
 		} else if (pieces[1] == "ide") {
 			if (IDE::init() == 0)
 				printf("No IDE devices found.\n");
-		} else {
-			printf("Usage:\n- init ahci\n- init ide\n");
-		}
+		} else if (pieces[1] == "thornfat" || pieces[1] == "tfat" || pieces[1] == "driver") {
+			if (!context.ahciDevice || !context.partition)
+				printf("No partition is selected.\n");
+			else {
+				context.driver = new FS::ThornFAT::ThornFATDriver(context.partition);
+				printf("Initialized ThornFAT driver.\n");
+			}
+		} else
+			usage();
 	}
 
 	void select(const std::vector<std::string> &pieces, InputContext &context) {
 		auto usage = [] { printf("Usage:\n- select controller <#>\n- select port <#>\n- select partition <#>\n"); };
 
 		if (pieces.size() == 3) {
-			if (pieces[1] == "controller") {
+			if (pieces[1] == "controller" || pieces[1] == "ahci" || pieces[1] == "cont") {
 				size_t controller_index;
 				if (!Util::parseUlong(pieces[2], controller_index)) {
 					usage();
@@ -524,12 +559,12 @@ namespace Thorn {
 	}
 
 	void list(const std::vector<std::string> &pieces, InputContext &context) {
-		auto usage = [] { printf("Usage:\n- list ahci\n- list gpt\n- list port\n"); };
+		auto usage = [] { printf("Usage:\n- list controller\n- list partition\n- list port\n"); };
 		if (pieces.size() < 2) {
 			usage();
-		} else if (pieces[1] == "ahci") {
+		} else if (pieces[1] == "ahci" || pieces[1] == "controllers" || pieces[1] == "controller" || pieces[1] == "cont") {
 			listAHCI(context);
-		} else if (pieces[1] == "gpt") {
+		} else if (pieces[1] == "gpt" || pieces[1] == "partition" || pieces[1] == "partitions" || pieces[1] == "part") {
 			listGPT(context);
 		} else if (pieces[1] == "port" || pieces[1] == "ports") {
 			listPorts(context);
@@ -629,9 +664,11 @@ namespace Thorn {
 
 	void make(const std::vector<std::string> &, InputContext &context) {
 		if (!context.driver) {
-			printf("Error: Driver isn't ready.\n");
+			printf("Driver isn't ready. Try init driver.\n");
 		} else {
+			printf("Creating partition...\n");
 			context.driver->make(sizeof(FS::ThornFAT::DirEntry) * 5);
+			printf("Initialized ThornFAT partition.\n");
 		}
 	}
 }

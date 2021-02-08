@@ -1320,4 +1320,8 @@ namespace Thorn::FS::ThornFAT {
 		initData(block_count, table_size);
 		return true;
 	}
+
+	bool ThornFATDriver::verify() {
+		return readSuperblock(superblock)? false : (superblock.magic == MAGIC);
+	}
 }
