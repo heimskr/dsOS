@@ -284,7 +284,7 @@ namespace Thorn::FS::ThornFAT {
 
 		int status = partition->write(&dir, sizeof(DirEntry), offset);
 		if (status != 0) {
-			DBGF(WRENTRYH, "Writing failed: %s\n", strerror(status));
+			DBGF(WRENTRYH, "Writing failed: %s", strerror(status));
 			return -status;
 		}
 		// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
@@ -298,7 +298,7 @@ namespace Thorn::FS::ThornFAT {
 			// write(imgfd, &dir_cpy, sizeof(DirEntry));
 			status = partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
 			if (status != 0) {
-				DBGF(WRENTRYH, "Writing failed: %s\n", strerror(status));
+				DBGF(WRENTRYH, "Writing failed: %s", strerror(status));
 				return -status;
 			}
 			// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
@@ -1204,7 +1204,7 @@ namespace Thorn::FS::ThornFAT {
 
 		const std::string simplified = simplifyPath(path);
 
-		serprintf("[ThornFATDriver::mkdir] simplified = \"%s\"\n", simplified.c_str());
+		DBGF(MKDIRH, "simplified = \"" BSR "\"", simplified.c_str());
 
 		DirEntry *subdir, *parent;
 		off_t offset;
@@ -1328,7 +1328,7 @@ namespace Thorn::FS::ThornFAT {
 				if (++included < READDIR_MAX_INCLUDE)
 #else
 				// DEBUG("[ThornFATDriver::readdir] Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
-				DBGF(READDIRH, "Including entry %s at offset %ld.\n", entry.name.str, offsets[i]);
+				DBGF(READDIRH, "Including entry %s at offset %ld.", entry.name.str, offsets[i]);
 #endif
 
 				filler(entry.name.str, offsets[i]);
@@ -1343,7 +1343,7 @@ namespace Thorn::FS::ThornFAT {
 
 		if (READDIR_MAX_INCLUDE <= included)
 			// DEBUG("[ThornFATDriver::readdir] Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
-			DBGF(READDIRH, "Including entry %s at offset %ld\n", entries[last_index].name.str, offsets[last_index]);
+			DBGF(READDIRH, "Including entry %s at offset %ld.", entries[last_index].name.str, offsets[last_index]);
 
 #endif
 

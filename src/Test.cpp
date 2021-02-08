@@ -410,7 +410,7 @@ namespace Thorn {
 			return;
 		}
 
-		int status = context.driver->readdir(path.c_str(), [](const char *item, off_t) { printf("%s\n", item); });
+		int status = context.driver->readdir(path.c_str(), [](const char *item, off_t) { tprintf("%s\n", item); });
 		if (status != 0)
 			printf("readdir(%s) failed: %s\n", path.c_str(), strerror(-status));
 	}
