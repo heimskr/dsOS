@@ -38,8 +38,8 @@ namespace Thorn::FS::ThornFAT {
 	// 	for (;;) asm("hlt");
 	// }
 
-	int ThornFATDriver::find(fd_t fd, const char *path, DirEntry *out, DirEntry **outptr, off_t *offset, bool get_parent,
-	                      std::string *last_name) {
+	int ThornFATDriver::find(fd_t fd, const char *path, DirEntry *out, DirEntry **outptr, off_t *offset,
+	                         bool get_parent, std::string *last_name) {
 		ENTER;
 
 		if (!FD_VALID(fd) && !path) {
@@ -78,7 +78,8 @@ namespace Thorn::FS::ThornFAT {
 				// If we couldn't find a file by file descriptor, then we'll have to try to find it by path instead.
 				pc_entry = pathCache.find(path);
 				if (pc_entry != NULL)
-					DBGF(FATFINDH, "Found from " IMS("pcache") " for path " BSTR DM " offset " BLR, path, pc_entry->offset);
+					DBGF(FATFINDH, "Found from " IMS("pcache") " for path " BSTR DM " offset " BLR, path,
+						pc_entry->offset);
 			}
 
 			if (pc_entry) {
