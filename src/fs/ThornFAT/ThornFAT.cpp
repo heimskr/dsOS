@@ -69,7 +69,7 @@ namespace Thorn::FS::ThornFAT {
 					pc_entry = fc_entry->complement;
 				} else if (!path) {
 					// If a file descriptor was the only criterion, we don't have enough to continue.
-					// FF_EXIT;
+					FF_EXIT;
 					return -ENOENT;
 				}
 			}
@@ -96,7 +96,8 @@ namespace Thorn::FS::ThornFAT {
 				else if (out)
 					*out = pc_entry->entry;
 
-				DBG(FATFINDH, "Returning from cache."); FF_EXIT;
+				DBG(FATFINDH, "Returning from cache.");
+				FF_EXIT;
 				return status;
 			}
 		}
@@ -109,7 +110,8 @@ namespace Thorn::FS::ThornFAT {
 			else if (out)
 				*out = rootdir;
 
-			DBG(FATFINDH, "Returning the root."); FF_EXIT;
+			DBG(FATFINDH, "Returning the root.");
+			FF_EXIT;
 			return status;
 		}
 
@@ -212,7 +214,7 @@ namespace Thorn::FS::ThornFAT {
 
 						if (offset)
 							*offset = offsets[i];
-						// FF_EXIT;
+						FF_EXIT;
 						return status;
 					}
 
@@ -298,10 +300,11 @@ namespace Thorn::FS::ThornFAT {
 			dir_cpy.name.str[0] = dir_cpy.name.str[1] = '.';
 			// write(imgfd, &dir_cpy, sizeof(DirEntry));
 			status = partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
-			if (status != 0) {
-				DBGF(WRENTRYH, "Writing failed: %s", strerror(status));
-				return -status;
-			}
+			// if (status != 0) {
+			// 	DBGF(WRENTRYH, "Writing failed: %s", strerror(status));
+			// 	return -status;
+			// }
+			SCHECKX(WRENTRYH, "Writing failed");
 			// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
 		}
 
@@ -322,7 +325,7 @@ namespace Thorn::FS::ThornFAT {
 			found->entry.length = dir.length;
 		}
 
-		// EXIT;
+		EXIT;
 		return 0;
 	}
 
@@ -544,7 +547,7 @@ namespace Thorn::FS::ThornFAT {
 			}
 		}
 
-		// EXIT;
+		EXIT;
 		return 0;
 	}
 
