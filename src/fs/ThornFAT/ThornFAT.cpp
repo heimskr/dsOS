@@ -1400,6 +1400,14 @@ namespace Thorn::FS::ThornFAT {
 	}
 
 	int ThornFATDriver::unlink(const char *path) {
+		HELLO(path);
+		DBGL;
+		DBGF(UNLINKH, RMETHOD("unlink") BSTR, path);
+
+		int status = remove(path);
+		SCHECK(UNLINKH, "remove failed");
+
+		DBG(UNLINKH, "Done.");
 		return 0;
 	}
 

@@ -364,6 +364,8 @@ namespace Thorn {
 			write(pieces, mainContext);
 		} else if (pieces[0] == "create") {
 			create(pieces, mainContext);
+		} else if (pieces[0] == "rm") {
+			remove(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -382,6 +384,23 @@ namespace Thorn {
 			}
 		} else
 			tprintf("Unknown command.\n");
+	}
+
+	void remove(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() != 2) {
+			tprintf("Usage:\n- rm <path>\n");
+		} else if (!context.driver) {
+			tprintf("Driver isn't ready.\n");
+		} else if (!context.driver->verify()) {
+			tprintf("Driver couldn't verify filesystem validity.\n");
+		}
+
+		const std::string path = FS::simplifyPath(context.path, pieces[1]);
+		int status = context.driver->unlink(path.c_str());
+		if (status != 0)
+			tprintf("Couldn't remove file: %s (%d)\n", strerror(-status), status);
+		else
+			tprintf("Removed %s.\n", path.c_str());
 	}
 
 	void create(const std::vector<std::string> &pieces, InputContext &context) {

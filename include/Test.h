@@ -38,6 +38,7 @@ namespace Thorn {
 
 	extern InputContext mainContext;
 
+	void remove(const std::vector<std::string> &, InputContext &);
 	void create(const std::vector<std::string> &, InputContext &);
 	void write(const std::vector<std::string> &, InputContext &);
 	void read(const std::vector<std::string> &, InputContext &);
