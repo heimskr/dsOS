@@ -1565,18 +1565,18 @@ namespace Thorn::FS::ThornFAT {
 		int last_index = -1;
 #endif
 
-		for (int i = 0; i < (int) count; i++) {
+		for (size_t i = 0; i < count; ++i) {
 			const DirEntry &entry = entries[i];
 			DBGF(READDIRH, "[] %s: %s", isFree(entry)? "free" : "not free", std::string(entry).c_str());
 			if (!isFree(entry)) {
+				filler(entry.name.str, offsets[i]);
 #ifdef READDIR_MAX_INCLUDE
 				last_index = i;
 				if (++included < READDIR_MAX_INCLUDE)
+					DBGF(READDIRH, "Including entry %s at offset %ld.", entry.name.str, offsets[i]);
 #else
 				DBGF(READDIRH, "Including entry %s at offset %ld.", entry.name.str, offsets[i]);
 #endif
-
-				filler(entry.name.str, offsets[i]);
 			} else
 				excluded++;
 		}
