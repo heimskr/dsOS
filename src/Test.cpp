@@ -358,6 +358,10 @@ namespace Thorn {
 			ls(pieces, mainContext);
 		} else if (pieces[0] == "mkdir") {
 			mkdir(pieces, mainContext);
+		} else if (pieces[0] == "read") {
+			read(pieces, mainContext);
+		} else if (pieces[0] == "write") {
+			write(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -371,10 +375,29 @@ namespace Thorn {
 				mainContext.driver->pathCache.clear();
 				tprintf("Cleared pcache.\n");
 			}
-		} else if (pieces[0] == "read") {
-			read(pieces, mainContext);
 		} else
 			tprintf("Unknown command.\n");
+	}
+
+	void write(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() < 3) {
+			tprintf("Usage:\n- write <path> <contents...>\n");
+		} else if (!context.driver) {
+			tprintf("Driver isn't ready.\n");
+		} else if (!context.driver->verify()) {
+			tprintf("Driver couldn't verify filesystem validity.\n");
+		}
+
+		const std::string path = FS::simplifyPath(context.path, pieces[1]);
+		std::string joined = pieces[2];
+		for (size_t i = 3; i < pieces.size(); ++i)
+			joined += " " + pieces[i];
+
+		int status = context.driver->write(path.c_str(), joined.c_str(), joined.size(), 0);
+		if (status == 0)
+			tprintf("Couldn't write to file: %s\n", strerror(-status));
+		else
+			tprintf("Wrote %lu bytes to %s.\n", joined.size(), path.c_str());
 	}
 
 	void read(const std::vector<std::string> &pieces, InputContext &context) {

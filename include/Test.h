@@ -38,6 +38,7 @@ namespace Thorn {
 
 	extern InputContext mainContext;
 
+	void write(const std::vector<std::string> &, InputContext &);
 	void read(const std::vector<std::string> &, InputContext &);
 	void mkdir(const std::vector<std::string> &, InputContext &);
 	void ls(const std::vector<std::string> &, InputContext &);
