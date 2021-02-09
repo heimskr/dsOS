@@ -548,7 +548,7 @@ namespace Thorn::FS::ThornFAT {
 					// the file allocation table says the file doesn't continue past this block.
 
 					WARN(FILEREADH, "File still has " BDR " byte%s left, but the file allocation table doesn't have a "
-						"next block after " BDR ".", remaining, PLURALS(remaining), block);
+						"next block after " BDR ".", PLURALS(remaining), block);
 					EXIT;
 					return -EINVAL;
 				} else {
@@ -1673,7 +1673,7 @@ namespace Thorn::FS::ThornFAT {
 #endif
 
 		if (0 < excluded) {
-			DBGF(READDIRH, "Excluding " BULR " freed entr%s.", excluded, PLURALY(excluded));
+			DBGF(READDIRH, "Excluding " BULR " freed entr%s.", PLURALY(excluded));
 		}
 
 		DBGE(READDIRH, "Done.");
