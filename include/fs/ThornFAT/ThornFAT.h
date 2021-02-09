@@ -208,6 +208,8 @@ namespace Thorn::FS::ThornFAT {
 			virtual int readdir(const char *path, DirFiller filler) override;
 			virtual int getattr(const char *path, FileStats &) override;
 			virtual int getsize(const char *path, size_t &out) override;
+			virtual int isdir(const char *path) override;
+			virtual int isfile(const char *path) override;
 			virtual bool verify() override;
 			virtual void cleanup() override {}
 			bool make(uint32_t block_size);

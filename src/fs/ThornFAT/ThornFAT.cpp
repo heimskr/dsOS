@@ -1430,7 +1430,8 @@ namespace Thorn::FS::ThornFAT {
 
 			const size_t count = entries.size();
 			for (size_t i = 0; i < count; i++)
-				DBGF(RMDIRH, "Existing free? " BSR " (" BSR ")", hasStuff(entries[i])? "no" : "ja", entries[i].name.str);
+				DBGF(RMDIRH, "Existing free? " BSR " (" BSR ")",
+					hasStuff(entries[i])? "no" : "ja", entries[i].name.str);
 
 			WARN(RMDIRH, "Can't remove nonempty directory" SUDARR IDS("ENOTEMPTY") " (length: " BDR ")", found.length);
 			return -ENOTEMPTY;
@@ -1650,11 +1651,24 @@ namespace Thorn::FS::ThornFAT {
 
 	int ThornFATDriver::getsize(const char *path, size_t &out) {
 		DirEntry found;
-		off_t offset;
-		int status = find(-1, path, &found, &offset);
+		int status = find(-1, path, &found);
 		SCHECK("getsize", "find failed");
 		out = found.length;
 		return 0;
+	}
+
+	int ThornFATDriver::isdir(const char *path) {
+		DirEntry found;
+		int status = find(-1, path, &found);
+		SCHECK("isdir", "find failed");
+		return found.isDirectory()? 1 : 0;
+	}
+
+	int ThornFATDriver::isfile(const char *path) {
+		DirEntry found;
+		int status = find(-1, path, &found);
+		SCHECK("isfile", "find failed");
+		return found.isFile()? 1 : 0;
 	}
 
 	bool ThornFATDriver::make(uint32_t block_size) {

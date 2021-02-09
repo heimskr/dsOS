@@ -73,6 +73,8 @@ namespace Thorn::FS {
 			virtual int readdir(const char *path, DirFiller filler) = 0;
 			virtual int getattr(const char *path, FileStats &) = 0;
 			virtual int getsize(const char *path, size_t &out) = 0;
+			virtual int isdir(const char *path) = 0;
+			virtual int isfile(const char *path) = 0;
 			/** Does this partition contain a valid instance of the filesystem? */
 			virtual bool verify() = 0;
 			virtual void cleanup() = 0;
