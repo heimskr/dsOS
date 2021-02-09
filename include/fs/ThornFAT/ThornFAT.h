@@ -117,6 +117,10 @@ namespace Thorn::FS::ThornFAT {
 			 *  @return Returns the index of the first free block if any were found; -1 otherwise. */
 			block_t findFreeBlock();
 
+			/** Determines whether a directory is empty. Returns 0 if the directory isn't empty, 1 if it is or a
+			 *  negative error code if an error occurred. */
+			int directoryEmpty(const DirEntry &dir);
+
 			/** Updates a DirEntry's filename by zeroing out its old filename and copying the new filename over it. */
 			void updateName(DirEntry &, const char *);
 			void updateName(DirEntry &, const std::string &);
@@ -133,6 +137,7 @@ namespace Thorn::FS::ThornFAT {
 			bool checkBlock(block_t);
 
 			bool isFree(const DirEntry &);
+			bool hasStuff(const DirEntry &);
 			bool isRoot(const DirEntry &);
 
 			template <typename T>

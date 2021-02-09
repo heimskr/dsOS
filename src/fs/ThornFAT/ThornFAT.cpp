@@ -999,6 +999,31 @@ namespace Thorn::FS::ThornFAT {
 		return UNUSABLE;
 	}
 
+	int ThornFATDriver::directoryEmpty(const DirEntry &dir) {
+		HELLO(dir->fname.str);
+		if (!dir.isDirectory())
+			return 0;
+
+		if (dir.length == 0)
+			return 1;
+
+		std::vector<DirEntry> entries;
+		int status = readDir(dir, entries);
+		if (status < 0)
+			return status;
+
+		const size_t count = entries.size();
+		if (count <= 1)
+			return 1;
+
+		for (size_t i = 0; i < count; i++) {
+			if (hasStuff(entries[i]))
+				return 0;
+		}
+
+		return 1;
+	}
+
 	void ThornFATDriver::updateName(DirEntry &entry, const char *new_name) {
 		strncpy(entry.name.str, new_name, sizeof(entry.name.str));
 	}
@@ -1088,6 +1113,14 @@ namespace Thorn::FS::ThornFAT {
 
 	bool ThornFATDriver::isFree(const DirEntry &entry) {
 		return entry.startBlock == 0 || readFAT(entry.startBlock) == 0;
+	}
+
+	bool ThornFATDriver::hasStuff(const DirEntry &entry) {
+		if (entry.isFile())
+			return !isFree(entry);
+		if (entry.isDirectory())
+			return strcmp(entry.name.str, "..") != 0 && 0 < entry.length;
+		return false;
 	}
 
 	bool ThornFATDriver::isRoot(const DirEntry &entry) {
@@ -1371,6 +1404,44 @@ namespace Thorn::FS::ThornFAT {
 	}
 
 	int ThornFATDriver::rmdir(const char *path) {
+		HELLO(path);
+		DBGL;
+		DBGF(RMDIRH, RMETHOD("rmdir") BSTR, path);
+
+		if (strcmp(path, "/") == 0 || !path[0]) {
+			WARNS(RMDIRH, "Preserving root" SUDARR IDS("EINVAL"));
+			return -EINVAL;
+		}
+
+		DirEntry found;
+		off_t offset;
+		int status = find(-1, path, &found, &offset);
+		SCHECK(RMDIRH, "find failed");
+
+		if (!found.isDirectory()) {
+			WARNS(RMDIRH, "Can't remove non-directory" SUDARR IDS("ENOTDIR"));
+			return -ENOTDIR;
+		}
+
+		if (directoryEmpty(found) == 0) {
+			std::vector<DirEntry> entries;
+			status = readDir(found, entries);
+			SCHECK(RMDIRH, "readDir failed");
+
+			const size_t count = entries.size();
+			for (size_t i = 0; i < count; i++)
+				DBGF(RMDIRH, "Existing free? " BSR " (" BSR ")", hasStuff(entries[i])? "no" : "ja", entries[i].name.str);
+
+			WARN(RMDIRH, "Can't remove nonempty directory" SUDARR IDS("ENOTEMPTY") " (length: " BDR ")", found.length);
+			return -ENOTEMPTY;
+		}
+
+		forget(found.startBlock);
+		found.startBlock = 0;
+		found.length = 0;
+		writeEntry(found, offset);
+
+		DBG(RMDIRH, "Done.");
 		return 0;
 	}
 
