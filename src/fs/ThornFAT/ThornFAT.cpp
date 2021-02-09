@@ -29,8 +29,8 @@ namespace Thorn::FS::ThornFAT {
 		return -status;
 	}
 
-	int ThornFATDriver::find(fd_t fd, const char *path, DirEntry *out, DirEntry **outptr, off_t *offset,
-	                         bool get_parent, std::string *last_name) {
+	int ThornFATDriver::find(fd_t fd, const char *path, DirEntry *out, off_t *offset, bool get_parent,
+	                         std::string *last_name) {
 		ENTER;
 
 		if (!FD_VALID(fd) && !path) {
@@ -38,8 +38,6 @@ namespace Thorn::FS::ThornFAT {
 			EXIT;
 			return -EINVAL;
 		}
-
-		int status = 0;
 
 #ifndef DEBUG_FATFIND
 	METHOD_OFF(INDEX_FATFIND);
@@ -82,28 +80,24 @@ namespace Thorn::FS::ThornFAT {
 				if (offset)
 					*offset = pc_entry->offset;
 
-				if (outptr)
-					*outptr = &pc_entry->entry;
-				else if (out)
+				if (out)
 					*out = pc_entry->entry;
 
 				DBG(FATFINDH, "Returning from cache.");
 				FF_EXIT;
-				return status;
+				return 0;
 			}
 		}
 
 		if (strcmp(path, "/") == 0 || strlen(path) == 0) {
 			// For the special case of "/" or "" (maybe that last one should be invalid...), return the root directory.
 			DirEntry &rootdir = getRoot(offset);
-			if (outptr)
-				*outptr = &rootdir;
-			else if (out)
+			if (out)
 				*out = rootdir;
 
 			DBGF(FATFINDH, "Returning the root: %s", std::string(rootdir).c_str());
 			FF_EXIT;
-			return status;
+			return 0;
 		}
 
 		size_t count;
@@ -127,9 +121,8 @@ namespace Thorn::FS::ThornFAT {
 
 			if (at_end && get_parent) {
 				// We just want the containing directory, thank you very much.
-				if (outptr)
-					*outptr = &dir;
-				else if (out)
+
+				if (out)
 					*out = dir;
 
 				if (offset)
@@ -138,7 +131,7 @@ namespace Thorn::FS::ThornFAT {
 				if (last_name)
 					*last_name = search.value_or("");
 				FF_EXIT;
-				return status;
+				return 0;
 			}
 
 			if (!search.has_value()) {
@@ -168,15 +161,13 @@ namespace Thorn::FS::ThornFAT {
 							DBG(FATFINDH, "Returning file at the end.");
 							DBGF(FATFINDH, "  Name" DL " " BSTR DM " offset" DL " " BLR, entry.name.str, offsets[i]);
 
-							if (outptr)
-								*outptr = &entry;
-							else if (out)
+							if (out)
 								*out = entry;
-
 							if (offset)
 								*offset = offsets[i];
+
 							FF_EXIT;
-							return status;
+							return 0;
 						}
 
 						// At this point, we've found a file, but we're still trying to search it like a directory.
@@ -189,15 +180,13 @@ namespace Thorn::FS::ThornFAT {
 						DBG(FATFINDH, "Returning directory at the end.");
 						DBG2(FATFINDH, "  Name:", entry.name.str);
 
-						if (outptr)
-							*outptr = &entry;
-						else if (out)
+						if (out)
 							*out = entry;
-
 						if (offset)
 							*offset = offsets[i];
+
 						FF_EXIT;
-						return status;
+						return 0;
 					}
 
 					// This is a directory, but we're not at the end yet. Search within this directory next.
@@ -498,7 +487,8 @@ namespace Thorn::FS::ThornFAT {
 		while (0 < remaining) {
 			if (remaining <= bs) {
 				checkBlock(block);
-				partition->read(ptr, remaining, block * bs);
+				int status = partition->read(ptr, remaining, block * bs);
+				SCHECK(FILEREADH, "Couldn't read from partition");
 				ptr += remaining;
 				remaining = 0;
 
@@ -554,7 +544,8 @@ namespace Thorn::FS::ThornFAT {
 				} else {
 					checkBlock(block);
 					DBGF(FILEREADH, "block * bs = " BUR, block * bs);
-					partition->read(ptr, bs, block * bs);
+					int status = partition->read(ptr, bs, block * bs);
+					SCHECK(FILEREADH, "Couldn't read from partition");
 					ptr += bs;
 					remaining -= bs;
 					block = readFAT(block);
@@ -566,8 +557,8 @@ namespace Thorn::FS::ThornFAT {
 		return 0;
 	}
 
-	int ThornFATDriver::newFile(const char *path, uint32_t length, FileType type, const Times *times,
-	                            DirEntry **dir_out, off_t *offset_out, DirEntry **parent_dir_out,
+	int ThornFATDriver::newFile(const char *path, size_t length, FileType type, const Times *times,
+	                            DirEntry *dir_out, off_t *offset_out, DirEntry *parent_dir_out,
 	                            off_t *parent_offset_out, bool noalloc) {
 		HELLO(path);
 #ifndef DEBUG_NEWFILE
@@ -576,10 +567,10 @@ namespace Thorn::FS::ThornFAT {
 		ENTER;
 		DBG2(NEWFILEH, "Trying to create new file at", path);
 
-		DirEntry *parent = nullptr;
+		DirEntry parent;
 		off_t parent_offset = 0;
 		std::string last_name;
-		int status = find(-1, path, nullptr, &parent, &parent_offset, true, &last_name);
+		int status = find(-1, path, &parent, &parent_offset, true, &last_name);
 		bool parent_is_new = status == 1;
 
 		if (status < 0 && status != -ENOENT) {
@@ -589,6 +580,8 @@ namespace Thorn::FS::ThornFAT {
 			// return status;
 			SCHECK(NEWFILEH, "fat_find failed");
 		}
+
+		DBGF(NEWFILEH, "parent[0x%lx] -> %s", parent, std::string(parent).c_str());
 
 		// First, check the filename length.
 		const size_t ln_length = last_name.size();
@@ -600,17 +593,29 @@ namespace Thorn::FS::ThornFAT {
 			return -ENAMETOOLONG;
 		}
 
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		// TODO: implement time.
 		DirEntry newfile(times == NULL? Times(0, 0, 0) : *times, length, type);
-
+		DBGF(NEWFILEH, "newfile: %s", std::string(newfile).c_str());
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		block_t free_block = findFreeBlock();
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		if (noalloc) {
 			// We provide an option not to allocate space for the file. This is helpful for fat_rename, when we just
 			// need to find an offset where an existing directory entry can be moved to. It's possibly okay if no
 			// free block is available if the parent directory has enough space for another entry.
 			// DEBUG("noalloc: startBlock set to 0\n");
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+
 			newfile.startBlock = 0;
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+
 		} else {
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+
 			// We'll need at least one free block to store the new file in so we can
 			// store the starting block in the directory entry we'll create soon.
 			if (free_block == UNUSABLE) {
@@ -621,17 +626,20 @@ namespace Thorn::FS::ThornFAT {
 			}
 
 			// SUCC(NEWFILEH, "Allocated " BSR " at block " BDR ".", path, free_block);
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 
 			// Allocate the first block, decrement the free blocks count and flush the cache to disk.
-			// pcache.fat[free_block] = FINAL;
-			writeFAT(FINAL, free_block);
+			writeFAT(free_block, FINAL);
 			--blocksFree;
 			// DEBUG("!noalloc: startBlock set to %d\n", free_block);
 			newfile.startBlock = free_block;
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 
 			// There's not a point in copying the name to the entry if this function
 			// is being called just to get an offset to move an existing entry to.
 			memcpy(newfile.name.str, last_name.c_str(), ln_length);
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+
 		}
 
 		block_t old_free_block = free_block;
@@ -640,7 +648,10 @@ namespace Thorn::FS::ThornFAT {
 		std::vector<DirEntry> entries;
 		std::vector<off_t> offsets;
 		int first_index;
-		status = readDir(*parent, entries, &offsets, &first_index);
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+		status = readDir(parent, entries, &offsets, &first_index);
+		SCHECK(NEWFILEH, "readDir failed");
+		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		size_t count = entries.size();
 
 		// Check all the directory entries except the initial meta-entries.
@@ -658,7 +669,7 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		const size_t bs = superblock.blockSize;
-		const uint64_t block_c = Thorn::Util::updiv(static_cast<size_t>(length), bs);
+		const uint64_t block_c = Thorn::Util::updiv(length, bs);
 
 		// There are four different scenarios that we have to accommodate when we want to add a new directory entry.
 		// The first and easiest is when the parent directory has a slot that used to contain an entry but was later
@@ -667,7 +678,7 @@ namespace Thorn::FS::ThornFAT {
 		// through the effort of adding a new block to it. The fourth is like the third, except the parent directory
 		// isn't block-aligned so we don't have to expend a lot of effort, much like the second scenario.
 
-		int increase_parent_length = 1;
+		bool increase_parent_length = true;
 
 		if (offset != -1) {
 			// Scenario one: we found a free entry earlier. Way too easy.
@@ -684,13 +695,12 @@ namespace Thorn::FS::ThornFAT {
 
 
 			DBGF(NEWFILEH, "[S1] parent->length" SDEQ BUR DMS "offset_index" SDEQ BULR DMS "parent->length / "
-				"sizeof(DirEntry)" SDEQ BULR DMS "%s", parent->length, offset_index, parent->length / sizeof(DirEntry),
-				parent == &root? "==" : "!=");
-			if (offset_index < parent->length / sizeof(DirEntry)) {
+				"sizeof(DirEntry)" SDEQ BULR, parent.length, offset_index, parent.length / sizeof(DirEntry));
+			if (offset_index < parent.length / sizeof(DirEntry)) {
 				// Don't increase the length if it already extends past this entry.
-				increase_parent_length = 0;
+				increase_parent_length = false;
 			}
-		} else if (parent->length <= bs - sizeof(DirEntry)) {
+		} else if (parent.length <= bs - sizeof(DirEntry)) {
 			// Scenario two: the parent directory has free space in its first block, which is also pretty easy to deal
 			// with.
 			CDBGS(A_CYAN, NEWFILEH, "Scenario two.");
@@ -699,7 +709,7 @@ namespace Thorn::FS::ThornFAT {
 				// If we're allocating space for the new file, we need enough blocks to hold it.
 				// If we don't have enough blocks, we should stop now before we make any changes to the filesystem.
 				WARN(NEWFILEH, "No free block " UDARR " " DSR, "ENOSPC");
-				writeFAT(0, old_free_block);
+				writeFAT(old_free_block, 0);
 				// pcache.fat[old_free_block] = 0;
 				NF_EXIT;
 				return -ENOSPC;
@@ -707,7 +717,9 @@ namespace Thorn::FS::ThornFAT {
 
 			// The offset of the free space is the sum of the parent's starting offset and its length.
 			// Try to write the entry to it.
-			offset = parent->startBlock * bs + parent->length;
+			offset = parent.startBlock * bs + parent.length;
+			DBGF(NEWFILEH, "startBlock[%d], bs[%lu], parent -> %s",
+				parent.startBlock, bs, std::string(parent).c_str());
 			status = writeEntry(newfile, offset);
 			SCHECK(NEWFILEH, "Couldn't add entry to parent directory");
 		} else {
@@ -715,8 +727,8 @@ namespace Thorn::FS::ThornFAT {
 			// Four is mercifully simple, three less so.
 
 			// Skip to the last block; we don't need to read or change anything in the earlier blocks.
-			size_t remaining = parent->length;
-			block_t block = parent->startBlock;
+			size_t remaining = parent.length;
+			block_t block = parent.startBlock;
 			DBGN(NEWFILEH, "Parent start block:", block);
 			int skipped = 0;
 			while (bs < remaining) {
@@ -799,8 +811,8 @@ namespace Thorn::FS::ThornFAT {
 			DBG(NEWFILEH, IMS("Increasing parent length."));
 			DBGFE(NEWFILEH, "Parent length" DLS BDR SUDARR BDR, parent->length, (uint32_t) (parent->length +
 				sizeof(DirEntry)));
-			parent->length += sizeof(DirEntry);
-			status = writeEntry(*parent, parent_offset);
+			parent.length += sizeof(DirEntry);
+			status = writeEntry(parent, parent_offset);
 			SCHECKX(NEWFILEH, "Couldn't write the parent directory to disk");
 		}
 
@@ -839,13 +851,9 @@ namespace Thorn::FS::ThornFAT {
 				DIE(NEWFILEH, IMS("pc_insert") "() failed (" BDR ")", status);
 				return -666;
 			} else if (dir_out)
-				*dir_out = &item->entry;
-		} else if (dir_out) {
-			DBGF(NEWFILEH, "Overflowing. " BULR " " DARR " " BULR, overflowIndex, (overflowIndex + 1) % OVERFLOW_MAX);
-			overflow[overflowIndex] = newfile;
-			*dir_out = &overflow[overflowIndex];
-			overflowIndex = (overflowIndex + 1) % OVERFLOW_MAX;
-		}
+				*dir_out = item->entry;
+		} else if (dir_out)
+			*dir_out = newfile;
 
 		// fat_save(imgfd, &superblock, pcache.fat);
 
@@ -860,8 +868,10 @@ namespace Thorn::FS::ThornFAT {
 
 		if (offset_out)
 			*offset_out = offset;
+
 		if (parent_dir_out)
 			*parent_dir_out = parent;
+
 		if (parent_offset_out)
 			*parent_offset_out = parent_offset;
 
@@ -874,20 +884,20 @@ namespace Thorn::FS::ThornFAT {
 		DBGF(REMOVEH, "Removing " BSR " from the filesystem %s from " IMS("pcache") ".",
 			path, remove_pentry? "and" : "but not");
 
-		DirEntry *found;
+		DirEntry found;
 		off_t offset;
 
 		DBG_OFFE();
-		int status = find(-1, path, nullptr, &found, &offset, false, nullptr);
+		int status = find(-1, path, &found, &offset, false, nullptr);
 		DBG_ONE();
 		SCHECK(REMOVEH, "fat_find failed");
 
-		DBGF(REMOVEH, "Offset" DL " " BLR DM " start" DL " " BDR DM " next block" DL " " BDR, offset, found->startBlock,
-			readFAT(found->startBlock));
+		DBGF(REMOVEH, "Offset" DL " " BLR DM " start" DL " " BDR DM " next block" DL " " BDR, offset, found.startBlock,
+			readFAT(found.startBlock));
 
-		forget(found->startBlock);
-		found->startBlock = 0;
-		writeEntry(*found, offset);
+		forget(found.startBlock);
+		found.startBlock = 0;
+		writeEntry(found, offset);
 		// fat_save(imgfd, &superblock, pcache.fat);
 
 		if (remove_pentry)
@@ -1113,7 +1123,7 @@ namespace Thorn::FS::ThornFAT {
 		block_t out;
 		int status = partition->read(&out, sizeof(block_t), superblock.blockSize + block_offset * sizeof(block_t));
 		SCHECK("readFAT", "Reading failed");
-		DBGF("readFAT", "Adjusted offset: " BULR " " DARR " " BDR,
+		DBGFE("readFAT", "Adjusted offset: " BULR " " DARR " " BDR,
 			superblock.blockSize + block_offset * sizeof(block_t), out);
 		return out;
 	}
@@ -1206,25 +1216,25 @@ namespace Thorn::FS::ThornFAT {
 		DBGL;
 		DBGF(RENAMEH, CMETHOD("rename") BSTR " " UARR " " BSTR, srcpath, destpath);
 
-		DirEntry *dest_entry, *src_entry;
+		DirEntry dest_entry, src_entry;
 		off_t dest_offset, src_offset;
 		int status;
 
 		// It's okay if the destination doesn't exist, but the source is required to exist.
-		status = find(-1, srcpath, nullptr, &src_entry, &src_offset, false, nullptr);
+		status = find(-1, srcpath, &src_entry, &src_offset, false, nullptr);
 		SCHECK(RENAMEH, "fat_find failed for old path");
 
 		// Start by removing the source from the pcache.
 		pathCache.erase(src_offset);
 
-		status = find(-1, destpath, nullptr, &dest_entry, &dest_offset, false, nullptr);
+		status = find(-1, destpath, &dest_entry, &dest_offset, false, nullptr);
 		DBGN(RENAMEH, "fat_find status:", status);
 		if (status < 0 && status != -ENOENT) {
 			SCHECK(RENAMEH, "fat_find failed for new path");
 		}
 
 		if (0 <= status) {
-			DBGF(RENAMEH, IUS("Destination " BSR " already exists."), dest_entry->name.str);
+			DBGF(RENAMEH, IUS("Destination " BSR " already exists."), dest_entry.name.str);
 			// Because the destination already exists, we need to unlink it to free up its space.
 			// The offset of its directory entry will then be available for us to use.
 			// We don't have to worry about not having enough space in this case; in fact,
@@ -1240,10 +1250,8 @@ namespace Thorn::FS::ThornFAT {
 			// If the destination doesn't exist, we need to try to add another directory entry to the destination
 			// directory.
 
-			DirEntry *parent_entry;
-			off_t  parent_offset;
-			status = newFile(destpath, 0, src_entry->isDirectory()? FileType::Directory : FileType::File,
-			                 &src_entry->times, &dest_entry, &dest_offset, &parent_entry, &parent_offset, 1);
+			status = newFile(destpath, 0, src_entry.isDirectory()? FileType::Directory : FileType::File,
+			                 &src_entry.times, &dest_entry, &dest_offset, nullptr, nullptr, true);
 			SCHECK(RENAMEH, "Couldn't create new directory entry");
 			DBGF(RENAMEH, BLR SUDARR BLR, src_offset, dest_offset);
 
@@ -1258,12 +1266,12 @@ namespace Thorn::FS::ThornFAT {
 			return -EINVAL;
 		}
 
-		memset(src_entry->name.str, 0, THORNFAT_PATH_MAX + 1);
-		strncpy(src_entry->name.str, destbase->c_str(), THORNFAT_PATH_MAX);
+		memset(src_entry.name.str, 0, THORNFAT_PATH_MAX + 1);
+		strncpy(src_entry.name.str, destbase->c_str(), THORNFAT_PATH_MAX);
 
 		// Once we've ensured the destination doesn't exist or no longer exists,
 		// we move the source's directory entry to the destination's offset.
-		status = partition->write(src_entry, sizeof(DirEntry), dest_offset);
+		status = partition->write(&src_entry, sizeof(DirEntry), dest_offset);
 		SCHECK(RENAMEH, "Writing failed");
 
 		// Now we need to remove the source entry's original directory entry from the disk image.
@@ -1272,7 +1280,7 @@ namespace Thorn::FS::ThornFAT {
 
 		// Finally, we add the newly moved file to the pcache.
 		DBG(RENAMEH, "Adding to " IMS("pcache") ".");
-		pathCache.insert(destpath, *src_entry, dest_offset, nullptr);
+		pathCache.insert(destpath, src_entry, dest_offset, nullptr);
 		SUCC(RENAMEH, "Moved " BSR " to " BSR ".", srcpath, destpath);
 		return 0;
 	}
@@ -1302,23 +1310,22 @@ namespace Thorn::FS::ThornFAT {
 		DBGL;
 		DBGF(UTIMENSH, BMETHOD("utimens") BSTR DM " current time " BLR, path, time_now);
 
-		DirEntry *dir;
+		DirEntry dir;
 		off_t offset;
 
-		int status = find(-1, path, nullptr, &dir, &offset);
+		int status = find(-1, path, &dir, &offset);
 		SCHECK(UTIMENSH, "find failed");
 
-		dir->times.accessed = time_now;
-		dir->times.modified = time_now;
+		dir.times.accessed = time_now;
+		dir.times.modified = time_now;
 
-		status = writeEntry(*dir, offset);
+		status = writeEntry(dir, offset);
 		SCHECK(UTIMENSH, "writeEntry failed");
 		return 0;
 	}
 
 	int ThornFATDriver::create(const char *path, mode_t modes) {
 		HELLO(path);
-		IGNORE_ECHO(path, 0);
 		DBGL;
 		DBGF(CREATEH, PMETHOD("create") BSTR DM " mode " BDR, path, modes);
 
@@ -1330,13 +1337,16 @@ namespace Thorn::FS::ThornFAT {
 			return -EEXIST;
 		}
 
-		DirEntry *newfile, *parent;
+		const std::string simplified = simplifyPath(path);
+
+		DirEntry newfile, parent;
 		off_t offset, poffset;
-		status = newFile(path, 0, FileType::File, nullptr, &newfile, &offset, &parent, &poffset, false);
+		status = newFile(simplified.c_str(), 0, FileType::File, nullptr, &newfile, &offset, &parent, &poffset, false);
 		SCHECK(CREATEH, "newfile failed");
 
-		newfile->modes = modes;
-		writeEntry(*newfile, offset);
+		newfile.modes = modes;
+		DBGF(CREATEH, "About to write new file at offset " BLR, offset);
+		writeEntry(newfile, offset);
 
 		SUCC(CREATEH, "Done. " IDS("{") "offset" DLS BLR DMS "poffset" DLS BLR IDS("}"), offset, poffset);
 		return 0;
@@ -1349,20 +1359,20 @@ namespace Thorn::FS::ThornFAT {
 
 		const size_t bs = superblock.blockSize;
 
-		DirEntry *file;
+		DirEntry file;
 		off_t file_offset;
 
 		DBG(WRITEH, "Finding file");
-		int status = find(-1, path, nullptr, &file, &file_offset);
+		int status = find(-1, path, &file, &file_offset);
 		SCHECK(WRITEH, "fat_find failed");
-		DBG2(WRITEH, "Found file:", file->name.str);
+		DBG2(WRITEH, "Found file:", file.name.str);
 
-		size_t length = file->length;
+		size_t length = file.length;
 		size_t new_size = offset + size > length? offset + size : length;
-		status = resize(*file, file_offset, new_size);
+		status = resize(file, file_offset, new_size);
 		SCHECK(WRITEH, "resize failed");
 
-		block_t block = file->startBlock;
+		block_t block = file.startBlock;
 		DBGF(WRITEH, "Starting write with block offset " BLR ", file offset " BLR ".", block * bs, offset);
 
 		off_t offset_left = offset;
@@ -1440,9 +1450,9 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		// TODO: time syscall. Syscalls in general, really.
-		// file->times.modified = NOW;
+		// file.times.modified = NOW;
 
-		writeEntry(*file, file_offset);
+		writeEntry(file, file_offset);
 		SUCC(WRITEH, "Wrote " BLR " byte%s", PLURALS(bytes_written));
 		return bytes_written;
 	}
@@ -1457,23 +1467,18 @@ namespace Thorn::FS::ThornFAT {
 
 		DBGF(MKDIRH, "simplified = \"" BSR "\"", simplified.c_str());
 
-		DirEntry *subdir, *parent;
+		DirEntry subdir, parent;
 		off_t offset;
 
 		DBG(MKDIRH, "Creating new file for directory.");
-		int status, newfile_status;
-		status = newfile_status = newFile(simplified.c_str(), sizeof(DirEntry), FileType::Directory, nullptr, &subdir,
-		                                  &offset, &parent, nullptr, false);
+		int status = newFile(simplified.c_str(), sizeof(DirEntry), FileType::Directory, nullptr, &subdir, &offset,
+		                     &parent, nullptr, false);
 		SCHECK(MKDIRH, "newFile failed");
 
-		// Set a copy of the parent directory with its named changed to ".." as the first entry in the new directory.
-		DirEntry parent_copy = *parent;
-		updateName(parent_copy, "..");
-		status = writeEntry(parent_copy, subdir->startBlock * superblock.blockSize);
+		// Set the copy of the parent directory with its named changed to ".." as the first entry in the new directory.
+		updateName(parent, "..");
+		status = writeEntry(parent, subdir.startBlock * superblock.blockSize);
 		SCHECK(MKDIRH, "writeEntry failed");
-
-		if (newfile_status == 1 && parent)
-			delete parent;
 
 		DBG(MKDIRH, "Done.");
 		return 0;
@@ -1506,14 +1511,14 @@ namespace Thorn::FS::ThornFAT {
 		DBGL;
 		DBGF(READH, OMETHOD("read") BSTR DM " offset " BLR DM " size " BLR, path, offset, size);
 
-		DirEntry *file;
+		DirEntry file;
 		off_t file_offset;
 
-		int status = find(-1, path, nullptr, &file, &file_offset);
+		int status = find(-1, path, &file, &file_offset);
 		SCHECK(READH, "fat_find failed");
 
-		size_t length = file->length;
-		if (length == 0 && file->isDirectory()) {
+		size_t length = file.length;
+		if (length == 0 && file.isDirectory()) {
 			// This should already be prevented by fat_find().
 			DBG(READH, "ENOENT");
 			WARNS(READH, "Can't open empty (i.e., free) directory" SUDARR IDS("ENOENT"));
@@ -1526,7 +1531,7 @@ namespace Thorn::FS::ThornFAT {
 			return 0;
 		}
 
-		block_t block = file->startBlock;
+		block_t block = file.startBlock;
 		size_t bytes_read = 0;
 		size_t size_left = size;
 		size_t to_read;
@@ -1575,11 +1580,12 @@ namespace Thorn::FS::ThornFAT {
 			DBGN(READH, "Reading from block:\e[36m", block);
 			// status = read(imgfd, buf + bytes_read, to_read);
 			status = partition->read(static_cast<char *>(buffer) + bytes_read, to_read, position);
-			position += to_read;
 			SCHECK(READH, "Couldn't read into buffer:");
 
+			position += to_read;
 			bytes_read += to_read;
 			size_left  -= to_read;
+
 			if (size_left == 0)
 				break;
 
@@ -1598,9 +1604,9 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		// TODO: time syscall.
-		// file->times.accessed = NOW;
-		DBGN(READH, "Writing new access time to entry:", file->times.accessed);
-		status = writeEntry(*file, file_offset);
+		// file.times.accessed = NOW;
+		DBGN(READH, "Writing new access time to entry:", file.times.accessed);
+		status = writeEntry(file, file_offset);
 		SCHECK(READH, "fat_write_entry (update accessed) status");
 
 		// Return the number of bytes we read into the buffer.
@@ -1612,32 +1618,32 @@ namespace Thorn::FS::ThornFAT {
 		HELLO(path);
 		DBGL;
 		DBGF(READDIRH, OMETHOD("readdir") BSTR, path);
-		DBG_OFFE();
+		// DBG_OFFE();
 
-		DirEntry *found;
+		DirEntry found;
 		off_t file_offset;
 
-		int status = find(-1, path, nullptr, &found, &file_offset);
+		int status = find(-1, path, &found, &file_offset);
 		SCHECK(READDIRH, "find failed");
 
-		if (!found->isDirectory()) {
+		if (!found.isDirectory()) {
 			// You can't really use readdir with a file.
 			DBG(READDIRH, "Can't readdir() a file " DARR " ENOTDIR");
 			DBG_ON();
 			return -ENOTDIR;
 		}
 
-		if (!isRoot(*found))
+		if (!isRoot(found))
 			// Only the root directory has a "." entry stored in the disk image.
 			// For other directories, it has to be added dynamically.
 			filler(".", 0);
 
-		DBGF(READDIRH, "Found directory at offset " BLR ": " BSR, file_offset, std::string(*found).c_str());
+		DBGF(READDIRH, "Found directory at offset " BLR ": " BSR, file_offset, std::string(found).c_str());
 
 		std::vector<DirEntry> entries;
 		std::vector<off_t> offsets;
 
-		status = readDir(*found, entries, &offsets);
+		status = readDir(found, entries, &offsets);
 		SCHECK(READDIRH, "readDir failed");
 		const size_t count = entries.size();
 		DBGF(READDIRH, "Count: " BULR, count);
@@ -1686,11 +1692,11 @@ namespace Thorn::FS::ThornFAT {
 	}
 
 	int ThornFATDriver::getsize(const char *path, size_t &out) {
-		DirEntry *found;
+		DirEntry found;
 		off_t offset;
-		int status = find(-1, path, nullptr, &found, &offset);
+		int status = find(-1, path, &found, &offset);
 		SCHECK("getsize", "find failed");
-		out = found->length;
+		out = found.length;
 		return 0;
 	}
 

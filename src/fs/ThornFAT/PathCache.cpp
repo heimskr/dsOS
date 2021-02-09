@@ -11,13 +11,15 @@ namespace Thorn::FS::ThornFAT {
 	}
 
 	PathCacheEntry * PathCache::find(const char *path) {
-		auto iter = pathMap.find(path);
-		return iter == pathMap.end()? nullptr : &iter->second;
+		return nullptr; // PathCache is deprecated.
+		// auto iter = pathMap.find(path);
+		// return iter == pathMap.end()? nullptr : &iter->second;
 	}
 
 	PathCacheEntry * PathCache::find(off_t offset) {
-		auto iter = offsetMap.find(offset);
-		return iter == offsetMap.end()? nullptr : iter->second;
+		return nullptr;
+		// auto iter = offsetMap.find(offset);
+		// return iter == offsetMap.end()? nullptr : iter->second;
 	}
 
 	PathCacheEntry PathCache::create(const char *path, const DirEntry &entry, off_t offset) {
@@ -45,7 +47,7 @@ namespace Thorn::FS::ThornFAT {
 	}
 
 	PCInsertStatus PathCache::insert(const char *path, const DirEntry &entry, off_t offset, PathCacheEntry **out) {
-		printf("\e[36m[PathCache::\e[1minsert\e[22m(\"%s\", %s, %ld, 0x%lx)]\e[0m\n", path, std::string(entry).c_str(), offset, out);
+		serprintf("\e[36m[PathCache::\e[1minsert\e[22m(\"%s\", %s, %ld, 0x%lx)]\e[0m\n", path, std::string(entry).c_str(), offset, out);
 		entry.print();
 		// TODO: mutexes.
 

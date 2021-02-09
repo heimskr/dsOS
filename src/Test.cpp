@@ -377,6 +377,16 @@ namespace Thorn {
 				mainContext.driver->pathCache.clear();
 				tprintf("Cleared pcache.\n");
 			}
+		} else if (pieces[0] == "printfat") {
+			if (!mainContext.driver) printf("Driver isn't ready.\n");
+			else if (!mainContext.driver->verify()) printf("Driver couldn't verify filesystem validity.\n");
+			else {
+				size_t count = 100;
+				if (1 < pieces.size())
+					Util::parseUlong(pieces[1], count);
+				for (size_t i = 0; i < count; ++i)
+					printf("%lu -> %d\n", i, mainContext.driver->readFAT(i));
+			}
 		} else
 			tprintf("Unknown command.\n");
 	}
@@ -400,7 +410,7 @@ namespace Thorn {
 
 		int status = context.driver->create(path.c_str(), modes);
 		if (status != 0)
-			tprintf("Couldn't create file: %s\n", strerror(-status));
+			tprintf("Couldn't create file: %s (%d)\n", strerror(-status), status);
 		else
 			tprintf("Created %s.\n", path.c_str());
 	}
@@ -420,8 +430,8 @@ namespace Thorn {
 			joined += " " + pieces[i];
 
 		int status = context.driver->write(path.c_str(), joined.c_str(), joined.size(), 0);
-		if (status != 0)
-			tprintf("Couldn't write to file: %s\n", strerror(-status));
+		if (status < 0)
+			tprintf("Couldn't write to file: %s (%d)\n", strerror(-status), status);
 		else
 			tprintf("Wrote %lu bytes to %s.\n", joined.size(), path.c_str());
 	}
@@ -439,14 +449,19 @@ namespace Thorn {
 		size_t size;
 		int status = context.driver->getsize(path.c_str(), size);
 		if (status != 0) {
-			tprintf("Couldn't read filesize: %s\n", strerror(-status));
+			tprintf("Couldn't read filesize: %s (%d)\n", strerror(-status), status);
+			return;
+		}
+
+		if (size == 0) {
+			tprintf("File is empty.\n");
 			return;
 		}
 
 		char *buffer = new char[size];
 		status = context.driver->read(path.c_str(), buffer, size, 0);
-		if (status == 0) {
-			tprintf("Couldn't read file: %s\n", strerror(-status));
+		if (status < 0) {
+			tprintf("Couldn't read file: %s (%d)\n", strerror(-status), status);
 			return;
 		}
 
@@ -465,7 +480,7 @@ namespace Thorn {
 		const std::string path = FS::simplifyPath(context.path, pieces[1]);
 		int status = context.driver->mkdir(path.c_str(), 0777);
 		if (status != 0)
-			tprintf("mkdir failed: %s\n", strerror(-status));
+			tprintf("mkdir failed: %s (%d)\n", strerror(-status), status);
 	}
 
 	void ls(const std::vector<std::string> &pieces, InputContext &context) {
@@ -490,7 +505,7 @@ namespace Thorn {
 
 		int status = context.driver->readdir(path.c_str(), [](const char *item, off_t) { tprintf("%s\n", item); });
 		if (status != 0)
-			tprintf("readdir(%s) failed: %s\n", path.c_str(), strerror(-status));
+			tprintf("readdir(%s) failed: %s (%d)\n", path.c_str(), strerror(-status), status);
 	}
 
 	void find(const std::vector<std::string> &pieces, InputContext &) {

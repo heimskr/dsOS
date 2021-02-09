@@ -228,7 +228,7 @@ namespace Thorn::FS::ThornFAT::Util {
 #else
 #define SETPTR(ptr, to) { if ((ptr)) { *(ptr) = (to); } }
 #endif
-// #define CPYPTR(ptr, to, type) { if ((ptr)) { *(ptr) = malloc(sizeof(type)); memcpy(*(ptr), (to), sizeof(type)); } }
+#define CPYPTR(ptr, to, type) { if ((ptr)) { *(ptr) = (type *) malloc(sizeof(type)); memcpy(*(ptr), (to), sizeof(type)); } }
 #ifndef MIN
 #define MIN(x, y) ((y) < (x)? (y) : (x))
 #endif

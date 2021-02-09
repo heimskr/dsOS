@@ -37,17 +37,13 @@ namespace Thorn::FS::ThornFAT {
 			 *                    file.
 			 *  @param out        A pointer that will be set to a copy of a matching file or directory. Unused if outptr
 			 *                    isn't nullptr.
-			 *  @param outptr     A pointer that will be set to a pointer to a matching file or directory. Important for
-			 *                    keeping caches up to date.
 			 *  @param offset     A pointer that will be set to the directory entry's offset if a match was found.
 			 *  @param get_parent Whether to return the directory containing the match instead of the match itself.
 			 *  @param last_name  A pointer to a string that will be set to the last path component if get_parent is
 			 *                    true.
-			 *  @return Returns 0 if the operation was successful and no memory as allocated, returns 1 if the operation
-			 *          was successful and memory was allocated in *out or **outptr, returns a negative error code
-			 *          otherwise. */
-			int find(fd_t, const char *, DirEntry *out = nullptr, DirEntry **outptr = nullptr, off_t * = nullptr,
-			         bool get_parent = false, std::string *last_name = nullptr);
+			 *  @return Returns 0 if the operation was successful or a negative error code otherwise. */
+			int find(fd_t, const char *, DirEntry *out = nullptr, off_t * = nullptr, bool get_parent = false,
+			         std::string *last_name = nullptr);
 
 			/** Removes a chain of blocks from the file allocation table. 
 			 *  Returns the number of blocks that were freed. */
@@ -89,20 +85,18 @@ namespace Thorn::FS::ThornFAT {
 			 *  @param times             An optional pointer to a set of times that will be assigned to the entry. If
 			 *                           nullptr, the current time (or a constant if CONSTANT_TIME is defined) will be
 			 *                           used.
-			 *  @param dir_out           An optional pointer to which a pointer to the new entry will be written.
+			 *  @param dir_out           An optional pointer to which a copy of the new entry will be written.
 			 *  @param offset_out        An optional pointer to which the offset of the new directory entry will be
 			 *                           written.
-			 *  @param parent_dir_out    An optional pointer to which a pointer to the new entry's parent directory
-			 *                           entry will be written.
+			 *  @param parent_dir_out    An optional pointer to which a copy of the new entry's parent directory entry
+			 *                           will be written.
 			 *  @param parent_offset_out An optional pointer to which the new entry's parent directory entry's offset
 			 *                           will be written.
 			 *  @param noalloc           A parameter indicating whether blocks shouldn't be allocated for the new file.
 			 *                           This is useful if you just want to create a dummy entry (e.g., in fat_rename).
-			 *  @return Returns 0 if the operation succeeded and **dir_out doesn't contain newly allocated memory,
-			 *          returns 1 if the operation succeeded and **dir_out does contain newly allocated memory, returns
-			 *          a negative number otherwise. */
-			int newFile(const char *path, uint32_t length, FileType type, const Times *times, DirEntry **dir_out,
-			            off_t *offset_out, DirEntry **parent_dir_out, off_t *parent_offset_out, bool noalloc);
+			 *  @return Returns 0 if the operation succeeded or a negative number otherwise. */
+			int newFile(const char *path, size_t length, FileType type, const Times *times, DirEntry *dir_out,
+			            off_t *offset_out, DirEntry *parent_dir_out, off_t *parent_offset_out, bool noalloc);
 
 			/** Attempts to remove a file.
 			 *  @param path          A file path.
