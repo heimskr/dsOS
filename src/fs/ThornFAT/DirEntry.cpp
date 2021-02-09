@@ -2,6 +2,28 @@
 #include "lib/printf.h"
 
 namespace Thorn::FS::ThornFAT {
+	DirEntry::DirEntry(const Times &times_, size_t length_, FileType type_):
+		times(times_), length(length_), type(type_) {}
+
+	DirEntry::DirEntry(const DirEntry &other) {
+		memcpy(name.str, other.name.str, sizeof(name.str));
+		times = other.times;
+		length = other.length;
+		startBlock = other.startBlock;
+		type = other.type;
+		modes = other.modes;
+	}
+
+	DirEntry & DirEntry::operator=(const DirEntry &other) {
+		memcpy(name.str, other.name.str, sizeof(name.str));
+		times = other.times;
+		length = other.length;
+		startBlock = other.startBlock;
+		type = other.type;
+		modes = other.modes;
+		return *this;
+	}
+
 	void DirEntry::reset() {
 		memset(name.str, 0, sizeof(name));
 		times = {0, 0, 0};

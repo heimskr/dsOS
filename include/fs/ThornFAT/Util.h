@@ -364,13 +364,30 @@ inline int IS_X(const char *p, const char *x) {
 #define IGNORE_ECHO(p, n) { }
 #define IGNORE_DOT(p, n) { }
 #endif
+#define PCFINDPATHH  A_RESET IMS("pc_findpath") A_DIM
+#define PCINSERTH    A_RESET IMS("  pc_" A_PINK "insert") A_DIM
+#define PCDOWNH      A_RESET IMS("    pc_" A_ORANGE "down") A_DIM
+#define PCUPH        A_RESET IMS("      pc_" A_ORANGE "up") A_DIM
+#define PCTRYLOCKH   A_RESET IMS(" pc_" A_ORANGE "trylock") A_DIM
+#define PCALIVEDNH   A_RESET IOS(" alive_down") A_DIM
+#define PCALIVEUPH   A_RESET IOS("   alive_up") A_DIM
+#define PCRMVITEMH   A_RESET IMS("pc_" A_RED "rmv_item") A_DIM
+#define PCRMVFDH     A_RESET IMS("  pc_" A_RED "rmv_fd") A_DIM
+#define PCSAVEH      A_RESET IMS("    pc_save") A_DIM
+#define PCFINDFDH    A_RESET IMS(" pc_" A_CHARTREUSE "find_fd") A_DIM
+#define PCFINDOFFH   A_RESET IMS("pc_" A_CHARTREUSE "find_off") A_DIM
+#define PCLINKH      A_RESET IMS("    pc_link") A_DIM
+#define PCNEWH       A_RESET IMS("     pc_" A_PINK "new") A_DIM
+
+
+
 #define CATCH_SIGSEGV // Coredumps won't be produced if this is enabled, but at least you'll get a cool message.
 #define DEBUG_DRIVER  // Whether to perform certain actions in response to touching or writing various files.
 #define ENABLE_SPAM   // Whether to print ASCII art when a crash is detected.
 #define INDENT_MAX   80 // The maximum number of spaces of indentation in the debug output.
 #define INDENT_WIDTH 2  // The number of spaces per indentation level in the debug output.
 #define DEBUG_STRAIGHT  // Whether to use vertical box drawing characters instead of brackets in the debug output.
-// #define DEBUG_EXTRA     // Whether to enable less important debug messages.
+#define DEBUG_EXTRA     // Whether to enable less important debug messages.
 // #define DEBUG_SETPTR // Whether to print all uses of SETPTR.
 // #define DEBUG_LOCKS  // Whether to print messages when mutexes are locked or unlocked.
 

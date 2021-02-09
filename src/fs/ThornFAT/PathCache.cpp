@@ -1,6 +1,7 @@
 #include "fs/ThornFAT/ThornFAT.h"
 #include "fs/ThornFAT/FDCache.h"
 #include "fs/ThornFAT/PathCache.h"
+#include "fs/ThornFAT/Util.h"
 #include "lib/printf.h"
 
 namespace Thorn::FS::ThornFAT {
@@ -116,7 +117,7 @@ namespace Thorn::FS::ThornFAT {
 		if (out)
 			*out = &overwrite_iter->second;
 
-		printf("\e[36m[PathCache::insert]\e[0m Overwrote a path cache entry at index %lu.\n", map_offset);
+		DBGF(PCINSERTH, "Overwrote a path cache entry at index %lu.", map_offset);
 		overflowIndex = (overflowIndex + 1) % PATHC_MAX;
 
 		// if (locked != NULL) {

@@ -110,7 +110,7 @@ namespace Thorn::FS::ThornFAT {
 			else if (out)
 				*out = rootdir;
 
-			DBG(FATFINDH, "Returning the root.");
+			DBGF(FATFINDH, "Returning the root: %s", std::string(rootdir).c_str());
 			FF_EXIT;
 			return status;
 		}
@@ -124,7 +124,7 @@ namespace Thorn::FS::ThornFAT {
 		std::string newpath, remaining = path;
 
 		// Start at the root.
-		DirEntry &dir = getRoot();
+		DirEntry dir = getRoot();
 		off_t dir_offset = superblock.startBlock * superblock.blockSize;
 
 		bool done = false;
@@ -333,15 +333,17 @@ namespace Thorn::FS::ThornFAT {
 		HELLO("");
 		ENTER;
 
+		off_t start = superblock.startBlock * superblock.blockSize;
+		if (offset) {
+			DBGFE("getRoot", "Setting offset to " BLR, start);
+			*offset = start;
+		}
+
 		// If the root directory is already cached, we can simply return a pointer to the cached entry.
 		if (root.startBlock != UNUSABLE) {
 			EXIT;
 			return root;
 		}
-
-		off_t start = superblock.startBlock * superblock.blockSize;
-		if (offset)
-			*offset = start;
 
 		int status = partition->read(&root, sizeof(DirEntry), start);
 		CHECKS(GETROOTH, "Couldn't read");
@@ -349,6 +351,7 @@ namespace Thorn::FS::ThornFAT {
 		// 	DEBUG("[ThornFAT::getRoot] Reading failed.\n");
 		// }
 
+		EXIT;
 		return root;
 	}
 
@@ -402,7 +405,7 @@ namespace Thorn::FS::ThornFAT {
 		// DEBUG("\n");
 
 		char first_name[THORNFAT_PATH_MAX + 1];
-		memcpy(first_name, raw.data(), THORNFAT_PATH_MAX);
+		memcpy(first_name, raw.data() + offsetof(DirEntry, name), THORNFAT_PATH_MAX);
 		if (strcmp(first_name, ".") == 0) {
 			// The directory contains a "." entry, presumably in addition to a ".." entry.
 			// This means there are two meta-entries before the actual entries.
@@ -436,7 +439,7 @@ namespace Thorn::FS::ThornFAT {
 
 			DirEntry entry;
 			memcpy(&entry, raw.data() + sizeof(DirEntry) * i, sizeof(DirEntry));
-			DBGFE("readDir", "[i=%d, offset=%lu] %s", i, sizeof(DirEntry) * i, std::string(entry).c_str());
+			DBGFE("readDir", "[i=%d, offset=%5lu] %s", i, sizeof(DirEntry) * i, std::string(entry).c_str());
 
 			const int entries_per_block = superblock.blockSize / sizeof(DirEntry);
 			rem = i % entries_per_block;
@@ -587,11 +590,8 @@ namespace Thorn::FS::ThornFAT {
 			return -ENAMETOOLONG;
 		}
 
-		DirEntry newfile = {
-			.times = (times == NULL? Times(0, 0, 0) : *times), // TODO: implement time
-			.length = length,
-			.type = type,
-		};
+		// TODO: implement time.
+		DirEntry newfile(times == NULL? Times(0, 0, 0) : *times, length, type);
 
 		block_t free_block = findFreeBlock();
 		if (noalloc) {
@@ -1246,9 +1246,9 @@ namespace Thorn::FS::ThornFAT {
 		SCHECK(MKDIRH, "newFile failed");
 
 		// Set a copy of the parent directory with its named changed to ".." as the first entry in the new directory.
-		// TODO: is updating the parent like this dangerous? Is it actually a copy?
-		updateName(*parent, "..");
-		status = writeEntry(*parent, subdir->startBlock * superblock.blockSize);
+		DirEntry parent_copy = *parent;
+		updateName(parent_copy, "..");
+		status = writeEntry(parent_copy, subdir->startBlock * superblock.blockSize);
 		// if (status < 0) {
 		// 	serprintf("[ThornFATDriver::mkdir] writeEntry failed: %s\n", strerror(-status));
 		// 	return status;
@@ -1379,7 +1379,6 @@ namespace Thorn::FS::ThornFAT {
 			DBGF(READDIRH, "Excluding " BULR " freed entr%s.", excluded, PLURALY(excluded));
 		}
 
-		// DEBUG("[ThornFATDriver::readdir] Done.\n");
 		DBGE(READDIRH, "Done.");
 		DBG_ON();
 		return 0;
@@ -1402,7 +1401,6 @@ namespace Thorn::FS::ThornFAT {
 		const size_t block_count = partition->length / block_size;
 
 		if (block_count < MINBLOCKS) {
-			// DEBUG("[ThornFATDriver::make] Number of blocks for partition is too small: %lu\n", block_count);
 			DBGF("make", "Number of blocks for partition is too small: %lu", block_count);
 			return false;
 		}
@@ -1410,7 +1408,6 @@ namespace Thorn::FS::ThornFAT {
 		if (block_size % sizeof(DirEntry)) {
 			// The block size must be a multiple of the size of a directory entry because it must be possible to fill a
 			// block with directory entries without any space left over.
-			// DEBUG("[ThornFATDriver::make] Block size isn't a multiple of %lu.\n", sizeof(DirEntry));
 			DBGF("make", "Block size isn't a multiple of %lu.", sizeof(DirEntry));
 			return false;
 		}
@@ -1428,7 +1425,6 @@ namespace Thorn::FS::ThornFAT {
 		const size_t table_size = tableSize(block_count, block_size);
 
 		if (UINT32_MAX <= table_size) {
-			// DEBUG("[ThornFATDriver::make] Table size too large: %u\n", table_size);
 			DBGF("make", "Table size too large: %u", table_size);
 			return false;
 		}

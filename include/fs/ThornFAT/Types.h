@@ -56,6 +56,10 @@ namespace Thorn::FS::ThornFAT {
 		mode_t modes = 0;
 		char padding[16] = {0}; // update if THORNFAT_PATH_MAX changes so that sizeof(DirEntry) is a multiple of 64
 
+		DirEntry() = default;
+		DirEntry(const Times &, size_t, FileType);
+		DirEntry(const DirEntry &);
+		DirEntry & operator=(const DirEntry &);
 		bool isFile() const { return type == FileType::File; }
 		bool isDirectory() const { return type == FileType::Directory; }
 		void reset();
