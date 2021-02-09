@@ -69,7 +69,7 @@ namespace Thorn::FS {
 			virtual int rmdir(const char *path) = 0;
 			virtual int unlink(const char *path) = 0;
 			virtual int open(const char *path) = 0;
-			virtual int read(const char *path, char *buffer, size_t size, off_t offset) = 0;
+			virtual int read(const char *path, void *buffer, size_t size, off_t offset) = 0;
 			virtual int readdir(const char *path, DirFiller filler) = 0;
 			virtual int getattr(const char *path, FileStats &) = 0;
 			/** Does this partition contain a valid instance of the filesystem? */

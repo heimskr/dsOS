@@ -1499,8 +1499,113 @@ namespace Thorn::FS::ThornFAT {
 		return 0;
 	}
 
-	int ThornFATDriver::read(const char *path, char *buffer, size_t size, off_t offset) {
-		return 0;
+	int ThornFATDriver::read(const char *path, void *buffer, size_t size, off_t offset) {
+		HELLO(path);
+		const size_t bs = superblock.blockSize;
+
+		DBGL;
+		DBGF(READH, OMETHOD("read") BSTR DM " offset " BLR DM " size " BLR, path, offset, size);
+
+		DirEntry *file;
+		off_t file_offset;
+
+		int status = find(-1, path, nullptr, &file, &file_offset);
+		SCHECK(READH, "fat_find failed");
+
+		size_t length = file->length;
+		if (length == 0 && file->isDirectory()) {
+			// This should already be prevented by fat_find().
+			DBG(READH, "ENOENT");
+			WARNS(READH, "Can't open empty (i.e., free) directory" SUDARR IDS("ENOENT"));
+			return -ENOENT;
+		}
+
+		if (length <= static_cast<size_t>(offset)) {
+			// The offset extends beyond the length of the file, so there's nothing to read.
+			DBGN(READH, "Done (nothing to read).", 0);
+			return 0;
+		}
+
+		block_t block = file->startBlock;
+		size_t bytes_read = 0;
+		size_t size_left = size;
+		size_t to_read;
+
+		off_t offset_left = offset;
+		while (static_cast<off_t>(bs) <= offset_left) {
+			const block_t block_fat = readFAT(block);
+			if (block_fat != -2 && block_fat < 1) {
+				DBGF(READH, "Next block is invalid (" BDR ")" SUDARR IDS("EINVAL"), block);
+				return -EINVAL;
+			}
+
+			block = block_fat;
+			offset_left -= bs;
+		}
+
+		// Seek to the block containing the relevant offset plus the remainder of the offset.
+		CHECKBLOCK(READH, "Invalid block");
+		size_t position = block * bs + offset_left;
+		DBGN(READH, "Seek:", block * bs + offset_left);
+
+		if (offset_left + size <= bs) {
+			// If the amount to read doesn't require us to move into other blocks, just finish everything here.
+			DBGN(READH, "Performing \e[36msmall read\e[36m from block", block);
+			DBGN(READH, "Offset left:", offset_left);
+			DBGN(READH, "Size:", size);
+			status = partition->read(buffer, size, position);
+			SCHECK(READH, "Couldn't read into buffer:");
+			position += size;
+			size_left = 0;
+			bytes_read += size;
+		} else if (0 < offset_left) {
+			// We'll need to read multiple blocks and we're currently not block-aligned, so let's fix that.
+			to_read = bs - offset_left;
+			status = partition->read(buffer, to_read, position);
+			SCHECK(READH, "Couldn't read into buffer:");
+			position += to_read;
+			bytes_read += to_read;
+			size_left -= to_read;
+		}
+
+		while (0 < size_left) {
+			// Don't read more than one block at a time.
+			to_read = bs < size_left? bs : size_left;
+
+			DBGN(READH, "Reading from block:\e[36m", block);
+			// status = read(imgfd, buf + bytes_read, to_read);
+			status = partition->read(static_cast<char *>(buffer) + bytes_read, to_read, position);
+			position += to_read;
+			SCHECK(READH, "Couldn't read into buffer:");
+
+			bytes_read += to_read;
+			size_left  -= to_read;
+			if (size_left == 0)
+				break;
+
+			block = readFAT(block);
+			if (block == -2 && size_left != 0) {
+				// We still have more to read, but this block was the last one. That's not good.
+				// Log a warning and break out of the loop. This won't happen unless the code is
+				// bad or the disk image is corrupted.
+				WARNS(READH, "There is still more to read, but there are no more blocks left!");
+				break;
+			}
+
+			DBGF(READH, "Next block: " BDR "; size left: " BLR, block, size_left);
+			if (block != FINAL)
+				position = block * bs;
+		}
+
+		// TODO: time syscall.
+		// file->times.accessed = NOW;
+		DBGN(READH, "Writing new access time to entry:", file->times.accessed);
+		status = writeEntry(*file, file_offset);
+		SCHECK(READH, "fat_write_entry (update accessed) status");
+
+		// Return the number of bytes we read into the buffer.
+		DBGN(READH, "Done.", bytes_read);
+		return bytes_read;
 	}
 
 	int ThornFATDriver::readdir(const char *path, DirFiller filler) {
