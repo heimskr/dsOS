@@ -988,7 +988,7 @@ namespace Thorn::FS::ThornFAT {
 		writeMany((block_t) 0, times);
 	}
 
-	void ThornFATDriver::initData(size_t block_count, size_t table_size) {
+	void ThornFATDriver::initData(size_t, size_t table_size) {
 		root.reset();
 		root.name.str[0] = '.';
 		root.length = 2 * sizeof(DirEntry);
@@ -1146,15 +1146,24 @@ namespace Thorn::FS::ThornFAT {
 		return 0;
 	}
 
-	int ThornFATDriver::release(const char *path) {
+	int ThornFATDriver::release(const char *) {
 		return 0;
 	}
 
-	int ThornFATDriver::statfs(const char *, DriverStats &) {
+	int ThornFATDriver::statfs(const char *, DriverStats &stats) {
+		stats.magic = MAGIC;
+		stats.nameMax = THORNFAT_PATH_MAX;
+		stats.optimalBlockSize = superblock.blockSize;
+		stats.totalBlocks = superblock.blockCount;
+		// TODO: stats.freeBlocks
+		// TODO: stats.availableBlocks
+		// TODO: stats.files
+		// TODO: stats.freeFiles
+		// TODO: stats.flags
 		return 0;
 	}
 
-	int ThornFATDriver::utimens(const char *path, const timespec &) {
+	int ThornFATDriver::utimens(const char *, const timespec &) {
 		return 0;
 	}
 
