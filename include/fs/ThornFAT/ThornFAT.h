@@ -6,8 +6,6 @@
 #include <vector>
 
 #include "fs/FS.h"
-#include "fs/ThornFAT/FDCache.h"
-#include "fs/ThornFAT/PathCache.h"
 #include "fs/ThornFAT/Types.h"
 
 namespace Thorn::FS::ThornFAT {
@@ -100,9 +98,8 @@ namespace Thorn::FS::ThornFAT {
 
 			/** Attempts to remove a file.
 			 *  @param path          A file path.
-			 *  @param remove_pentry Whether to remove the entry (by path) from the path cache.
 			 *  @return Returns 0 if the operation succeeded or a negative error code otherwise. */
-			int remove(const char *path, bool remove_pentry);
+			int remove(const char *path);
 
 			/** Attempts to resize a file or directory. If the new size is smaller than the old size, the leftover data
 			 *  will be zeroed out. This modifies both the directory entry argument and the data on the disk.
@@ -211,7 +208,5 @@ namespace Thorn::FS::ThornFAT {
 			bool make(uint32_t block_size);
 
 			ThornFATDriver(Partition *);
-			PathCache pathCache = this;
-			FDCache fdCache = this;
 	};
 }

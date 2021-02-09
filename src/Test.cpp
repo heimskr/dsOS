@@ -370,13 +370,6 @@ namespace Thorn {
 			handleInput("sel port 0");
 			handleInput("sel part 0");
 			handleInput("init tfat");
-		} else if (pieces[0] == "clearpc") {
-			if (!mainContext.driver) printf("Driver isn't ready.\n");
-			else if (!mainContext.driver->verify()) printf("Driver couldn't verify filesystem validity.\n");
-			else {
-				mainContext.driver->pathCache.clear();
-				tprintf("Cleared pcache.\n");
-			}
 		} else if (pieces[0] == "printfat") {
 			if (!mainContext.driver) printf("Driver isn't ready.\n");
 			else if (!mainContext.driver->verify()) printf("Driver couldn't verify filesystem validity.\n");

@@ -43,52 +43,6 @@ namespace Thorn::FS::ThornFAT {
 	METHOD_OFF(INDEX_FATFIND);
 #endif
 
-		if (!get_parent) {
-			// If we're not trying to find the parent directory, then we
-			// can try to find the information in either of the caches.
-			PathCacheEntry *pc_entry = nullptr;
-
-			DBGFE(FATFINDH, CHMETHOD("fat_find") "fd " BFDR ", path " BSTR, fd, path == NULL? "null" : path);
-
-			if (FD_VALID(fd)) {
-				// Try to find the file in the cache based on the file descriptor if one's provided.
-				FDCacheEntry *fc_entry = fdCache.find(fd);
-				if (fc_entry) {
-					DBGN(FATFINDH, "Found from " ICS("fdcache") " for file descriptor", fd);
-					pc_entry = fc_entry->complement;
-				} else if (!path) {
-					// If a file descriptor was the only criterion, we don't have enough to continue.
-					FF_EXIT;
-					return -ENOENT;
-				}
-			}
-
-			if (!pc_entry) {
-				// If we couldn't find a file by file descriptor, then we'll have to try to find it by path instead.
-				pc_entry = pathCache.find(path);
-				if (pc_entry != NULL)
-					DBGF(FATFINDH, "Found from " IMS("pcache") " for path " BSTR DM " offset " BLR, path,
-						pc_entry->offset);
-			}
-
-			if (pc_entry) {
-				// We found something. Store its entry and its offset and we're done.
-				const char *filename = pc_entry->entry.name.str;
-				if (strlen(filename) == 0)
-					WARNS(FATFINDH, SUB "pc_entry" DARR "entry" DARR "fname: " A_RED "empty" A_RESET);
-
-				if (offset)
-					*offset = pc_entry->offset;
-
-				if (out)
-					*out = pc_entry->entry;
-
-				DBG(FATFINDH, "Returning from cache.");
-				FF_EXIT;
-				return 0;
-			}
-		}
-
 		if (strcmp(path, "/") == 0 || strlen(path) == 0) {
 			// For the special case of "/" or "" (maybe that last one should be invalid...), return the root directory.
 			DirEntry &rootdir = getRoot(offset);
@@ -238,7 +192,6 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		blocksFree += removed;
-		// save(&superblock, pcache.fat);
 		EXIT;
 		return removed;
 	}
@@ -300,12 +253,7 @@ namespace Thorn::FS::ThornFAT {
 			dir_cpy.name.str[0] = dir_cpy.name.str[1] = '.';
 			// write(imgfd, &dir_cpy, sizeof(DirEntry));
 			status = partition->write(&dir_cpy, sizeof(DirEntry), offset + sizeof(DirEntry));
-			// if (status != 0) {
-			// 	DBGF(WRENTRYH, "Writing failed: %s", strerror(status));
-			// 	return -status;
-			// }
 			SCHECKX(WRENTRYH, "Writing failed");
-			// IFERRNOXC(WARN(WRENTRYH, "write() failed " UDARR " " DSR, strerror(errno)));
 		}
 
 		if (dir.startBlock == superblock.startBlock) {
@@ -313,16 +261,6 @@ namespace Thorn::FS::ThornFAT {
 				&root? '=' : '!');
 			if (&dir != &root)
 				root.length = dir.length;
-		}
-
-		// If fat_write_entry() is called, it's probably because something about the entry was recently changed.
-		// If the length changed, this might invalidate a corresponding pcache entry.
-		// We're assuming the offset is still valid.
-		PathCacheEntry *found = pathCache.find(offset);
-		if (found && found->entry.length != dir.length) {
-			DBGF(WRENTRYH, "Updating " IMS("pcache") " entry length for " BSR DLS BDR SUDARR BDR, found->path,
-				found->entry.length, dir.length);
-			found->entry.length = dir.length;
 		}
 
 		EXIT;
@@ -339,17 +277,15 @@ namespace Thorn::FS::ThornFAT {
 			*offset = start;
 		}
 
-		// If the root directory is already cached, we can simply return a pointer to the cached entry.
+		// If the root directory is already cached, we can simply return a reference to the cached entry.
 		if (root.startBlock != UNUSABLE) {
 			EXIT;
 			return root;
 		}
 
 		int status = partition->read(&root, sizeof(DirEntry), start);
-		CHECKS(GETROOTH, "Couldn't read");
-		// if (status) {
-		// 	DEBUG("[ThornFAT::getRoot] Reading failed.\n");
-		// }
+		if (status)
+			DBGF(GETROOTH, "Reading failed: %s", STRERR(status));
 
 		EXIT;
 		return root;
@@ -628,7 +564,7 @@ namespace Thorn::FS::ThornFAT {
 			// SUCC(NEWFILEH, "Allocated " BSR " at block " BDR ".", path, free_block);
 		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 
-			// Allocate the first block, decrement the free blocks count and flush the cache to disk.
+			// Allocate the first block and decrement the free blocks count.
 			writeFAT(free_block, FINAL);
 			--blocksFree;
 			// DEBUG("!noalloc: startBlock set to %d\n", free_block);
@@ -710,7 +646,6 @@ namespace Thorn::FS::ThornFAT {
 				// If we don't have enough blocks, we should stop now before we make any changes to the filesystem.
 				WARN(NEWFILEH, "No free block " UDARR " " DSR, "ENOSPC");
 				writeFAT(old_free_block, 0);
-				// pcache.fat[old_free_block] = 0;
 				NF_EXIT;
 				return -ENOSPC;
 			}
@@ -828,7 +763,6 @@ namespace Thorn::FS::ThornFAT {
 					writeFAT(0, old_free_block);
 					WARN(NEWFILEH, "No free block " UDARR " " DSR, "ENOSPC");
 					countFree();
-					// fat_save(imgfd, &superblock, pcache.fat);
 					NF_EXIT;
 					return -ENOSPC;
 				}
@@ -839,23 +773,10 @@ namespace Thorn::FS::ThornFAT {
 			}
 
 			writeFAT(FINAL, block);
+		}
 
-			// Attempt to insert the new item into the pcache.
-			DBGF(NEWFILEH, "About to insert into " IMS("pcache") DLS BSTR DMS "offset" DLS BLR, newfile.name.str,
-				offset);
-			PathCacheEntry *item;
-			PCInsertStatus insert_status = pathCache.insert(path, newfile, offset, &item);
-			DBG(NEWFILEH, "Inserted.");
-			if (insert_status != PCInsertStatus::Success && insert_status != PCInsertStatus::Overwritten) {
-				// Inserting a pcache entry should always work. If it doesn't, there's a bug somewhere.
-				DIE(NEWFILEH, IMS("pc_insert") "() failed (" BDR ")", status);
-				return -666;
-			} else if (dir_out)
-				*dir_out = item->entry;
-		} else if (dir_out)
+		if (dir_out)
 			*dir_out = newfile;
-
-		// fat_save(imgfd, &superblock, pcache.fat);
 
 		if (offset_out)
 			*offset_out = offset;
@@ -880,9 +801,8 @@ namespace Thorn::FS::ThornFAT {
 		return parent_is_new;
 	}
 
-	int ThornFATDriver::remove(const char *path, bool remove_pentry) {
-		DBGF(REMOVEH, "Removing " BSR " from the filesystem %s from " IMS("pcache") ".",
-			path, remove_pentry? "and" : "but not");
+	int ThornFATDriver::remove(const char *path) {
+		DBGF(REMOVEH, "Removing " BSR " from the filesystem.", path);
 
 		DirEntry found;
 		off_t offset;
@@ -898,10 +818,6 @@ namespace Thorn::FS::ThornFAT {
 		forget(found.startBlock);
 		found.startBlock = 0;
 		writeEntry(found, offset);
-		// fat_save(imgfd, &superblock, pcache.fat);
-
-		if (remove_pentry)
-			pathCache.erase(path);
 
 		return 0;
 	}
@@ -941,7 +857,6 @@ namespace Thorn::FS::ThornFAT {
 			// Update the file length and then save the directory entry.
 			file.length = 0;
 			writeEntry(file, file_offset);
-			// fat_save(&superblock, pcache.fat);
 		} else if (old_c == new_c) {
 			DBGF(RESIZEH, "No change in block count (" BLR ")", old_c);
 			// Easy: no block boundaries need to be crossed.
@@ -990,7 +905,6 @@ namespace Thorn::FS::ThornFAT {
 			file.length = new_size;
 			status = writeEntry(file, file_offset);
 			SCHECKX(RESIZEH, "fat_write_entry failed");
-			// fat_save(imgfd, &pcache.sb, pcache.fat);
 		} else {
 			DBGF(RESIZEH, "Increasing block count from " BLR " to " BLR ".", old_c, new_c);
 
@@ -1037,7 +951,6 @@ namespace Thorn::FS::ThornFAT {
 				file_offset, file.length, new_size);
 			file.length = new_size;
 			writeEntry(file, file_offset);
-			// fat_save(imgfd, &pcache.sb, pcache.fat);
 		}
 
 		SUCCS(RESIZEH, "Successfully resized.");
@@ -1106,7 +1019,7 @@ namespace Thorn::FS::ThornFAT {
 	block_t ThornFATDriver::findFreeBlock() {
 		auto block_c = superblock.blockCount;
 		for (decltype(block_c) i = 0; i < block_c; i++)
-			if (readFAT(i) == 0) // TODO: cache FAT
+			if (readFAT(i) == 0)
 				return i;
 		return UNUSABLE;
 	}
@@ -1224,9 +1137,6 @@ namespace Thorn::FS::ThornFAT {
 		status = find(-1, srcpath, &src_entry, &src_offset, false, nullptr);
 		SCHECK(RENAMEH, "fat_find failed for old path");
 
-		// Start by removing the source from the pcache.
-		pathCache.erase(src_offset);
-
 		status = find(-1, destpath, &dest_entry, &dest_offset, false, nullptr);
 		DBGN(RENAMEH, "fat_find status:", status);
 		if (status < 0 && status != -ENOENT) {
@@ -1239,12 +1149,8 @@ namespace Thorn::FS::ThornFAT {
 			// The offset of its directory entry will then be available for us to use.
 			// We don't have to worry about not having enough space in this case; in fact,
 			// we're actually freeing up at least one block.
-			status = remove(destpath, true);
+			status = remove(destpath);
 			SCHECK(RENAMEH, "Couldn't unlink target");
-
-			// fat_remove would normally remove the corresponding pcache entry, but it uses string comparisons. We have
-			// the offset, so we can do it faster if we search by offset instead.
-			pathCache.erase(dest_offset);
 		} else if (status == -ENOENT) {
 			DBGFE(RENAMEH, IUS("Destination " BSR " doesn't exist."), destpath);
 			// If the destination doesn't exist, we need to try to add another directory entry to the destination
@@ -1278,9 +1184,6 @@ namespace Thorn::FS::ThornFAT {
 		status = partition->write(nothing, sizeof(DirEntry), src_offset);
 		SCHECK(RENAMEH, "Writing failed");
 
-		// Finally, we add the newly moved file to the pcache.
-		DBG(RENAMEH, "Adding to " IMS("pcache") ".");
-		pathCache.insert(destpath, src_entry, dest_offset, nullptr);
 		SUCC(RENAMEH, "Moved " BSR " to " BSR ".", srcpath, destpath);
 		return 0;
 	}
