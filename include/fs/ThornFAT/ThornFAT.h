@@ -53,6 +53,9 @@ namespace Thorn::FS::ThornFAT {
 			 *  Returns the number of blocks that were freed. */
 			size_t forget(block_t start);
 
+			/** Returns the length of a chain of blocks. Returns the length of the chain (including the first block). */
+			size_t chainLength(block_t start);
+
 			/** Writes a directory entry at a given offset. 
 			 *  Returns 0 if the operation was successful or a negative error code otherwise. */
 			int writeEntry(const DirEntry &, off_t);
@@ -104,9 +107,20 @@ namespace Thorn::FS::ThornFAT {
 			/** Attempts to remove a file.
 			 *  @param path          A file path.
 			 *  @param remove_pentry Whether to remove the entry (by path) from the path cache.
-			 *  @return Returns 0 if the operation succeeded or a negative error code otherwise.
-			 */
+			 *  @return Returns 0 if the operation succeeded or a negative error code otherwise. */
 			int remove(const char *path, bool remove_pentry);
+
+			/** Attempts to resize a file or directory. If the new size is smaller than the old size, the leftover data
+			 *  will be zeroed out. This modifies both the directory entry argument and the data on the disk.
+			 *  @param file        A reference to a directory entry.
+			 *  @param file_offset The starting offset of the file.
+			 *  @param new_size    The new size of the file.
+			 *  @return Returns 0 if the operation succeeded or a negative error code otherwise. */
+			int resize(DirEntry &file, off_t file_offset, size_t new_size);
+
+			/** Zeroes out the free space at the end of a file. Useful when truncating a file.
+			 *  Returns 0 if the operation was successful or a negative error code otherwise. */
+			int zeroOutFree(const DirEntry &file, size_t new_size);
 
 			/** Attempts to find a free block in a file allocation table.
 			 *  @return Returns the index of the first free block if any were found; -1 otherwise. */

@@ -378,6 +378,7 @@ inline int IS_X(const char *p, const char *x) {
 #define PCFINDOFFH   A_RESET IMS("pc_" A_CHARTREUSE "find_off") A_DIM
 #define PCLINKH      A_RESET IMS("    pc_link") A_DIM
 #define PCNEWH       A_RESET IMS("     pc_" A_PINK "new") A_DIM
+#define FD_VALID(fd) ((fd) != UINT64_MAX)
 
 
 

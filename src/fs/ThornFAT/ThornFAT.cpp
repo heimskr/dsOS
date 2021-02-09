@@ -11,10 +11,6 @@
 #include "Kernel.h"
 #include "ThornUtil.h"
 
-#define FD_VALID(fd) ((fd) != UINT64_MAX)
-// #define DEBUG(...)
-// #define DEBUG(...) serprintf(__VA_ARGS__)
-
 namespace Thorn::FS::ThornFAT {
 	char ThornFATDriver::nothing[sizeof(DirEntry)] = {0};
 
@@ -32,11 +28,6 @@ namespace Thorn::FS::ThornFAT {
 		// }
 		return -status;
 	}
-
-	// void ThornFATDriver::error(const std::string &err) {
-	// 	DEBUG("Error: %s\n", err.c_str());
-	// 	for (;;) asm("hlt");
-	// }
 
 	int ThornFATDriver::find(fd_t fd, const char *path, DirEntry *out, DirEntry **outptr, off_t *offset,
 	                         bool get_parent, std::string *last_name) {
@@ -263,6 +254,35 @@ namespace Thorn::FS::ThornFAT {
 		return removed;
 	}
 
+	size_t ThornFATDriver::chainLength(block_t start) {
+		HELLO("");
+		ENTER;
+		size_t length = 0;
+		if (readFAT(start) == 0) {
+			WARNS("chain_length", "Start block is free.");
+		} else {
+			block_t block = start;
+			for (;;) {
+				length++;
+				block = readFAT(block);
+				if (block == -2) {
+					break;
+				} else if (block == 0) {
+					WARNS("chain_length", "Chain ended on free block.");
+					break;
+				} else if (block == -1) {
+					WARNS("chain_length", "Chain ended on invalid block.");
+					break;
+				} else if (block < -2) {
+					DIE("chain_length", "Chain contains an invalid block: " BDR, block);
+				}
+			}
+		}
+
+		EXIT;
+		return length;
+	}
+
 	int ThornFATDriver::writeEntry(const DirEntry &dir, off_t offset) {
 		HELLO(dir.name.str);
 		ENTER;
@@ -443,6 +463,7 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		for (const DirEntry &entry: entries) {
+			(void) entry;
 			DBGFE("readDir", "Entry: " BSR, std::string(entry).c_str());
 		}
 
@@ -875,6 +896,203 @@ namespace Thorn::FS::ThornFAT {
 		return 0;
 	}
 
+	int ThornFATDriver::resize(DirEntry &file, off_t file_offset, size_t new_size) {
+		HELLO(file.name.str);
+		ENTER;
+		if (file.length == new_size) {
+			DBGF(RESIZEH, IYS("Skipping") " resize for path " BSTR " to size " BLR " (same size)",
+				file.name.str, new_size);
+			EXIT;
+			return 0;
+		}
+
+		size_t old_calculated;
+		const size_t new_c = Thorn::Util::updiv(new_size, static_cast<size_t>(superblock.blockSize));
+		const size_t old_apparent = Thorn::Util::updiv(file.length, static_cast<size_t>(superblock.blockSize));
+
+		if (file.startBlock == 0) {
+			WARNS(RESIZEH, "Trying to resize a free file. Defaulting to apparent block length.");
+			old_calculated = old_apparent;
+		} else {
+			old_calculated = chainLength(file.startBlock);
+		}
+
+		const size_t old_c = old_calculated;
+		DBGF(RESIZEH, ICS("Resizing") " for path " BSTR " to new size " BLR "; file" DARR "length" DL " " BDR DM
+			" blocks needed for old size" DL " " BLR DM " blocks needed for new size" DL " " BLR,
+			file.name.str, new_size, file.length, old_c, new_c);
+
+		if (new_size == 0) {
+			DBG(RESIZEH, "Truncating to 0.");
+			// Deallocate all blocks belonging to the file and keep just the first block allocated.
+			forget(file.startBlock);
+			writeFAT(file.startBlock, FINAL);
+
+			// Update the file length and then save the directory entry.
+			file.length = 0;
+			writeEntry(file, file_offset);
+			// fat_save(&superblock, pcache.fat);
+		} else if (old_c == new_c) {
+			DBGF(RESIZEH, "No change in block count (" BLR ")", old_c);
+			// Easy: no block boundaries need to be crossed.
+
+			int status;
+			if (new_size < file.length) {
+				// We need to zero out the end.
+				status = zeroOutFree(file, new_size);
+				SCHECKX(RESIZEH, "fat_zero_out_free status");
+			}
+
+			DBGF(RESIZEH, ICS("Trying to change file" DARR "length") " at " BLR " from " BDR " byte(s) to " BLR " byte(s)",
+				file_offset, file.length, new_size);
+			file.length = new_size;
+			status = writeEntry(file, file_offset);
+			SCHECKX(RESIZEH, "fat_write_entry status");
+		} else if (new_c < old_c) {
+			// Less easy: we have to shrink the file.
+
+			DBGF(RESIZEH, "Reducing block count from " BLR " to " BLR ".", old_c, new_c);
+
+			block_t blocks[old_c];
+			block_t block = file.startBlock;
+			for (size_t i = 0; i < old_c; i++) {
+				blocks[i] = block;
+				DBGN(RESIZEH, IMS("Noting") " a FAT block:", blocks[i]);
+				block = readFAT(block);
+			}
+
+			DBGE(RESIZEH, "About to zero out free space.");
+			int status = zeroOutFree(file, new_size);
+			SCHECKX(RESIZEH, "fat_zero_out_free status");
+
+			for (size_t i = new_c; i < old_c; i++) {
+				DBGN(RESIZEH, ILS("Freeing") " a FAT block:", blocks[i]);
+				writeFAT(blocks[i], 0);
+				++blocksFree;
+			}
+
+			if (0 < new_c) {
+				DBGN(RESIZEH, ILS("Ending") " a FAT block:", blocks[new_c - 1]);
+				writeFAT(blocks[new_c - 1], FINAL);
+			}
+
+			DBGN(RESIZEH, "Setting new byte length to", new_size);
+			file.length = new_size;
+			status = writeEntry(file, file_offset);
+			SCHECKX(RESIZEH, "fat_write_entry failed");
+			// fat_save(imgfd, &pcache.sb, pcache.fat);
+		} else {
+			DBGF(RESIZEH, "Increasing block count from " BLR " to " BLR ".", old_c, new_c);
+
+			// The tricky one: we have to absorb more blocks.
+			// Let's first make sure we can add enough additional blocks.
+			size_t to_add = new_c - (old_c || 1);
+			DBGF(RESIZEH, "Trying to add " BLR " block%s", PLURALS(to_add));
+			if (!hasFree(to_add)) {
+				WARNS(RESIZEH, "Not enough blocks " UDARR " " IDS("ENOSPC"));
+				EXIT;
+				return -ENOSPC;
+			}
+
+			block_t new_block;
+			block_t block = file.startBlock;
+			size_t skipped = 0, added = 0;
+
+			for (;;) {
+				new_block = readFAT(block);
+				if (new_block <= 0)
+					break;
+				block = readFAT(block);
+				++skipped;
+			}
+
+			for (size_t i = 0; i < to_add; i++) {
+				new_block = findFreeBlock();
+				if (new_block == -1) {
+					WARNS(RESIZEH, "Out of space " UDARR " " IDS("ENOSPC"));
+					EXIT;
+					return -ENOSPC;
+				}
+
+				DBGN(RESIZEH, IGS("Added") " block", new_block);
+				writeFAT(block, new_block);
+				writeFAT(new_block, FINAL);
+				block = new_block;
+				++added;
+			}
+
+			blocksFree -= added;
+
+			DBGF(RESIZEH, "Trying to change file" DARR "length at offset " BLR " from " BDR " to " BLR ".",
+				file_offset, file.length, new_size);
+			file.length = new_size;
+			writeEntry(file, file_offset);
+			// fat_save(imgfd, &pcache.sb, pcache.fat);
+		}
+
+		SUCCS(RESIZEH, "Successfully resized.");
+		EXIT; return 0;
+	}
+
+	int ThornFATDriver::zeroOutFree(const DirEntry &file, size_t new_size) {
+		HELLO(file.name.str);
+		ENTER;
+		DBGF(ZEROOUTFREEH, "Freeing space for file at block " BDR DS " size" DL " " BDR " " UDARR " " BDR,
+			file.startBlock, file.length, new_size);
+		uint32_t bs = superblock.blockSize;
+
+		if (new_size % bs == 0) {
+			// There's nothing to do here.
+			EXIT;
+			return 0;
+		}
+
+		size_t diff = file.length - new_size;
+		if (file.length <= new_size) {
+			WARN(ZEROOUTFREEH, "New size isn't smaller than old size (diff = " BDR "); skipping.", diff);
+			EXIT;
+			return 0;
+		}
+
+		uint32_t remaining = new_size;
+		block_t block = file.startBlock;
+
+		CHECKBLOCK(ZEROOUTFREEH, "Invalid block");
+		// lseek(imgfd, block * bs, SEEK_SET);
+		// ECHECKXC(ZEROOUTFREEH, "lseek() failed");
+
+		size_t position = block * bs;
+
+		DBGF(ZEROOUTFREEH, "bs = " BDR DM " remaining = " BUR, bs, remaining);
+		while (bs < remaining) {
+			DBGF(ZEROOUTFREEH, BDR " " UDARR " " BDR, block, readFAT(block));
+			block = readFAT(block);
+			CHECKBLOCK(ZEROOUTFREEH, "Invalid block in loop");
+			position = block * bs;
+			// lseek(imgfd, block * bs, SEEK_SET);
+			// ECHECKXC(ZEROOUTFREEH, "lseek() failed");
+			remaining -= bs;
+		}
+
+		position += remaining;
+		static char empty[1024] = {0};
+		int status;
+		while (sizeof(empty) <= diff) {
+			status = partition->write(empty, sizeof(empty), position);
+			SCHECK(ZEROOUTFREEH, "Writing to partition failed");
+			position += sizeof(empty);
+		}
+
+		if (0 < diff) {
+			status = partition->write(empty, diff, position);
+			SCHECK(ZEROOUTFREEH, "Writing to partition failed");
+		}
+
+		DBG(ZEROOUTFREEH, "Done.");
+		EXIT;
+		return 0;
+	}
+
 	block_t ThornFATDriver::findFreeBlock() {
 		auto block_c = superblock.blockCount;
 		for (decltype(block_c) i = 0; i < block_c; i++)
@@ -1125,6 +1343,23 @@ namespace Thorn::FS::ThornFAT {
 	}
 
 	int ThornFATDriver::write(const char *path, const char *buffer, size_t size, off_t offset) {
+		HELLO(path);
+		DBGL;
+		DBGF(WRITEH, PMETHOD("write") BSTR DMS "offset " BLR DMS "size " BLR, path, offset, size);
+
+		const size_t bs = superblock.blockSize;
+
+		DirEntry *file;
+		off_t file_offset;
+
+		DBG(WRITEH, "Finding file");
+		int status = find(-1, path, nullptr, &file, &file_offset);
+		SCHECK(WRITEH, "fat_find failed");
+		DBG2(WRITEH, "Found file:", file->name.str);
+
+		size_t length = file->length;
+		size_t new_size = offset + size > length? offset + size : length;
+		// status =
 
 		return 0;
 	}
