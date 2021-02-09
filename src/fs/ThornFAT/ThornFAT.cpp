@@ -1359,9 +1359,92 @@ namespace Thorn::FS::ThornFAT {
 
 		size_t length = file->length;
 		size_t new_size = offset + size > length? offset + size : length;
-		// status =
+		status = resize(*file, file_offset, new_size);
+		SCHECK(WRITEH, "resize failed");
 
-		return 0;
+		block_t block = file->startBlock;
+		DBGF(WRITEH, "Starting write with block offset " BLR ", file offset " BLR ".", block * bs, offset);
+
+		off_t offset_left = offset;
+		while (static_cast<off_t>(bs) <= offset_left) {
+			const block_t block_fat = readFAT(block);
+			if (block_fat != -2 && block_fat < 1) {
+				DBGN(WRITEH, "Next block is invalid:", block);
+			}
+
+			block = block_fat;
+			DBGF(WRITEH, "Skipping to block " BDR " " DARR " offset " BLR, block, block * bs);
+			offset_left -= bs;
+		}
+
+		CHECKBLOCK(WRITEH, "Invalid block");
+
+		size_t position = block * bs + offset_left;
+		ssize_t size_left = size;
+		ssize_t to_write;
+		ssize_t bytes_written = 0;
+		if (offset_left + size <= bs) {
+			// If the amount to write doesn't require us to move into other blocks, just finish everything here.
+			DBGF(WRITEH, "Performing " IPS("small write") " of size " BLR " to block " BDR " with " BLR
+				" remaining offset.", size, block, offset_left);
+			status = partition->write(buffer, size, position);
+			position += size;
+			SCHECK(WRITEH, "Couldn't write from buffer");
+			size_left = 0;
+			bytes_written += size;
+		} else if (0 < offset_left) {
+			// We'll need to write multiple blocks and we're currently not block-aligned, so let's fix that.
+			to_write = bs - offset_left;
+			DBGF(WRITEH, "Writing " BLR " block%s to block-align.", PLURALS(to_write));
+			status = partition->write(buffer, to_write, position);
+			CHECKS(WRITEH, "Couldn't write to block-align");
+			position += to_write;
+			DBGH(WRITEH, "Now at offset", block * bs + offset_left + to_write);
+			SCHECK(WRITEH, "Couldn't write from buffer");
+
+			block = readFAT(block);
+			const block_t block_fat = readFAT(block);
+			if (block_fat != FINAL && block_fat < 1)
+				DBGN(WRITEH, "Next block is invalid:", block);
+
+			CHECKBLOCK(WRITEH, "Invalid block during block alignment");
+			DBGN(WRITEH, "Jumping to block", block);
+			position = block * bs;
+			DBGH(WRITEH, "Now at offset", block * bs);
+
+			bytes_written += to_write;
+			size_left -= to_write;
+		}
+
+		while (0 < size_left) {
+			// Don't write more than one block at a time.
+			to_write = static_cast<ssize_t>(bs) < size_left? bs : size_left;
+
+			DBGN(WRITEH, "Writing to block" A_PINK, block);
+			status = partition->write(buffer + bytes_written, to_write, position);
+			SCHECK(WRITEH, "Couldn't read into buffer");
+			position += to_write;
+
+			bytes_written += to_write;
+			size_left  -= to_write;
+			block = readFAT(block);
+			if (block == FINAL && size_left != 0) {
+				// We still have more to write, but this block was the last one.
+				WARNS(WRITEH, "There is still more to write, but there are no more blocks left!");
+				break;
+			} else if (block != FINAL) {
+				DBGF(WRITEH, "Next block" DL " " BDR DS " seeking to" DL " " BULR, block, block * bs);
+				CHECKBLOCK(WRITEH, "Invalid block while writing");
+				position = block * bs;
+			}
+		}
+
+		// TODO: time syscall. Syscalls in general, really.
+		// file->times.modified = NOW;
+
+		writeEntry(*file, file_offset);
+		SUCC(WRITEH, "Wrote " BLR " byte%s", PLURALS(bytes_written));
+		return bytes_written;
 	}
 
 	int ThornFATDriver::mkdir(const char *path, mode_t mode) {

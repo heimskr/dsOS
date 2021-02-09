@@ -34,7 +34,7 @@ namespace Thorn::IDE {
 			printf("Drive not found!\n");
 			status = ENXIO; // Drive not found!
 		} else if (((lba + numsects) > devices[drive].size) && (devices[drive].type == IDE_ATA)) {
-			status = -EINVAL; // Seeking to invalid position.
+			status = EINVAL; // Seeking to invalid position.
 		} else {
 			uint8_t err = 0;
 			if (devices[drive].type == IDE_ATA)
