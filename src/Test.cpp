@@ -362,6 +362,8 @@ namespace Thorn {
 			read(pieces, mainContext);
 		} else if (pieces[0] == "write") {
 			write(pieces, mainContext);
+		} else if (pieces[0] == "create") {
+			create(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -377,6 +379,30 @@ namespace Thorn {
 			}
 		} else
 			tprintf("Unknown command.\n");
+	}
+
+	void create(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() != 2 && pieces.size() != 3) {
+			tprintf("Usage:\n- create <path> [modes]\n");
+		} else if (!context.driver) {
+			tprintf("Driver isn't ready.\n");
+		} else if (!context.driver->verify()) {
+			tprintf("Driver couldn't verify filesystem validity.\n");
+		}
+
+		const std::string path = FS::simplifyPath(context.path, pieces[1]);
+		size_t modes = 0644;
+
+		if (pieces.size() == 3 && !Util::parseUlong(pieces[2], modes, 8)) {
+			tprintf("Couldn't parse modes.\n");
+			return;
+		}
+
+		int status = context.driver->create(path.c_str(), modes);
+		if (status != 0)
+			tprintf("Couldn't create file: %s\n", strerror(-status));
+		else
+			tprintf("Created %s.\n", path.c_str());
 	}
 
 	void write(const std::vector<std::string> &pieces, InputContext &context) {
@@ -424,7 +450,7 @@ namespace Thorn {
 			return;
 		}
 
-		printf("%s: [%s]\n", path.c_str(), buffer);
+		tprintf("%s: [%s]\n", path.c_str(), buffer);
 	}
 
 	void mkdir(const std::vector<std::string> &pieces, InputContext &context) {
