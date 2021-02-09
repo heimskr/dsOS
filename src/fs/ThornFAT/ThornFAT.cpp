@@ -1163,7 +1163,25 @@ namespace Thorn::FS::ThornFAT {
 		return 0;
 	}
 
-	int ThornFATDriver::utimens(const char *, const timespec &) {
+	int ThornFATDriver::utimens(const char *path, const timespec &ts) {
+		HELLO(path);
+
+		long time_now = ts.tv_sec;
+
+		DBGL;
+		DBGF(UTIMENSH, BMETHOD("utimens") BSTR DM " current time " BLR, path, time_now);
+
+		DirEntry *dir;
+		off_t offset;
+
+		int status = find(-1, path, nullptr, &dir, &offset);
+		SCHECK(UTIMENSH, "find failed");
+
+		dir->times.accessed = time_now;
+		dir->times.modified = time_now;
+
+		status = writeEntry(*dir, offset);
+		SCHECK(UTIMENSH, "writeEntry failed");
 		return 0;
 	}
 

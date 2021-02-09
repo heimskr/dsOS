@@ -30,11 +30,11 @@ namespace Thorn::FS::ThornFAT {
 	} __attribute__((packed));
 
 	struct Times {
-		time_t created  = 0;
-		time_t modified = 0;
-		time_t accessed = 0;
+		long created  = 0;
+		long modified = 0;
+		long accessed = 0;
 		Times() = default;
-		Times(time_t created_, time_t modified_, time_t accessed_):
+		Times(long created_, long modified_, long accessed_):
 			created(created_), modified(modified_), accessed(accessed_) {}
 	};
 
