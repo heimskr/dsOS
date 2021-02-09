@@ -394,7 +394,7 @@ namespace Thorn {
 			joined += " " + pieces[i];
 
 		int status = context.driver->write(path.c_str(), joined.c_str(), joined.size(), 0);
-		if (status == 0)
+		if (status != 0)
 			tprintf("Couldn't write to file: %s\n", strerror(-status));
 		else
 			tprintf("Wrote %lu bytes to %s.\n", joined.size(), path.c_str());
