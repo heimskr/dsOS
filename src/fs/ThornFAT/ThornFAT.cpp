@@ -517,8 +517,6 @@ namespace Thorn::FS::ThornFAT {
 			SCHECK(NEWFILEH, "fat_find failed");
 		}
 
-		DBGF(NEWFILEH, "parent[0x%lx] -> %s", parent, std::string(parent).c_str());
-
 		// First, check the filename length.
 		const size_t ln_length = last_name.size();
 		if (THORNFAT_PATH_MAX < ln_length) {
@@ -529,29 +527,15 @@ namespace Thorn::FS::ThornFAT {
 			return -ENAMETOOLONG;
 		}
 
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		// TODO: implement time.
 		DirEntry newfile(times == NULL? Times(0, 0, 0) : *times, length, type);
-		DBGF(NEWFILEH, "newfile: %s", std::string(newfile).c_str());
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		block_t free_block = findFreeBlock();
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		if (noalloc) {
 			// We provide an option not to allocate space for the file. This is helpful for fat_rename, when we just
 			// need to find an offset where an existing directory entry can be moved to. It's possibly okay if no
 			// free block is available if the parent directory has enough space for another entry.
-			// DEBUG("noalloc: startBlock set to 0\n");
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
-
 			newfile.startBlock = 0;
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
-
 		} else {
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
-
 			// We'll need at least one free block to store the new file in so we can
 			// store the starting block in the directory entry we'll create soon.
 			if (free_block == UNUSABLE) {
@@ -561,21 +545,16 @@ namespace Thorn::FS::ThornFAT {
 				return -ENOSPC;
 			}
 
-			// SUCC(NEWFILEH, "Allocated " BSR " at block " BDR ".", path, free_block);
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
+			SUCC(NEWFILEH, "Allocated " BSR " at block " BDR ".", path, free_block);
 
 			// Allocate the first block and decrement the free blocks count.
 			writeFAT(free_block, FINAL);
 			--blocksFree;
-			// DEBUG("!noalloc: startBlock set to %d\n", free_block);
 			newfile.startBlock = free_block;
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 
 			// There's not a point in copying the name to the entry if this function
 			// is being called just to get an offset to move an existing entry to.
 			memcpy(newfile.name.str, last_name.c_str(), ln_length);
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
-
 		}
 
 		block_t old_free_block = free_block;
@@ -584,10 +563,8 @@ namespace Thorn::FS::ThornFAT {
 		std::vector<DirEntry> entries;
 		std::vector<off_t> offsets;
 		int first_index;
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		status = readDir(parent, entries, &offsets, &first_index);
 		SCHECK(NEWFILEH, "readDir failed");
-		DBGF(NEWFILEH, "parent: %s", std::string(parent).c_str());
 		size_t count = entries.size();
 
 		// Check all the directory entries except the initial meta-entries.
@@ -653,8 +630,6 @@ namespace Thorn::FS::ThornFAT {
 			// The offset of the free space is the sum of the parent's starting offset and its length.
 			// Try to write the entry to it.
 			offset = parent.startBlock * bs + parent.length;
-			DBGF(NEWFILEH, "startBlock[%d], bs[%lu], parent -> %s",
-				parent.startBlock, bs, std::string(parent).c_str());
 			status = writeEntry(newfile, offset);
 			SCHECK(NEWFILEH, "Couldn't add entry to parent directory");
 		} else {
