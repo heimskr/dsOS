@@ -1685,6 +1685,15 @@ namespace Thorn::FS::ThornFAT {
 		return 0;
 	}
 
+	int ThornFATDriver::getsize(const char *path, size_t &out) {
+		DirEntry *found;
+		off_t offset;
+		int status = find(-1, path, nullptr, &found, &offset);
+		SCHECK("getsize", "find failed");
+		out = found->length;
+		return 0;
+	}
+
 	bool ThornFATDriver::make(uint32_t block_size) {
 		int status = partition->clear();
 		if (status != 0) {

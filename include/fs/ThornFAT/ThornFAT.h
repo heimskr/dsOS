@@ -211,6 +211,7 @@ namespace Thorn::FS::ThornFAT {
 			virtual int read(const char *path, void *buffer, size_t size, off_t offset) override;
 			virtual int readdir(const char *path, DirFiller filler) override;
 			virtual int getattr(const char *path, FileStats &) override;
+			virtual int getsize(const char *path, size_t &out) override;
 			virtual bool verify() override;
 			virtual void cleanup() override {}
 			bool make(uint32_t block_size);

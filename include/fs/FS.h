@@ -72,6 +72,7 @@ namespace Thorn::FS {
 			virtual int read(const char *path, void *buffer, size_t size, off_t offset) = 0;
 			virtual int readdir(const char *path, DirFiller filler) = 0;
 			virtual int getattr(const char *path, FileStats &) = 0;
+			virtual int getsize(const char *path, size_t &out) = 0;
 			/** Does this partition contain a valid instance of the filesystem? */
 			virtual bool verify() = 0;
 			virtual void cleanup() = 0;

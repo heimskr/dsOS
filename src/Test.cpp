@@ -371,8 +371,37 @@ namespace Thorn {
 				mainContext.driver->pathCache.clear();
 				tprintf("Cleared pcache.\n");
 			}
+		} else if (pieces[0] == "read") {
+			read(pieces, mainContext);
 		} else
 			tprintf("Unknown command.\n");
+	}
+
+	void read(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() != 2) {
+			tprintf("Usage:\n- read <path>\n");
+		} else if (!context.driver) {
+			tprintf("Driver isn't ready.\n");
+		} else if (!context.driver->verify()) {
+			tprintf("Driver couldn't verify filesystem validity.\n");
+		}
+
+		const std::string path = FS::simplifyPath(context.path, pieces[1]);
+		size_t size;
+		int status = context.driver->getsize(path.c_str(), size);
+		if (status != 0) {
+			tprintf("Couldn't read filesize: %s\n", strerror(-status));
+			return;
+		}
+
+		char *buffer = new char[size];
+		status = context.driver->read(path.c_str(), buffer, size, 0);
+		if (status == 0) {
+			tprintf("Couldn't read file: %s\n", strerror(-status));
+			return;
+		}
+
+		printf("%s: [%s]\n", path.c_str(), buffer);
 	}
 
 	void mkdir(const std::vector<std::string> &pieces, InputContext &context) {
