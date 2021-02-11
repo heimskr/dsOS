@@ -29,9 +29,6 @@
 
 namespace Thorn {
 	void runTests() {
-		// testUHCI();
-		// initAHCI();
-		// testAHCI();
 		testPS2Keyboard();
 	}
 
@@ -49,10 +46,6 @@ namespace Thorn {
 			using namespace Thorn::Ports;
 
 			uint32_t bar4 = controller.address;
-
-			// for (int i = 0; i <= 0xff; ++i)
-			// 	printf("%x (%x): %x\n", i, bar4 + i, inb(bar4 + i));
-			// 	printf("%x: %x\n", i, controller.device->readByte(i) & 0xff);
 
 			printf("0x34: %x\n", controller.device->readByte(34) & 0xff);
 

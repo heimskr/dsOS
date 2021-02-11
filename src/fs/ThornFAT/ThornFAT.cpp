@@ -787,6 +787,9 @@ namespace Thorn::FS::ThornFAT {
 		DBG_ONE();
 		SCHECK(REMOVEH, "fat_find failed");
 
+		if (found.isDirectory())
+			return -EISDIR;
+
 		DBGF(REMOVEH, "Offset" DL " " BLR DM " start" DL " " BDR DM " next block" DL " " BDR, offset, found.startBlock,
 			readFAT(found.startBlock));
 
