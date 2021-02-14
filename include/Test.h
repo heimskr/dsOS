@@ -41,9 +41,10 @@ namespace Thorn {
 
 	extern InputContext mainContext;
 
+	void readSerial(const std::vector<std::string> &, InputContext &);
 	void set(const std::vector<std::string> &, InputContext &);
 	void bars(const std::vector<std::string> &, InputContext &);
-	void serialWrite(const std::vector<std::string> &, InputContext &);
+	void writeSerial(const std::vector<std::string> &, InputContext &);
 	void cd(const std::vector<std::string> &, InputContext &);
 	void rmdir(const std::vector<std::string> &, InputContext &);
 	void remove(const std::vector<std::string> &, InputContext &);

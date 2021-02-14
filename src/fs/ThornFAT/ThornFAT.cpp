@@ -1674,6 +1674,11 @@ namespace Thorn::FS::ThornFAT {
 		return found.isFile()? 1 : 0;
 	}
 
+	int ThornFATDriver::exists(const char *path) {
+		DirEntry found;
+		return find(-1, path, &found);
+	}
+
 	bool ThornFATDriver::make(uint32_t block_size) {
 		int status = partition->clear();
 		if (status != 0) {

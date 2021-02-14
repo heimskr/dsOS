@@ -269,6 +269,7 @@ namespace Thorn {
 						case Keyboard::InputKey::KeyRightCtrl:
 						case Keyboard::InputKey::KeyLeftMeta:
 						case Keyboard::InputKey::KeyRightMeta:
+						case Keyboard::InputKey::KeyCapsLock:
 						case Keyboard::InputKey::Invalid:
 							break;
 						default:
@@ -364,23 +365,11 @@ namespace Thorn {
 		} else if (pieces[0] == "cd") {
 			cd(pieces, mainContext);
 		} else if (pieces[0] == "serial") {
-			serialWrite(pieces, mainContext);
+			writeSerial(pieces, mainContext);
 		} else if (pieces[0] == "set") {
 			set(pieces, mainContext);
 		} else if (pieces[0] == "readserial") {
-			std::string input;
-			for (;;) {
-				char ch = Serial::read(mainContext.portBase);
-				if (ch == '^') {
-					char next = Serial::read(mainContext.portBase);
-					if (next == '^')
-						input += ch;
-					else if (next == 'q')
-						break;
-				} else
-					input += ch;
-			}
-			tprintf("Serial input: [%s]\n", input.c_str());
+			readSerial(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -399,6 +388,59 @@ namespace Thorn {
 			}
 		} else
 			tprintf("Unknown command.\n");
+	}
+
+	void readSerial(const std::vector<std::string> &pieces, InputContext &context) {
+		auto usage = [] { tprintf("Usage:\n- readserial [file]\n"); };
+		if (2 < pieces.size()) {
+			usage();
+			return;
+		}
+
+		std::string path;
+
+		if (pieces.size() == 2) {
+			if (!context.driver) {
+				tprintf("Driver isn't ready.\n");
+				return;
+			} else if (!context.driver->verify()) {
+				tprintf("Driver couldn't verify filesystem validity.\n");
+				return;
+			} else {
+				path = FS::simplifyPath(context.path, pieces[1]);
+				int status = context.driver->isfile(path.c_str());
+				if (status < 0) {
+					tprintf("Couldn't check for file: %s (%d)\n", strerror(-status), status);
+					return;
+				} else if (status == 0) {
+					tprintf("%s is a directory.\n", path.c_str());
+					return;
+				}
+			}
+		}
+
+		std::string input;
+		for (;;) {
+			char ch = Serial::read(context.portBase);
+			if (ch == '^') {
+				char next = Serial::read(context.portBase);
+				if (next == '^')
+					input += ch;
+				else if (next == 'q')
+					break;
+			} else
+				input += ch;
+		}
+
+		if (path.empty()) {
+			tprintf("Serial input: [%s]\n", input.c_str());
+		} else {
+			int status = context.driver->write(path.c_str(), input.c_str(), input.size(), 0);
+			if (status < 0)
+				tprintf("Couldn't write to %s: %s (%d)\n", path.c_str(), strerror(-status), status);
+			else
+				tprintf("Wrote %lu byte%s to %s.\n", input.size(), input.size() == 1? "" : "s", path.c_str());
+		}
 	}
 
 	void set(const std::vector<std::string> &pieces, InputContext &context) {
@@ -428,7 +470,7 @@ namespace Thorn {
 		}
 	}
 
-	void serialWrite(const std::vector<std::string> &pieces, InputContext &context) {
+	void writeSerial(const std::vector<std::string> &pieces, InputContext &context) {
 		if (pieces.size() < 2) {
 			tprintf("Usage:\n- serial <text...>\n");
 			return;
