@@ -9,15 +9,15 @@ namespace Thorn::Device {
 
 namespace Thorn::FS {
 
-	struct WriteRecord {
+	struct Record {
 		size_t size;
 		off_t offset;
 
-		WriteRecord(size_t size_, off_t offset_): size(size_), offset(offset_) {}
+		Record(size_t size_, off_t offset_): size(size_), offset(offset_) {}
 	};
 
 	struct Partition {
-		std::vector<WriteRecord> records;
+		std::vector<Record> writeRecords, readRecords;
 		Device::DeviceBase *parent;
 		/** Number of bytes after the start of the disk. */
 		off_t offset;

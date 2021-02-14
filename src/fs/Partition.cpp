@@ -9,12 +9,13 @@
 
 namespace Thorn::FS {
 	int Partition::read(void *buffer, size_t size, off_t offset) {
+		readRecords.emplace_back(size, offset);
 		// printf("\e[32m[read(buffer, %lu, %ld)]\e[0m\n", size, offset);
 		return parent->read(buffer, size, offset);
 	}
 
 	int Partition::write(const void *buffer, size_t size, off_t offset) {
-		records.emplace_back(size, offset);
+		writeRecords.emplace_back(size, offset);
 #ifdef DEBUG_WRITES
 		printf("\e[32m[\e[31mwrite\e[32m(buffer, %lu, %ld)]\e[0m", size, offset);
 		if (size == 320) {
