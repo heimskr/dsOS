@@ -41,6 +41,7 @@ namespace Thorn {
 
 	extern InputContext mainContext;
 
+	void printSize(const std::vector<std::string> &, InputContext &);
 	void readSerial(const std::vector<std::string> &, InputContext &);
 	void set(const std::vector<std::string> &, InputContext &);
 	void bars(const std::vector<std::string> &, InputContext &);

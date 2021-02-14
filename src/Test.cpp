@@ -370,6 +370,8 @@ namespace Thorn {
 			set(pieces, mainContext);
 		} else if (pieces[0] == "readserial") {
 			readSerial(pieces, mainContext);
+		} else if (pieces[0] == "size") {
+			printSize(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -390,10 +392,27 @@ namespace Thorn {
 			tprintf("Unknown command.\n");
 	}
 
+	void printSize(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() != 2) {
+			tprintf("Usage:\n- size <file>\n");
+		} else if (!context.driver) {
+			tprintf("Driver isn't ready.\n");
+		} else if (!context.driver->verify()) {
+			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			size_t size;
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			int status = context.driver->getsize(path.c_str(), size);
+			if (status != 0)
+				tprintf("Couldn't check filesize: %s (%d)\n", strerror(-status), status);
+			else
+				tprintf("Filesize of %s: %lu\n", path.c_str(), size);
+		}
+	}
+
 	void readSerial(const std::vector<std::string> &pieces, InputContext &context) {
-		auto usage = [] { tprintf("Usage:\n- readserial [file]\n"); };
 		if (2 < pieces.size()) {
-			usage();
+			tprintf("Usage:\n- readserial [file]\n");
 			return;
 		}
 
