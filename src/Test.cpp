@@ -470,7 +470,10 @@ namespace Thorn {
 		}
 
 		if (path.empty()) {
-			tprintf("Serial input: [%s]\n", input.c_str());
+			printf("Serial input: [");
+			for (size_t i = 0; i < input.size(); ++i)
+				printf("%c", input[i]);
+			printf("]\n");
 			return;
 		}
 
@@ -663,10 +666,10 @@ namespace Thorn {
 				return;
 			}
 
-			tprintf("%s: [", path.c_str());
+			printf("%s: [", path.c_str());
 			for (size_t i = 0; i < size; ++i)
-				tprintf("%c", buffer[i]);
-			tprintf("]\n");
+				printf("%c", buffer[i]);
+			printf("]\n");
 		}
 	}
 
