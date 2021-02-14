@@ -597,11 +597,16 @@ namespace Thorn {
 			for (size_t i = 3; i < pieces.size(); ++i)
 				joined += " " + pieces[i];
 
-			int status = context.driver->write(path.c_str(), joined.c_str(), joined.size(), 0);
-			if (status < 0)
-				tprintf("Couldn't write to file: %s (%d)\n", strerror(-status), status);
-			else
-				tprintf("Wrote %lu bytes to %s.\n", joined.size(), path.c_str());
+			int status = context.driver->truncate(path.c_str(), joined.size());
+			if (status < 0) {
+				tprintf("Couldn't truncate file: %s (%d)\n", strerror(-status), status);
+			} else {
+				status = context.driver->write(path.c_str(), joined.c_str(), joined.size(), 0);
+				if (status < 0)
+					tprintf("Couldn't write to file: %s (%d)\n", strerror(-status), status);
+				else
+					tprintf("Wrote %lu bytes to %s.\n", joined.size(), path.c_str());
+			}
 		}
 	}
 
