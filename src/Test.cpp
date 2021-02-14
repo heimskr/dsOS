@@ -373,16 +373,7 @@ namespace Thorn {
 		} else if (pieces[0] == "size") {
 			printSize(pieces, mainContext);
 		} else if (pieces[0] == "records") {
-			if (!mainContext.partition)
-				tprintf("Partition is invalid.\n");
-			else if (pieces.size() != 2 || (pieces[1] != "write" && pieces[1] != "read"))
-				tprintf("Usage:\n- records write\n- records read\n");
-			else if (pieces[1] == "write")
-				for (const auto &record: mainContext.partition->writeRecords)
-					printf("[s=%lu, o=%lu]\n", record.size, record.offset);
-			else if (pieces[1] == "read")
-				for (const auto &record: mainContext.partition->readRecords)
-					printf("[s=%lu, o=%lu]\n", record.size, record.offset);
+			records(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -401,6 +392,22 @@ namespace Thorn {
 			}
 		} else
 			tprintf("Unknown command.\n");
+	}
+
+	void records(const std::vector<std::string> &pieces, InputContext &context) {
+		auto usage = [] { tprintf("Usage:\n- records write\n- records read\n"); };
+		if (!mainContext.partition)
+			tprintf("Partition is invalid.\n");
+		else if (pieces.size() != 2)
+			usage();
+		else if (pieces[1] == "write")
+			for (const auto &record: mainContext.partition->writeRecords)
+				printf("[s=%lu, o=%lu]\n", record.size, record.offset);
+		else if (pieces[1] == "read")
+			for (const auto &record: mainContext.partition->readRecords)
+				printf("[s=%lu, o=%lu]\n", record.size, record.offset);
+		else
+			usage();
 	}
 
 	void printSize(const std::vector<std::string> &pieces, InputContext &context) {
