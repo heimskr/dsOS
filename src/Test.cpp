@@ -372,6 +372,12 @@ namespace Thorn {
 			readSerial(pieces, mainContext);
 		} else if (pieces[0] == "size") {
 			printSize(pieces, mainContext);
+		} else if (pieces[0] == "records") {
+			if (!mainContext.partition)
+				tprintf("Partition is invalid.\n");
+			else
+				for (const auto &record: mainContext.partition->records)
+					printf("[s=%lu, o=%lu]\n", record.size, record.offset);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -453,13 +459,20 @@ namespace Thorn {
 
 		if (path.empty()) {
 			tprintf("Serial input: [%s]\n", input.c_str());
-		} else {
-			int status = context.driver->write(path.c_str(), input.c_str(), input.size(), 0);
-			if (status < 0)
-				tprintf("Couldn't write to %s: %s (%d)\n", path.c_str(), strerror(-status), status);
-			else
-				tprintf("Wrote %lu byte%s to %s.\n", input.size(), input.size() == 1? "" : "s", path.c_str());
+			return;
 		}
+
+		int status = context.driver->truncate(path.c_str(), input.size());
+		if (status < 0) {
+			tprintf("Couldn't truncate file: %s (%d)\n", strerror(-status), status);
+			return;
+		}
+
+		status = context.driver->write(path.c_str(), input.c_str(), input.size(), 0);
+		if (status < 0)
+			tprintf("Couldn't write to %s: %s (%d)\n", path.c_str(), strerror(-status), status);
+		else
+			tprintf("Wrote %lu byte%s to %s.\n", input.size(), input.size() == 1? "" : "s", path.c_str());
 	}
 
 	void set(const std::vector<std::string> &pieces, InputContext &context) {
