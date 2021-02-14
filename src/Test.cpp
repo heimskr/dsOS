@@ -633,7 +633,10 @@ namespace Thorn {
 				return;
 			}
 
-			tprintf("%s: [%s]\n", path.c_str(), buffer);
+			tprintf("%s: [", path.c_str());
+			for (size_t i = 0; i < size; ++i)
+				tprintf("%c", buffer[i]);
+			tprintf("]\n");
 		}
 	}
 
