@@ -77,6 +77,9 @@ $(ISO_FILE): kernel
 run: $(ISO_FILE)
 	qemu-system-x86_64 $(QEMU_MAIN) $(QEMU_EXTRA)
 
+pipe: $(ISO_FILE)
+	qemu-system-x86_64 $(QEMU_MAIN) $(QEMU_EXTRA) < pipe
+
 clean:
 	rm -rf *.o **/*.o `find src -iname "*.o"` kernel iso kernel.iso
 

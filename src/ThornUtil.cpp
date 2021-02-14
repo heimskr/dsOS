@@ -1,6 +1,7 @@
 #include <cstdlib>
 
 #include "ThornUtil.h"
+#include "lib/printf.h"
 
 namespace Thorn::Util {
 	bool parseLong(const std::string &str, long &out, int base) {

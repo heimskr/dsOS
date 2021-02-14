@@ -363,6 +363,24 @@ namespace Thorn {
 			rmdir(pieces, mainContext);
 		} else if (pieces[0] == "cd") {
 			cd(pieces, mainContext);
+		} else if (pieces[0] == "serial") {
+			serialWrite(pieces, mainContext);
+		} else if (pieces[0] == "set") {
+			set(pieces, mainContext);
+		} else if (pieces[0] == "readserial") {
+			std::string input;
+			for (;;) {
+				char ch = Serial::read(mainContext.portBase);
+				if (ch == '^') {
+					char next = Serial::read(mainContext.portBase);
+					if (next == '^')
+						input += ch;
+					else if (next == 'q')
+						break;
+				} else
+					input += ch;
+			}
+			tprintf("Serial input: [%s]\n", input.c_str());
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -383,6 +401,51 @@ namespace Thorn {
 			tprintf("Unknown command.\n");
 	}
 
+	void set(const std::vector<std::string> &pieces, InputContext &context) {
+		auto usage = [] { tprintf("Usage:\n- set baseport <baseport>\n"); };
+		if (pieces.size() < 2) {
+			usage();
+		} else if (pieces[1] == "baseport") {
+			if (pieces.size() != 3) {
+				usage();
+			} else {
+				long baseport;
+				if (2 < pieces[2].size() && pieces[2].substr(0, 2) == "0x") {
+					if (!Util::parseLong(pieces[2].substr(2), baseport, 16)) {
+						tprintf("Invalid baseport.\n");
+						return;
+					}
+				} else if (!Util::parseLong(pieces[2], baseport)) {
+					tprintf("Invalid baseport.\n");
+					return;
+				}
+
+				context.portBase = baseport;
+				tprintf("baseport set to 0x%x.\n", static_cast<Ports::port_t>(baseport));
+			}
+		} else {
+			usage();
+		}
+	}
+
+	void serialWrite(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() < 2) {
+			tprintf("Usage:\n- serial <text...>\n");
+			return;
+		}
+
+		Serial::ready = false;
+		if (!Serial::init(context.portBase)) {
+			tprintf("Serial failed to initialize for base 0x%x.\n", context.portBase);
+		} else {
+			std::string text = pieces[1];
+			for (size_t i = 2; i < pieces.size(); ++i)
+				text += " " + pieces[i];
+			Serial::write(text.c_str(), context.portBase);
+			Serial::write('\n', context.portBase);
+		}
+	}
+
 	void cd(const std::vector<std::string> &pieces, InputContext &context) {
 		if (pieces.size() != 2) {
 			tprintf("Usage:\n- cd <path>\n");
@@ -390,16 +453,16 @@ namespace Thorn {
 			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
 			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			int status = context.driver->isdir(path.c_str());
+			if (status == 0)
+				tprintf("Can't change directory: path is a file\n");
+			else if (status < 0)
+				tprintf("Can't change directory: %s (%d)\n", strerror(-status), status);
+			else
+				context.path = path;
 		}
-
-		const std::string path = FS::simplifyPath(context.path, pieces[1]);
-		int status = context.driver->isdir(path.c_str());
-		if (status == 0)
-			tprintf("Can't change directory: path is a file\n");
-		else if (status < 0)
-			tprintf("Can't change directory: %s (%d)\n", strerror(-status), status);
-		else
-			context.path = path;
 	}
 
 	void rmdir(const std::vector<std::string> &pieces, InputContext &context) {
@@ -409,14 +472,14 @@ namespace Thorn {
 			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
 			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			int status = context.driver->rmdir(path.c_str());
+			if (status != 0)
+				tprintf("Couldn't remove directory: %s (%d)\n", strerror(-status), status);
+			else
+				tprintf("Removed %s.\n", path.c_str());
 		}
-
-		const std::string path = FS::simplifyPath(context.path, pieces[1]);
-		int status = context.driver->rmdir(path.c_str());
-		if (status != 0)
-			tprintf("Couldn't remove directory: %s (%d)\n", strerror(-status), status);
-		else
-			tprintf("Removed %s.\n", path.c_str());
 	}
 
 	void remove(const std::vector<std::string> &pieces, InputContext &context) {
@@ -426,14 +489,14 @@ namespace Thorn {
 			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
 			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			int status = context.driver->unlink(path.c_str());
+			if (status != 0)
+				tprintf("Couldn't remove file: %s (%d)\n", strerror(-status), status);
+			else
+				tprintf("Removed %s.\n", path.c_str());
 		}
-
-		const std::string path = FS::simplifyPath(context.path, pieces[1]);
-		int status = context.driver->unlink(path.c_str());
-		if (status != 0)
-			tprintf("Couldn't remove file: %s (%d)\n", strerror(-status), status);
-		else
-			tprintf("Removed %s.\n", path.c_str());
 	}
 
 	void create(const std::vector<std::string> &pieces, InputContext &context) {
@@ -443,21 +506,21 @@ namespace Thorn {
 			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
 			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			size_t modes = 0644;
+
+			if (pieces.size() == 3 && !Util::parseUlong(pieces[2], modes, 8)) {
+				tprintf("Couldn't parse modes.\n");
+				return;
+			}
+
+			int status = context.driver->create(path.c_str(), modes);
+			if (status != 0)
+				tprintf("Couldn't create file: %s (%d)\n", strerror(-status), status);
+			else
+				tprintf("Created %s.\n", path.c_str());
 		}
-
-		const std::string path = FS::simplifyPath(context.path, pieces[1]);
-		size_t modes = 0644;
-
-		if (pieces.size() == 3 && !Util::parseUlong(pieces[2], modes, 8)) {
-			tprintf("Couldn't parse modes.\n");
-			return;
-		}
-
-		int status = context.driver->create(path.c_str(), modes);
-		if (status != 0)
-			tprintf("Couldn't create file: %s (%d)\n", strerror(-status), status);
-		else
-			tprintf("Created %s.\n", path.c_str());
 	}
 
 	void write(const std::vector<std::string> &pieces, InputContext &context) {
@@ -467,18 +530,18 @@ namespace Thorn {
 			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
 			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			std::string joined = pieces[2];
+			for (size_t i = 3; i < pieces.size(); ++i)
+				joined += " " + pieces[i];
+
+			int status = context.driver->write(path.c_str(), joined.c_str(), joined.size(), 0);
+			if (status < 0)
+				tprintf("Couldn't write to file: %s (%d)\n", strerror(-status), status);
+			else
+				tprintf("Wrote %lu bytes to %s.\n", joined.size(), path.c_str());
 		}
-
-		const std::string path = FS::simplifyPath(context.path, pieces[1]);
-		std::string joined = pieces[2];
-		for (size_t i = 3; i < pieces.size(); ++i)
-			joined += " " + pieces[i];
-
-		int status = context.driver->write(path.c_str(), joined.c_str(), joined.size(), 0);
-		if (status < 0)
-			tprintf("Couldn't write to file: %s (%d)\n", strerror(-status), status);
-		else
-			tprintf("Wrote %lu bytes to %s.\n", joined.size(), path.c_str());
 	}
 
 	void read(const std::vector<std::string> &pieces, InputContext &context) {
@@ -488,29 +551,29 @@ namespace Thorn {
 			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
 			tprintf("Driver couldn't verify filesystem validity.\n");
-		}
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			size_t size;
+			int status = context.driver->getsize(path.c_str(), size);
+			if (status != 0) {
+				tprintf("Couldn't read filesize: %s (%d)\n", strerror(-status), status);
+				return;
+			}
 
-		const std::string path = FS::simplifyPath(context.path, pieces[1]);
-		size_t size;
-		int status = context.driver->getsize(path.c_str(), size);
-		if (status != 0) {
-			tprintf("Couldn't read filesize: %s (%d)\n", strerror(-status), status);
-			return;
-		}
+			if (size == 0) {
+				tprintf("File is empty.\n");
+				return;
+			}
 
-		if (size == 0) {
-			tprintf("File is empty.\n");
-			return;
-		}
+			char *buffer = new char[size];
+			status = context.driver->read(path.c_str(), buffer, size, 0);
+			if (status < 0) {
+				tprintf("Couldn't read file: %s (%d)\n", strerror(-status), status);
+				return;
+			}
 
-		char *buffer = new char[size];
-		status = context.driver->read(path.c_str(), buffer, size, 0);
-		if (status < 0) {
-			tprintf("Couldn't read file: %s (%d)\n", strerror(-status), status);
-			return;
+			tprintf("%s: [%s]\n", path.c_str(), buffer);
 		}
-
-		tprintf("%s: [%s]\n", path.c_str(), buffer);
 	}
 
 	void mkdir(const std::vector<std::string> &pieces, InputContext &context) {
@@ -520,12 +583,12 @@ namespace Thorn {
 			tprintf("Driver isn't ready.\n");
 		} else if (!context.driver->verify()) {
 			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			int status = context.driver->mkdir(path.c_str(), 0777);
+			if (status != 0)
+				tprintf("mkdir failed: %s (%d)\n", strerror(-status), status);
 		}
-
-		const std::string path = FS::simplifyPath(context.path, pieces[1]);
-		int status = context.driver->mkdir(path.c_str(), 0777);
-		if (status != 0)
-			tprintf("mkdir failed: %s (%d)\n", strerror(-status), status);
 	}
 
 	void ls(const std::vector<std::string> &pieces, InputContext &context) {
@@ -554,7 +617,9 @@ namespace Thorn {
 	}
 
 	void find(const std::vector<std::string> &pieces, InputContext &) {
-		auto usage = [] { tprintf("Usage:\n- find pci [class] [subclass] [interface]\n"); };
+		auto usage = [] {
+			tprintf("Usage:\n- find pci [class] [subclass] [interface]\n- find bar <bus> <device> <function>\n");
+		};
 		if (pieces.size() < 2) {
 			usage();
 		} else if (pieces[1] == "pci") {
@@ -563,6 +628,7 @@ namespace Thorn {
 				usage();
 				return;
 			}
+
 			long target_baseclass = -1, target_subclass = -1, target_interface = -1;
 			if (3 <= pieces.size() && !Util::parseLong(pieces[2], target_baseclass)) {
 				tprintf("Invalid class: %s\n", pieces[2].c_str());
@@ -576,6 +642,9 @@ namespace Thorn {
 				tprintf("Invalid interface: %s\n", pieces[4].c_str());
 				return;
 			}
+
+			bool color = false;
+			Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Magenta, Terminal::VGAColor::Black);
 
 			for (uint32_t bus = 0; bus < 256; ++bus)
 				for (uint32_t device = 0; device < 32; ++device)
@@ -595,12 +664,39 @@ namespace Thorn {
 							continue;
 						if (PCI::ID::IDSet *pci_ids = PCI::ID::getDeviceIDs(vendor, device_id, 0, 0)) {
 							if (target_baseclass != -1 && target_subclass != -1 && target_interface != -1)
-								tprintf("[%x:%x:%x] %s\n", bus, device, function, pci_ids->deviceName);
+								tprintf("[%x:%x:%x] %s ", bus, device, function, pci_ids->deviceName);
 							else
-								tprintf("[%x:%x:%x] (%x/%x/%x) %s\n", bus, device, function, baseclass, subclass,
+								tprintf("[%x:%x:%x] (%x/%x/%x) %s ", bus, device, function, baseclass, subclass,
 									interface, pci_ids->deviceName);
+							if (color)
+								Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Magenta, Terminal::VGAColor::Black);
+							else
+								Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Cyan, Terminal::VGAColor::Black);
+							color = !color;
 						}
 					}
+			Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::LightGray, Terminal::VGAColor::Black);
+		} else if (pieces[1] == "bar" && pieces.size() == 5) {
+			long target_bus = -1, target_device = -1, target_function = -1;
+			if (!Util::parseLong(pieces[2], target_bus)) {
+				tprintf("Invalid bus: %s\n", pieces[2].c_str());
+			} else if (!Util::parseLong(pieces[3], target_device)) {
+				tprintf("Invalid device: %s\n", pieces[3].c_str());
+			} else if (!Util::parseLong(pieces[4], target_function)) {
+				tprintf("Invalid function: %s\n", pieces[4].c_str());
+			} else {
+				PCI::HeaderNative header = PCI::readNativeHeader({
+					static_cast<unsigned>(target_bus),
+					static_cast<unsigned>(target_device),
+					static_cast<unsigned>(target_function)
+				});
+				printf("BAR0: 0x%x\n", header.bar0);
+				printf("BAR1: 0x%x\n", header.bar1);
+				printf("BAR2: 0x%x\n", header.bar2);
+				printf("BAR3: 0x%x\n", header.bar3);
+				printf("BAR4: 0x%x\n", header.bar4);
+				printf("BAR5: 0x%x\n", header.bar5);
+			}
 		} else {
 			usage();
 		}

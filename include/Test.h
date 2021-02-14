@@ -1,5 +1,7 @@
 #pragma once
 
+#include "hardware/Serial.h"
+
 #include <memory>
 #include <string>
 
@@ -34,10 +36,14 @@ namespace Thorn {
 		FS::Partition *partition = nullptr;
 		FS::ThornFAT::ThornFATDriver *driver = nullptr;
 		std::string path = "/";
+		Ports::port_t portBase = Serial::COM1;
 	};
 
 	extern InputContext mainContext;
 
+	void set(const std::vector<std::string> &, InputContext &);
+	void bars(const std::vector<std::string> &, InputContext &);
+	void serialWrite(const std::vector<std::string> &, InputContext &);
 	void cd(const std::vector<std::string> &, InputContext &);
 	void rmdir(const std::vector<std::string> &, InputContext &);
 	void remove(const std::vector<std::string> &, InputContext &);
