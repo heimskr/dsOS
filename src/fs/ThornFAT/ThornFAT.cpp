@@ -982,6 +982,7 @@ namespace Thorn::FS::ThornFAT {
 			status = partition->write(empty, sizeof(empty), position);
 			SCHECK(ZEROOUTFREEH, "Writing to partition failed");
 			position += sizeof(empty);
+			diff -= sizeof(empty);
 		}
 
 		if (0 < diff) {
@@ -1399,7 +1400,15 @@ namespace Thorn::FS::ThornFAT {
 	}
 
 	int ThornFATDriver::truncate(const char *path, off_t size) {
-		return 0;
+		HELLO(path);
+		DBGL;
+		DBGF("truncate", MMETHOD("truncate") BSTR DM " size " BLR, path, size);
+		DirEntry found;
+		off_t offset;
+		int status = find(-1, path, &found, &offset);
+		SCHECK("truncate", "fat_find failed");
+
+		return resize(found, offset, size);
 	}
 
 	int ThornFATDriver::ftruncate(const char *path, off_t size) {

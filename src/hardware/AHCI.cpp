@@ -610,6 +610,7 @@ namespace Thorn::AHCI {
 	}
 
 	Port::AccessStatus Port::writeBytes(size_t count, size_t offset, const void *buffer) {
+		const size_t original_count = count;
 		uint64_t lba = offset / BLOCKSIZE;
 		offset %= BLOCKSIZE;
 
@@ -649,6 +650,10 @@ namespace Thorn::AHCI {
 			}
 		}
 
+		// if (4 < original_count) {
+		// 	printf("original_count = %lu\n", original_count);
+		// 	Kernel::wait(1, 1);
+		// }
 		return status;
 	}
 
