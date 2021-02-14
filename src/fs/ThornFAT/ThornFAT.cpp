@@ -548,7 +548,7 @@ namespace Thorn::FS::ThornFAT {
 			SUCC(NEWFILEH, "Allocated " BSR " at block " BDR ".", path, free_block);
 
 			// Allocate the first block and decrement the free blocks count.
-			writeFAT(free_block, FINAL);
+			writeFAT(FINAL, free_block);
 			--blocksFree;
 			newfile.startBlock = free_block;
 
@@ -622,7 +622,7 @@ namespace Thorn::FS::ThornFAT {
 				// If we're allocating space for the new file, we need enough blocks to hold it.
 				// If we don't have enough blocks, we should stop now before we make any changes to the filesystem.
 				WARN(NEWFILEH, "No free block " UDARR " " DSR, "ENOSPC");
-				writeFAT(old_free_block, 0);
+				writeFAT(0, old_free_block);
 				NF_EXIT;
 				return -ENOSPC;
 			}
@@ -683,7 +683,7 @@ namespace Thorn::FS::ThornFAT {
 
 				// We'll take the value from the free block we found earlier to use as the next block in the parent
 				// directory.
-				writeFAT(old_free_block, block);
+				writeFAT(block, old_free_block);
 				block = old_free_block;
 
 				if (!noalloc) {
@@ -830,7 +830,7 @@ namespace Thorn::FS::ThornFAT {
 			DBG(RESIZEH, "Truncating to 0.");
 			// Deallocate all blocks belonging to the file and keep just the first block allocated.
 			forget(file.startBlock);
-			writeFAT(file.startBlock, FINAL);
+			writeFAT(FINAL, file.startBlock);
 
 			// Update the file length and then save the directory entry.
 			file.length = 0;
@@ -870,13 +870,13 @@ namespace Thorn::FS::ThornFAT {
 
 			for (size_t i = new_c; i < old_c; i++) {
 				DBGN(RESIZEH, ILS("Freeing") " a FAT block:", blocks[i]);
-				writeFAT(blocks[i], 0);
+				writeFAT(0, blocks[i]);
 				++blocksFree;
 			}
 
 			if (0 < new_c) {
 				DBGN(RESIZEH, ILS("Ending") " a FAT block:", blocks[new_c - 1]);
-				writeFAT(blocks[new_c - 1], FINAL);
+				writeFAT(FINAL, blocks[new_c - 1]);
 			}
 
 			DBGN(RESIZEH, "Setting new byte length to", new_size);
@@ -917,8 +917,8 @@ namespace Thorn::FS::ThornFAT {
 				}
 
 				DBGN(RESIZEH, IGS("Added") " block", new_block);
-				writeFAT(block, new_block);
-				writeFAT(new_block, FINAL);
+				writeFAT(new_block, block);
+				writeFAT(FINAL, new_block);
 				block = new_block;
 				++added;
 			}
