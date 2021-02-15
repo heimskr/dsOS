@@ -32,6 +32,7 @@ namespace Thorn::AHCI {
 		uint8_t irq = device->allocateVector(PCI::Vector::Any);
 		if (irq == 0xff)
 			printf("[AHCI::Controller::init] Failed to allocate vector\n");
+		printf("[AHCI::Controller::init] Assigning IRQ %d\n", irq);
 		while (!(abar->ghc & GHC_ENABLE)) {
 			abar->ghc = abar->ghc | GHC_ENABLE;
 			// TODO: how to wait without interfering with preemption?
@@ -610,7 +611,7 @@ namespace Thorn::AHCI {
 	}
 
 	Port::AccessStatus Port::writeBytes(size_t count, size_t offset, const void *buffer) {
-		const size_t original_count = count;
+		// const size_t original_count = count;
 		uint64_t lba = offset / BLOCKSIZE;
 		offset %= BLOCKSIZE;
 

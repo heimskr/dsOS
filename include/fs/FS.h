@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <stdio.h>
+#include <sys/stat.h>
 
 #include "Defs.h"
 #include "fs/Partition.h"
