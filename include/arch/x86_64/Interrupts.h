@@ -57,3 +57,5 @@ extern "C" {
 	void irq14();
 	void irq15();
 }
+
+extern bool abouttodie;

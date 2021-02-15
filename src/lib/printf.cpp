@@ -866,7 +866,7 @@ extern "C" {
 	bool printf_putc = true;
 	bool printf_serial = true;
 
-	int printf_(const char* format, ...) {
+	int printf(const char* format, ...) {
 		va_list va;
 		va_start(va, format);
 		char buffer[1];

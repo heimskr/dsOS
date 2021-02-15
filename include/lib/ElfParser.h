@@ -34,30 +34,30 @@
 
 namespace Elf {
 	struct Section {
-		int sectionIndex = 0;
-		std::intptr_t sectionOffset, sectionAddr;
-		std::string sectionName;
-		std::string sectionType;
-		int sectionSize, sectionEntSize, sectionAddrAlign;
+		int index = 0;
+		std::intptr_t offset, addr;
+		std::string name;
+		std::string type;
+		int size, entSize, addrAlign;
 	};
 
 	struct Segment {
-		std::string segmentType, segmentFlags;
-		long segmentOffset, segmentVirtaddr, segmentPhysaddr, segmentFilesize, segmentMemsize;
-		int segmentAlign;
+		std::string type, flags;
+		long offset, virtaddr, physaddr, filesize, memsize;
+		int align;
 	};
 
 	struct Symbol {
-		std::string symbolIndex;
-		std::intptr_t symbolValue;
-		int symbolNum = 0, symbolSize = 0;
-		std::string symbolType, symbolBind, symbolVisibility, symbolName, symbolSection;
+		std::string index;
+		std::intptr_t value;
+		int num = 0, size = 0;
+		std::string type, bind, visibility, name, section;
 	};
 
 	struct Relocation {
-		std::intptr_t relocationOffset, relocationInfo, relocationSymbolValue;
-		std::string   relocationType, relocationSymbolName, relocationSectionName;
-		std::intptr_t relocationPltAddress;
+		std::intptr_t offset, info, symbolValue;
+		std::string   type, symbolName, sectionName;
+		std::intptr_t pltAddress;
 	};
 
 	class ElfParser {
@@ -86,10 +86,7 @@ namespace Elf {
 			std::string getSymbolIndex(uint16_t sym_idx);
 
 			const char * getRelocationType(uint64_t rela_type);
-			std::intptr_t getRelSymbolValue(uint64_t sym_idx, const std::vector<Symbol> &syms);
-			std::string getRelSymbolName(uint64_t sym_idx, const std::vector<Symbol> &syms);
-
-			std::string m_program_path;
-			uint8_t *m_mmap_program;
+			std::intptr_t getRelSymbolValue(uint64_t sym_idx, const std::vector<Symbol> &);
+			std::string getRelSymbolName(uint64_t sym_idx, const std::vector<Symbol> &);
 	};
 }

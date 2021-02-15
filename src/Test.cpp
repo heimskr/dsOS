@@ -25,6 +25,7 @@
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
+#include "lib/ElfParser.h"
 #include "lib/printf.h"
 
 namespace Thorn {
@@ -376,6 +377,8 @@ namespace Thorn {
 			records(pieces, mainContext);
 		} else if (pieces[0] == "mode") {
 			mode(pieces, mainContext);
+		} else if (pieces[0] == "parseelf") {
+			parseElf(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
@@ -400,6 +403,53 @@ namespace Thorn {
 			}
 		} else
 			tprintf("Unknown command.\n");
+	}
+
+	void parseElf(const std::vector<std::string> &pieces, InputContext &context) {
+		if (pieces.size() != 2) {
+			tprintf("Usage:\n- parseelf <path>\n");
+		} else if (!context.driver) {
+			tprintf("Driver isn't ready.\n");
+		} else if (!context.driver->verify()) {
+			tprintf("Driver couldn't verify filesystem validity.\n");
+		} else {
+			const std::string path = FS::simplifyPath(context.path, pieces[1]);
+			size_t size;
+			int status = context.driver->getsize(path.c_str(), size);
+			if (status != 0) {
+				tprintf("Couldn't read filesize: %s (%d)\n", strerror(-status), status);
+				return;
+			}
+
+			if (size == 0) {
+				tprintf("File is empty.\n");
+				return;
+			}
+
+			char *buffer = new char[size];
+			status = context.driver->read(path.c_str(), buffer, size, 0);
+			if (status < 0) {
+				tprintf("Couldn't read file: %s (%d)\n", strerror(-status), status);
+				return;
+			}
+
+			Elf::ElfParser parser(buffer);
+
+			std::vector<int> ints;
+			for (int i = 0; i < 999999; ++i) {
+				if (i >= 248840) {
+					serprintf("%lu -> %lu\n", ints.size(), ints.size() * sizeof(int));
+					abouttodie = true;
+				}
+				ints.push_back(i);
+			}
+
+			// for (const Elf::Section &section: parser.getSections()) {
+				// printf("Section[index=%d, offset=0x%lx, addr=0x%lx, name=\"%s\", type=\"%s\", size=%d, entsize=%d, "
+				// 	"addralign=%d]\n", section.index, section.offset, section.addr, section.name.c_str(),
+				// 	section.type.c_str(), section.size, section.entSize, section.addrAlign);
+			// }
+		}
 	}
 
 	void mode(const std::vector<std::string> &pieces, InputContext &context) {

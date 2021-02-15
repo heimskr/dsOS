@@ -138,7 +138,7 @@ namespace Thorn {
 	void Kernel::backtrace() {
 		uintptr_t *rbp;
 		asm volatile("mov %%rbp, %0" : "=r"(rbp));
-		printf("Backtrace:\n");
+		printf("Backtrace (rbp = 0x%lx):\n", rbp);
 		uintptr_t old = 0;
 		for (int i = 0; (uintptr_t) rbp != 0; ++i) {
 			if (old == *(rbp + 1))
@@ -150,7 +150,7 @@ namespace Thorn {
 	}
 
 	void Kernel::backtrace(uintptr_t *rbp) {
-		printf("Backtrace:\n");
+		printf("Backtrace (rbp = 0x%lx):\n", rbp);
 		uintptr_t old = 0;
 		for (int i = 0; (uintptr_t) rbp != 0; ++i) {
 			if (old == *(rbp + 1))

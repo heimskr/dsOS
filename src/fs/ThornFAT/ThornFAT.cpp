@@ -522,7 +522,7 @@ namespace Thorn::FS::ThornFAT {
 		if (THORNFAT_PATH_MAX < ln_length) {
 			// If it's too long, we can give up early.
 			// DEBUG("[ThornFATDriver::newFile] Name too long (%lu chars)\n", ln_length);
-			WARN(NEWFILEH, "Name too long: " BSR " " UDARR " " IDS("ENAMETOOLONG"), last_name);
+			WARN(NEWFILEH, "Name too long: " BSR " " UDARR " " IDS("ENAMETOOLONG"), last_name.c_str());
 			NF_EXIT;
 			return -ENAMETOOLONG;
 		}

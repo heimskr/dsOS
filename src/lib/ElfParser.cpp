@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "lib/ElfParser.h"
+#include "lib/printf.h"
 #include "Kernel.h"
 
 namespace Elf {
@@ -30,20 +31,21 @@ namespace Elf {
 		int shnum = ehdr->e_shnum;
 
 		Elf64_Shdr *sh_strtab = &shdr[ehdr->e_shstrndx];
-		const char * const sh_strtab_p = (char *) m_mmap_program + sh_strtab->sh_offset;
+		const char * const sh_strtab_p = (const char *) programText.c_str() + sh_strtab->sh_offset;
 
 		std::vector<Section> sections;
 		for (int i = 0; i < shnum; ++i) {
 			Section section;
-			section.sectionIndex     = i;
-			section.sectionName      = std::string(sh_strtab_p + shdr[i].sh_name);
-			section.sectionType      = getSectionType(shdr[i].sh_type);
-			section.sectionAddr      = shdr[i].sh_addr;
-			section.sectionOffset    = shdr[i].sh_offset;
-			section.sectionSize      = shdr[i].sh_size;
-			section.sectionEntSize   = shdr[i].sh_entsize;
-			section.sectionAddrAlign = shdr[i].sh_addralign;
+			section.index     = i;
+			section.name      = std::string(sh_strtab_p + shdr[i].sh_name);
+			section.type      = getSectionType(shdr[i].sh_type);
+			section.addr      = shdr[i].sh_addr;
+			section.offset    = shdr[i].sh_offset;
+			section.size      = shdr[i].sh_size;
+			section.entSize   = shdr[i].sh_entsize;
+			section.addrAlign = shdr[i].sh_addralign;
 			sections.push_back(section);
+			printf("Size: %lu -> %lu\n", sections.size(), sections.size() * sizeof(Section));
 		}
 
 		return sections;
@@ -57,14 +59,14 @@ namespace Elf {
 		std::vector<Segment> segments;
 		for (int i = 0; i < phnum; ++i) {
 			Segment segment;
-			segment.segmentType     = getSegmentType(phdr[i].p_type);
-			segment.segmentOffset   = phdr[i].p_offset;
-			segment.segmentVirtaddr = phdr[i].p_vaddr;
-			segment.segmentPhysaddr = phdr[i].p_paddr;
-			segment.segmentFilesize = phdr[i].p_filesz;
-			segment.segmentMemsize  = phdr[i].p_memsz;
-			segment.segmentFlags    = getSegmentFlags(phdr[i].p_flags);
-			segment.segmentAlign    = phdr[i].p_align;
+			segment.type     = getSegmentType(phdr[i].p_type);
+			segment.offset   = phdr[i].p_offset;
+			segment.virtaddr = phdr[i].p_vaddr;
+			segment.physaddr = phdr[i].p_paddr;
+			segment.filesize = phdr[i].p_filesz;
+			segment.memsize  = phdr[i].p_memsz;
+			segment.flags    = getSegmentFlags(phdr[i].p_flags);
+			segment.align    = phdr[i].p_align;
 			
 			segments.push_back(segment);
 		}
@@ -77,8 +79,8 @@ namespace Elf {
 		// get strtab
 		const char *sh_strtab_p = nullptr;
 		for (const Section &sec: secs) {
-			if ((sec.sectionType == "SHT_STRTAB") && (sec.sectionName == ".strtab")) {
-				sh_strtab_p = (const char *) programText.c_str() + sec.sectionOffset;
+			if ((sec.type == "SHT_STRTAB") && (sec.name == ".strtab")) {
+				sh_strtab_p = (const char *) programText.c_str() + sec.offset;
 				break;
 			}
 		}
@@ -86,36 +88,36 @@ namespace Elf {
 		// get dynstr
 		const char *sh_dynstr_p = nullptr;
 		for (const Section &sec: secs) {
-			if ((sec.sectionType == "SHT_STRTAB") && (sec.sectionName == ".dynstr")) {
-				sh_dynstr_p = (const char *) programText.c_str() + sec.sectionOffset;
+			if ((sec.type == "SHT_STRTAB") && (sec.name == ".dynstr")) {
+				sh_dynstr_p = (const char *) programText.c_str() + sec.offset;
 				break;
 			}
 		}
 
 		std::vector<Symbol> symbols;
 		for (const Section &sec: secs) {
-			if ((sec.sectionType != "SHT_SYMTAB") && (sec.sectionType != "SHT_DYNSYM"))
+			if ((sec.type != "SHT_SYMTAB") && (sec.type != "SHT_DYNSYM"))
 				continue;
 
-			int total_syms = sec.sectionSize / sizeof(Elf64_Sym);
-			Elf64_Sym *syms_data = (Elf64_Sym*) (programText.c_str() + sec.sectionOffset);
+			int total_syms = sec.size / sizeof(Elf64_Sym);
+			Elf64_Sym *syms_data = (Elf64_Sym*) (programText.c_str() + sec.offset);
 
 			for (int i = 0; i < total_syms; ++i) {
 				Symbol symbol;
-				symbol.symbolNum        = i;
-				symbol.symbolValue      = syms_data[i].st_value;
-				symbol.symbolSize       = syms_data[i].st_size;
-				symbol.symbolType       = getSymbolType(syms_data[i].st_info);
-				symbol.symbolBind       = getSymbolBind(syms_data[i].st_info);
-				symbol.symbolVisibility = getSymbolVisibility(syms_data[i].st_other);
-				symbol.symbolIndex      = getSymbolIndex(syms_data[i].st_shndx);
-				symbol.symbolSection    = sec.sectionName;
+				symbol.num        = i;
+				symbol.value      = syms_data[i].st_value;
+				symbol.size       = syms_data[i].st_size;
+				symbol.type       = getSymbolType(syms_data[i].st_info);
+				symbol.bind       = getSymbolBind(syms_data[i].st_info);
+				symbol.visibility = getSymbolVisibility(syms_data[i].st_other);
+				symbol.index      = getSymbolIndex(syms_data[i].st_shndx);
+				symbol.section    = sec.name;
 				
-				if (sec.sectionType == "SHT_SYMTAB")
-					symbol.symbolName = std::string(sh_strtab_p + syms_data[i].st_name);
+				if (sec.type == "SHT_SYMTAB")
+					symbol.name = std::string(sh_strtab_p + syms_data[i].st_name);
 				
-				if (sec.sectionType == "SHT_DYNSYM")
-					symbol.symbolName = std::string(sh_dynstr_p + syms_data[i].st_name);
+				if (sec.type == "SHT_DYNSYM")
+					symbol.name = std::string(sh_dynstr_p + syms_data[i].st_name);
 				
 				symbols.push_back(symbol);
 			}
@@ -131,9 +133,9 @@ namespace Elf {
 		long plt_vma_address = 0;
 
 		for (const Section &sec: secs) {
-			if (sec.sectionName == ".plt") {
-				plt_entry_size  = sec.sectionEntSize;
-				plt_vma_address = sec.sectionAddr;
+			if (sec.name == ".plt") {
+				plt_entry_size  = sec.entSize;
+				plt_vma_address = sec.addr;
 				break;
 			}
 		}
@@ -141,21 +143,21 @@ namespace Elf {
 		std::vector<Relocation> relocations;
 		for (const Section &sec: secs) {
 
-			if (sec.sectionType != "SHT_RELA") 
+			if (sec.type != "SHT_RELA")
 				continue;
 
-			int total_relas = sec.sectionSize / sizeof(Elf64_Rela);
-			Elf64_Rela *relas_data  = (Elf64_Rela *) (programText.c_str() + sec.sectionOffset);
+			int total_relas = sec.size / sizeof(Elf64_Rela);
+			Elf64_Rela *relas_data  = (Elf64_Rela *) (programText.c_str() + sec.offset);
 
 			for (int i = 0; i < total_relas; ++i) {
 				Relocation rel;
-				rel.relocationOffset = static_cast<std::intptr_t>(relas_data[i].r_offset);
-				rel.relocationInfo   = static_cast<std::intptr_t>(relas_data[i].r_info);
-				rel.relocationType   = getRelocationType(relas_data[i].r_info);
-				rel.relocationSymbolValue = getRelSymbolValue(relas_data[i].r_info, syms);
-				rel.relocationSymbolName  = getRelSymbolName(relas_data[i].r_info, syms);
-				rel.relocationPltAddress  = plt_vma_address + (i + 1) * plt_entry_size;
-				rel.relocationSectionName = sec.sectionName;
+				rel.offset = static_cast<std::intptr_t>(relas_data[i].r_offset);
+				rel.info   = static_cast<std::intptr_t>(relas_data[i].r_info);
+				rel.type   = getRelocationType(relas_data[i].r_info);
+				rel.symbolValue = getRelSymbolValue(relas_data[i].r_info, syms);
+				rel.symbolName  = getRelSymbolName(relas_data[i].r_info, syms);
+				rel.pltAddress  = plt_vma_address + (i + 1) * plt_entry_size;
+				rel.sectionName = sec.name;
 				relocations.push_back(rel);
 			}
 		}
@@ -295,15 +297,15 @@ namespace Elf {
 
 	std::intptr_t ElfParser::getRelSymbolValue(uint64_t sym_idx, const std::vector<Symbol> &syms) {
 		for (const Symbol &sym: syms)
-			if (sym.symbolNum == static_cast<int>(ELF64_R_SYM(sym_idx)))
-				return sym.symbolValue;
+			if (sym.num == static_cast<int>(ELF64_R_SYM(sym_idx)))
+				return sym.value;
 		return 0;
 	}
 
 	std::string ElfParser::getRelSymbolName(uint64_t sym_idx, const std::vector<Symbol> &syms) {
 		for (const Symbol &sym: syms)
-			if (sym.symbolNum == static_cast<int>(ELF64_R_SYM(sym_idx)))
-				return sym.symbolName;
+			if (sym.num == static_cast<int>(ELF64_R_SYM(sym_idx)))
+				return sym.name;
 		return "";
 	}
 }
