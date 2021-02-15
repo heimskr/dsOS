@@ -74,8 +74,6 @@ void double_fault() {
 
 void page_interrupt() {
 	const uint64_t address = x86_64::getCR2();
-	if (abouttodie)
-		printf("Hello from 0x%lx : 0x%lx\n", addr14, address);
 	constexpr int page_size = 4096;
 #ifdef DEBUG_PAGE_FAULTS
 	printf("Page fault: 0x%lx\n", address);
@@ -91,8 +89,6 @@ void page_interrupt() {
 	printf("[PML4 %d, PDP %d, PD %d, PT %d, Offset %d]\n", pml4i, pdpi, pdi, pti, offset);
 #endif
 
-	if (abouttodie) printf("[%s:%d]\n", __FILE__, __LINE__);
-
 	Thorn::Kernel *kernel = Thorn::Kernel::instance;
 	if (!kernel) {
 		printf("Kernel is null!\n");
@@ -106,12 +102,7 @@ void page_interrupt() {
 		for (;;) asm("hlt");
 	}
 
-	if (abouttodie) printf("[%s:%d]\n", __FILE__, __LINE__);
-
 	uintptr_t assigned = meta.assign(pml4i, pdpi, pdi, pti) & ~0xfff;
-
-	if (abouttodie) printf("[%s:%d]\n", __FILE__, __LINE__);
-
 
 	if (assigned == 0) {
 		printf("Couldn't assign a page! [%d, %d, %d, %d]\n", pml4i, pdpi, pdi, pti);
@@ -121,9 +112,6 @@ void page_interrupt() {
 	uint64_t *base = (uint64_t *) (address & ~0xfff);
 	for (size_t i = 0; i < page_size / sizeof(uint64_t); ++i)
 		base[i] = 0;
-
-	if (abouttodie) printf("[%s:%d]\n", __FILE__, __LINE__);
-
 
 #ifdef DEBUG_PAGE_FAULTS
 	printf("Assigned a page (0x%lx)!\n", assigned);
