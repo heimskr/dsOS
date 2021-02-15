@@ -1345,7 +1345,8 @@ namespace Thorn::FS::ThornFAT {
 			// Don't write more than one block at a time.
 			to_write = static_cast<ssize_t>(bs) < size_left? bs : size_left;
 
-			DBGN(WRITEH, "Writing to block" A_PINK, block);
+			DBGF(WRITEH, "Writing to block " A_PINK BDR A_RESET " (to_write = " BLR DMS "position = " BULR ")",
+				block, to_write, position);
 			status = partition->write(buffer + bytes_written, to_write, position);
 			SCHECK(WRITEH, "Couldn't read into buffer");
 			position += to_write;

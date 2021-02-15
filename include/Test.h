@@ -1,6 +1,7 @@
 #pragma once
 
 #include "hardware/Serial.h"
+#include "device/Device.h"
 
 #include <memory>
 #include <string>
@@ -32,7 +33,9 @@ namespace Thorn {
 	struct InputContext {
 		AHCI::Controller *controller = nullptr;
 		AHCI::Port *port = nullptr;
-		Device::AHCIDevice *ahciDevice = nullptr;
+		bool ahci = true;
+		int idePort = -1;
+		Device::DeviceBase *device = nullptr;
 		FS::Partition *partition = nullptr;
 		FS::ThornFAT::ThornFATDriver *driver = nullptr;
 		std::string path = "/";
@@ -41,6 +44,7 @@ namespace Thorn {
 
 	extern InputContext mainContext;
 
+	void mode(const std::vector<std::string> &, InputContext &);
 	void records(const std::vector<std::string> &, InputContext &);
 	void printSize(const std::vector<std::string> &, InputContext &);
 	void readSerial(const std::vector<std::string> &, InputContext &);

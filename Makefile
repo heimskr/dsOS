@@ -13,8 +13,8 @@ ASFLAGS      := $(SHARED_FLAGS) -Wa,--divide
 GRUB         ?= grub
 QEMU_MAIN    ?= -s -drive file=$(ISO_FILE),if=none,media=cdrom,format=raw,id=drive-sata-disk \
                    -device ahci,id=ahci -device ide-cd,drive=drive-sata-disk,id=sata-disk,bus=ahci.1,unit=0 -boot d -serial stdio -m 8G
-QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none,format=raw -device ide-hd,drive=disk,bus=ahci.0
-# QEMU_EXTRA   ?= -drive format=raw,file=disk.img
+# QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none,format=raw -device ide-hd,drive=disk,bus=ahci.0
+QEMU_EXTRA   ?= -drive format=raw,file=disk.img
 
 QEMU_EXTRA   := $(QEMU_EXTRA) -no-shutdown -d cpu_reset
 # QEMU_EXTRA   := $(QEMU_EXTRA) -device qemu-xhci -device usb-kbd

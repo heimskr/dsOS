@@ -136,12 +136,12 @@ namespace Thorn::IDE {
 		int count = 0;
 
 		// Detect I/O ports that interface the IDE controller
-		channels[ATA_PRIMARY].base	  = (bar0 & 0xFFFFFFFC) + 0x1F0 * (!bar0);
-		channels[ATA_PRIMARY].ctrl	  = (bar1 & 0xFFFFFFFC) + 0x3F6 * (!bar1);
-		channels[ATA_SECONDARY].base  = (bar2 & 0xFFFFFFFC) + 0x170 * (!bar2);
-		channels[ATA_SECONDARY].ctrl  = (bar3 & 0xFFFFFFFC) + 0x376 * (!bar3);
-		channels[ATA_PRIMARY].bmide	  = (bar4 & 0xFFFFFFFC) + 0; // Bus Master IDE
-		channels[ATA_SECONDARY].bmide = (bar4 & 0xFFFFFFFC) + 8; // Bus Master IDE
+		channels[ATA_PRIMARY].base	  = (bar0 & 0xfffffffc) + 0x1f0 * (!bar0);
+		channels[ATA_PRIMARY].ctrl	  = (bar1 & 0xfffffffc) + 0x3f6 * (!bar1);
+		channels[ATA_SECONDARY].base  = (bar2 & 0xfffffffc) + 0x170 * (!bar2);
+		channels[ATA_SECONDARY].ctrl  = (bar3 & 0xfffffffc) + 0x376 * (!bar3);
+		channels[ATA_PRIMARY].bmide	  = (bar4 & 0xfffffffc) + 0; // Bus Master IDE
+		channels[ATA_SECONDARY].bmide = (bar4 & 0xfffffffc) + 8; // Bus Master IDE
 		// Disable IRQs
 		write(ATA_PRIMARY, ATA_REG_CONTROL, 2);
 		write(ATA_SECONDARY, ATA_REG_CONTROL, 2);
@@ -178,7 +178,7 @@ namespace Thorn::IDE {
 					uint8_t cl = read(i, ATA_REG_LBA1);
 					uint8_t ch = read(i, ATA_REG_LBA2);
 
-					if (cl == 0x14 && ch == 0xEB)
+					if (cl == 0x14 && ch == 0xeb)
 						type = IDE_ATAPI;
 					else if (cl == 0x69 && ch == 0x96)
 						type = IDE_ATAPI;
@@ -253,31 +253,31 @@ namespace Thorn::IDE {
 		if (lba >= 0x10000000) { // Sure drive should support LBA in this case, or you are giving a wrong LBA.
 			// LBA48:
 			lba_mode  = 2;
-			lba_io[0] = (lba & 0x000000FF) >> 0;
-			lba_io[1] = (lba & 0x0000FF00) >> 8;
-			lba_io[2] = (lba & 0x00FF0000) >> 16;
-			lba_io[3] = (lba & 0xFF000000) >> 24;
+			lba_io[0] = (lba & 0x000000ff) >> 0;
+			lba_io[1] = (lba & 0x0000ff00) >> 8;
+			lba_io[2] = (lba & 0x00ff0000) >> 16;
+			lba_io[3] = (lba & 0xff000000) >> 24;
 			lba_io[4] = 0; // LBA28 is an integer, so 32 bits are enough to access 2 TB
 			lba_io[5] = 0; // LBA28 is an integer, so 32 bits are enough to access 2 TB
 			head	  = 0; // Lower 4-bits of HDDEVSEL are not used here
 		} else if (devices[drive].capabilities & 0x200) { // Drive supports LBA
 			// LBA28:
 			lba_mode  = 1;
-			lba_io[0] = (lba & 0x00000FF) >> 0;
-			lba_io[1] = (lba & 0x000FF00) >> 8;
-			lba_io[2] = (lba & 0x0FF0000) >> 16;
+			lba_io[0] = (lba & 0x00000ff) >> 0;
+			lba_io[1] = (lba & 0x000ff00) >> 8;
+			lba_io[2] = (lba & 0x0ff0000) >> 16;
 			lba_io[3] = 0; // These registers are not used here.
 			lba_io[4] = 0;
 			lba_io[5] = 0;
-			head	  = (lba & 0xF000000) >> 24;
+			head	  = (lba & 0xf000000) >> 24;
 		} else {
 			// CHS:
 			lba_mode  = 0;
 			sect	  = (lba % 63) + 1;
 			cyl		  = (lba + 1 - sect) / (16 * 63);
 			lba_io[0] = sect;
-			lba_io[1] = (cyl >> 0) & 0xFF;
-			lba_io[2] = (cyl >> 8) & 0xFF;
+			lba_io[1] = (cyl >> 0) & 0xff;
+			lba_io[2] = (cyl >> 8) & 0xff;
 			lba_io[3] = 0;
 			lba_io[4] = 0;
 			lba_io[5] = 0;
@@ -292,9 +292,9 @@ namespace Thorn::IDE {
 
 		// Select drive from the controller
 		if (lba_mode == 0)
-			write(channel, ATA_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head); // Drive & CHS
+			write(channel, ATA_REG_HDDEVSEL, 0xa0 | (slavebit << 4) | head); // Drive & CHS
 		else
-			write(channel, ATA_REG_HDDEVSEL, 0xE0 | (slavebit << 4) | head); // Drive & LBA
+			write(channel, ATA_REG_HDDEVSEL, 0xe0 | (slavebit << 4) | head); // Drive & LBA
 
 		// Write parameters
 		if (lba_mode == 2) {
@@ -457,48 +457,48 @@ namespace Thorn::IDE {
 
 	uint8_t read(uint8_t channel, uint8_t reg) {
 		uint8_t result = 0;
-		if (reg > 0x07 && reg < 0x0C)
+		if (reg > 0x07 && reg < 0x0c)
 			write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
 		if (reg < 0x08)
 			result = inb(channels[channel].base + reg - 0x00);
-		else if (reg < 0x0C)
+		else if (reg < 0x0c)
 			result = inb(channels[channel].base + reg - 0x06);
-		else if (reg < 0x0E)
-			result = inb(channels[channel].ctrl + reg - 0x0A);
+		else if (reg < 0x0e)
+			result = inb(channels[channel].ctrl + reg - 0x0a);
 		else if (reg < 0x16)
-			result = inb(channels[channel].bmide + reg - 0x0E);
-		if (reg > 0x07 && reg < 0x0C)
+			result = inb(channels[channel].bmide + reg - 0x0e);
+		if (reg > 0x07 && reg < 0x0c)
 			write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
 		return result;
 	}
 
 	void write(uint8_t channel, uint8_t reg, uint8_t data) {
-		if (reg > 0x07 && reg < 0x0C)
+		if (reg > 0x07 && reg < 0x0c)
 			write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
 		if (reg < 0x08)
 			outb(channels[channel].base + reg - 0x00, data);
-		else if (reg < 0x0C)
+		else if (reg < 0x0c)
 			outb(channels[channel].base + reg - 0x06, data);
-		else if (reg < 0x0E)
-			outb(channels[channel].ctrl + reg - 0x0A, data);
+		else if (reg < 0x0e)
+			outb(channels[channel].ctrl + reg - 0x0a, data);
 		else if (reg < 0x16)
-			outb(channels[channel].bmide + reg - 0x0E, data);
-		if (reg > 0x07 && reg < 0x0C)
+			outb(channels[channel].bmide + reg - 0x0e, data);
+		if (reg > 0x07 && reg < 0x0c)
 			write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
 	}
 
 	void readBuffer(uint8_t channel, uint8_t reg, void *buffer, uint32_t quads) {
-		if (reg > 0x07 && reg < 0x0C)
+		if (reg > 0x07 && reg < 0x0c)
 			write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
 		if (reg < 0x08)
 			insl(channels[channel].base + reg - 0x00, buffer, quads);
-		else if (reg < 0x0C)
+		else if (reg < 0x0c)
 			insl(channels[channel].base + reg - 0x06, buffer, quads);
-		else if (reg < 0x0E)
-			insl(channels[channel].ctrl + reg - 0x0A, buffer, quads);
+		else if (reg < 0x0e)
+			insl(channels[channel].ctrl + reg - 0x0a, buffer, quads);
 		else if (reg < 0x16)
-			insl(channels[channel].bmide + reg - 0x0E, buffer, quads);
-		if (reg > 0x07 && reg < 0x0C)
+			insl(channels[channel].bmide + reg - 0x0e, buffer, quads);
+		if (reg > 0x07 && reg < 0x0c)
 			write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
 	}
 
@@ -521,10 +521,10 @@ namespace Thorn::IDE {
 
 		atapiPacket[ 0] = ATAPI_CMD_READ;
 		atapiPacket[ 1] = 0x0;
-		atapiPacket[ 2] = (lba >> 24) & 0xFF;
-		atapiPacket[ 3] = (lba >> 16) & 0xFF;
-		atapiPacket[ 4] = (lba >> 8) & 0xFF;
-		atapiPacket[ 5] = (lba >> 0) & 0xFF;
+		atapiPacket[ 2] = (lba >> 24) & 0xff;
+		atapiPacket[ 3] = (lba >> 16) & 0xff;
+		atapiPacket[ 4] = (lba >> 8) & 0xff;
+		atapiPacket[ 5] = (lba >> 0) & 0xff;
 		atapiPacket[ 6] = 0x0;
 		atapiPacket[ 7] = 0x0;
 		atapiPacket[ 8] = 0x0;
@@ -536,7 +536,7 @@ namespace Thorn::IDE {
 		for (uint8_t i = 0; i < 4; i++)
 			read(channel, ATA_REG_ALTSTATUS);
 		write(channel, ATA_REG_FEATURES, 0);
-		write(channel, ATA_REG_LBA1, (words * 2) & 0xFF);
+		write(channel, ATA_REG_LBA1, (words * 2) & 0xff);
 		write(channel, ATA_REG_LBA2, (words * 2) >> 8);
 		write(channel, ATA_REG_COMMAND, ATA_CMD_PACKET);
 

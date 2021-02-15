@@ -40,15 +40,21 @@ namespace Thorn::FS {
 		size_t mistakes = 0;
 		for (size_t i = 0; i < size; ++i)
 			if (((char *) buffer)[i] != verify[i]) {
-				printf("Mistake at %lu: %x should be %x\n", i, verify[i] & 0xff, ((char *) buffer)[i] & 0xff);
+				printf("Mistake at %lu: %02x should be %02x ('%c' vs. '%c')\n", i, verify[i] & 0xff,
+					((char *) buffer)[i] & 0xff, verify[i] & 0xff, ((char *) buffer)[i] & 0xff);
 				++mistakes;
 			}
 #ifdef VERIFY_WRITES_QUIETLY
 		if (mistakes != 0)
 #endif
-		printf("Found %lu mistake%s%s (size=%lu, offset=0x%lx) memcmp = %d\n",
-			mistakes, mistakes == 1? "" : "s", mistakes == 0? "." : "!!!", size, offset,
+		printf("Found %lu mistake%s%s (size=%lu, offset=0x%lx / %lu) memcmp = %d\n",
+			mistakes, mistakes == 1? "" : "s", mistakes == 0? "." : "!!!", size, offset, offset,
 			memcmp(buffer, verify, size));
+		// if (mistakes == 0 && 4 < size) {
+		// 	printf("Found no mistakes (size=%lu, offset=0x%lx / %lu).\n", size, offset, offset);
+		// 	for (size_t i = 0; i < size; ++i)
+		// 		printf("%lu: %02x is %02x.\n", i, verify[i] & 0xff, ((char *) buffer)[i] & 0xff);
+		// }
 		return 0;
 #endif
 	}

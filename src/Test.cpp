@@ -374,9 +374,17 @@ namespace Thorn {
 			printSize(pieces, mainContext);
 		} else if (pieces[0] == "records") {
 			records(pieces, mainContext);
+		} else if (pieces[0] == "mode") {
+			mode(pieces, mainContext);
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
+			handleInput("sel port 0");
+			handleInput("sel part 0");
+			handleInput("init tfat");
+		} else if (pieces[0] == "0i") {
+			handleInput("mode ide");
+			handleInput("init ide");
 			handleInput("sel port 0");
 			handleInput("sel part 0");
 			handleInput("init tfat");
@@ -394,17 +402,67 @@ namespace Thorn {
 			tprintf("Unknown command.\n");
 	}
 
+	void mode(const std::vector<std::string> &pieces, InputContext &context) {
+		auto usage = [] { tprintf("Usage:\n- mode ahci\n- mode ide\n"); };
+		if (pieces.size() != 2) {
+			usage();
+		} else if (pieces[1] == "ahci") {
+			if (context.ahci) {
+				tprintf("Already in AHCI mode.\n");
+				return;
+			}
+
+			context.ahci = true;
+
+		} else if (pieces[1] == "ide") {
+			if (!context.ahci) {
+				tprintf("Already in IDE mode.\n");
+				return;
+			}
+
+			context.ahci = false;
+		} else {
+			usage();
+			return;
+		}
+
+		if (context.driver) {
+			delete context.driver;
+			context.driver = nullptr;
+		}
+
+		if (context.partition) {
+			delete context.partition;
+			context.partition = nullptr;
+		}
+
+		if (context.port) {
+			delete context.port;
+			context.port = nullptr;
+		}
+
+		if (context.controller) {
+			delete context.controller;
+			context.controller = nullptr;
+		}
+
+		context.path = "/";
+		context.idePort = -1;
+
+		tprintf("Switched to %s mode.\n", context.ahci? "AHCI" : "IDE");
+	}
+
 	void records(const std::vector<std::string> &pieces, InputContext &context) {
 		auto usage = [] { tprintf("Usage:\n- records write\n- records read\n"); };
-		if (!mainContext.partition)
+		if (!context.partition)
 			tprintf("Partition is invalid.\n");
 		else if (pieces.size() != 2)
 			usage();
 		else if (pieces[1] == "write")
-			for (const auto &record: mainContext.partition->writeRecords)
+			for (const auto &record: context.partition->writeRecords)
 				printf("[s=%lu, o=%lu]\n", record.size, record.offset);
 		else if (pieces[1] == "read")
-			for (const auto &record: mainContext.partition->readRecords)
+			for (const auto &record: context.partition->readRecords)
 				printf("[s=%lu, o=%lu]\n", record.size, record.offset);
 		else
 			usage();
@@ -809,9 +867,9 @@ namespace Thorn {
 			if (context.partition)
 				delete context.partition;
 			context.partition = nullptr;
-			if (context.ahciDevice)
-				delete context.ahciDevice;
-			context.ahciDevice = nullptr;
+			if (context.device)
+				delete context.device;
+			context.device = nullptr;
 			if (context.driver)
 				delete context.driver;
 			context.driver = nullptr;
@@ -820,7 +878,7 @@ namespace Thorn {
 			if (IDE::init() == 0)
 				tprintf("No IDE devices found.\n");
 		} else if (pieces[1] == "thornfat" || pieces[1] == "tfat" || pieces[1] == "driver") {
-			if (!context.ahciDevice || !context.partition)
+			if (!context.device || !context.partition)
 				tprintf("No partition is selected.\n");
 			else {
 				context.driver = new FS::ThornFAT::ThornFATDriver(context.partition);
@@ -835,6 +893,11 @@ namespace Thorn {
 
 		if (pieces.size() == 3) {
 			if (pieces[1] == "controller" || pieces[1] == "ahci" || pieces[1] == "cont") {
+				if (!context.ahci) {
+					tprintf("Can't select AHCI controller: not in AHCI mode.\n");
+					return;
+				}
+
 				size_t controller_index;
 				if (!Util::parseUlong(pieces[2], controller_index)) {
 					usage();
@@ -852,25 +915,37 @@ namespace Thorn {
 					tprintf("Selected controller %lu.\n", controller_index);
 				}
 			} else if (pieces[1] == "port") {
-				if (!context.controller) {
-					tprintf("No controller is selected.\n");
-					return;
-				}
+				if (context.ahci) {
+					if (!context.controller) {
+						tprintf("No controller is selected.\n");
+						return;
+					}
 
-				AHCI::Controller &controller = *context.controller;
-				size_t port_index;
-				if (!Util::parseUlong(pieces[2], port_index)) {
-					usage();
-				} else if (32 <= port_index) {
-					tprintf("Port index out of range.\n");
-				} else if (!controller.ports[port_index]) {
-					tprintf("Invalid port.\n");
+					AHCI::Controller &controller = *context.controller;
+					size_t port_index;
+					if (!Util::parseUlong(pieces[2], port_index)) {
+						usage();
+					} else if (32 <= port_index) {
+						tprintf("Port index out of range.\n");
+					} else if (!controller.ports[port_index]) {
+						tprintf("Invalid port.\n");
+					} else {
+						context.port = controller.ports[port_index];
+						tprintf("Selected port %lu.\n", port_index);
+					}
 				} else {
-					context.port = controller.ports[port_index];
-					tprintf("Selected port %lu.\n", port_index);
+					size_t port_index;
+					if (!Util::parseUlong(pieces[2], port_index)) {
+						usage();
+					} else if (4 <= port_index) {
+						tprintf("Port index out of range.\n");
+					} else {
+						context.idePort = static_cast<int>(port_index);
+						tprintf("Selected port %d.\n", context.idePort);
+					}
 				}
 			} else if (pieces[1] == "part" || pieces[1] == "partition") {
-				if (!context.port) {
+				if ((context.ahci && !context.port) || (!context.ahci && context.idePort == -1)) {
 					tprintf("No port selected.\n");
 				} else {
 					size_t partition_index;
@@ -888,33 +963,58 @@ namespace Thorn {
 	}
 
 	void selectPartition(size_t partition_index, InputContext &context) {
+		if ((context.ahci && !context.port) || (!context.ahci && context.idePort == -1)) {
+			tprintf("No port is selected.\n");
+			return;
+		}
+
 		MBR mbr;
-		context.port->read(0, 512, &mbr);
+		if (context.ahci)
+			context.port->read(0, 512, &mbr);
+		else
+			IDE::readBytes(context.idePort, 512, 0, &mbr);
+
 		if (!mbr.indicatesGPT()) {
 			tprintf("MBR doesn't indicate the presence of a GPT.\n");
 			return;
 		}
 
+		const size_t bs = context.ahci? AHCI::Port::BLOCKSIZE : IDE::SECTOR_SIZE;
+
 		GPT::Header gpt;
-		context.port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
+
+		if (context.ahci)
+			context.port->readBytes(sizeof(GPT::Header), bs, &gpt);
+		else
+			IDE::readBytes(context.idePort, sizeof(GPT::Header), bs, &gpt);
+
 		if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
 			tprintf("Unsupported partition entry size.\n");
 			return;
 		}
-		size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA + gpt.partitionEntrySize * partition_index;
+		size_t offset = bs * gpt.startLBA + gpt.partitionEntrySize * partition_index;
 		GPT::PartitionEntry entry;
-		context.port->readBytes(gpt.partitionEntrySize, offset, &entry);
+
+		if (context.ahci)
+			context.port->readBytes(gpt.partitionEntrySize, offset, &entry);
+		else
+			IDE::readBytes(context.idePort, gpt.partitionEntrySize, offset, &entry);
+
 		if (!entry.typeGUID) {
 			tprintf("Invalid partition.\n");
 			return;
 		}
 
-		if (context.ahciDevice)
-			delete context.ahciDevice;
+		if (context.device)
+			delete context.device;
 
-		context.ahciDevice = new Device::AHCIDevice(context.port);
-		context.partition = new FS::Partition(context.ahciDevice, entry.firstLBA * AHCI::Port::BLOCKSIZE,
-				(entry.lastLBA - entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
+		if (context.ahci)
+			context.device = new Device::AHCIDevice(context.port);
+		else
+			context.device = new Device::IDEDevice(context.idePort);
+
+		context.partition = new FS::Partition(context.device, entry.firstLBA * bs,
+				(entry.lastLBA - entry.firstLBA + 1) * bs);
 		tprintf("Selected partition \"%s\".\n", std::string(entry).c_str());
 	}
 
@@ -957,21 +1057,32 @@ namespace Thorn {
 	}
 
 	void listGPT(InputContext &context) {
-		AHCI::Port *port = context.port;
-		if (!port) {
+		if ((context.ahci && !context.port) || (!context.ahci && context.idePort == -1)) {
 			tprintf("No port is selected.\n");
 			return;
 		}
 
 		MBR mbr;
-		port->read(0, 512, &mbr);
+
+		if (context.ahci)
+			context.port->read(0, 512, &mbr);
+		else
+			IDE::readBytes(context.idePort, 512, 0, &mbr);
+
 		if (!mbr.indicatesGPT()) {
 			tprintf("MBR doesn't indicate the presence of a GPT.\n");
 			return;
 		}
 
+		const size_t bs = context.ahci? AHCI::Port::BLOCKSIZE : IDE::SECTOR_SIZE;
+
 		GPT::Header gpt;
-		port->readBytes(sizeof(GPT::Header), AHCI::Port::BLOCKSIZE, &gpt);
+
+		if (context.ahci)
+			context.port->readBytes(sizeof(GPT::Header), bs, &gpt);
+		else
+			IDE::readBytes(context.idePort, sizeof(GPT::Header), bs, &gpt);
+
 		tprintf("Signature:   0x%lx\n", gpt.signature);
 		tprintf("Revision:    %d\n",    gpt.revision);
 		tprintf("Header size: %d\n",    gpt.headerSize);
@@ -982,7 +1093,7 @@ namespace Thorn {
 		tprintf("Start LBA:   %ld\n",   gpt.startLBA);
 		tprintf("Partitions:  %d\n",    gpt.partitionCount);
 		tprintf("Entry size:  %d\n",    gpt.partitionEntrySize);
-		size_t offset = AHCI::Port::BLOCKSIZE * gpt.startLBA;
+		size_t offset = bs * gpt.startLBA;
 		tprintf("GUID:        %s\n", std::string(gpt.guid).c_str());
 		if (gpt.partitionEntrySize != sizeof(GPT::PartitionEntry)) {
 			tprintf("Unsupported partition entry size.\n");
@@ -991,7 +1102,10 @@ namespace Thorn {
 
 		for (unsigned i = 0; i < gpt.partitionCount; ++i) {
 			GPT::PartitionEntry entry;
-			port->readBytes(gpt.partitionEntrySize, offset, &entry);
+			if (context.ahci)
+				context.port->readBytes(gpt.partitionEntrySize, offset, &entry);
+			else
+				IDE::readBytes(context.idePort, gpt.partitionEntrySize, offset, &entry);
 			if (entry.typeGUID) {
 				tprintf("Partition %d: \"", i);
 				entry.printName(false);
