@@ -1,5 +1,6 @@
 #include "arch/x86_64/APIC.h"
 #include "arch/x86_64/control_register.h"
+#include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PageMeta.h"
 #include "arch/x86_64/PageTableWrapper.h"
@@ -10,10 +11,10 @@
 #include "memory/memset.h"
 #include "Kernel.h"
 #include "Options.h"
-
-#define INTERRUPT 
+#include "Terminal.h"
 
 // #define DEBUG_PAGE_FAULTS
+#define DEADLY_PAGE_FAULTS
 
 extern bool irqInvoked;
 
@@ -49,6 +50,8 @@ namespace x86_64::IDT {
 		add(43, &isr_43);
 		add(46, &isr_46);
 		add(47, &isr_47);
+		add(0x69, &isr_0x69);
+		wrmsr(0xc0000082, (uintptr_t) &isr_0x69);
 		asm volatile("lidt %0" :: "m"(idt_header));
 	}
 
@@ -74,6 +77,12 @@ void double_fault() {
 
 void page_interrupt() {
 	const uint64_t address = x86_64::getCR2();
+#ifdef DEADLY_PAGE_FAULTS
+	Thorn::Terminal::setColor((uint8_t) Thorn::Terminal::VGAColor::Red);
+	printf("FATAL: page fault for address 0x%lx!\n", address);
+	Thorn::Kernel::backtrace();
+	Thorn::Kernel::perish();
+#else
 	constexpr int page_size = 4096;
 #ifdef DEBUG_PAGE_FAULTS
 	printf("Page fault: 0x%lx\n", address);
@@ -115,6 +124,7 @@ void page_interrupt() {
 
 #ifdef DEBUG_PAGE_FAULTS
 	printf("Assigned a page (0x%lx)!\n", assigned);
+#endif
 #endif
 }
 

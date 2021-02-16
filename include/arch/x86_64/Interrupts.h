@@ -46,6 +46,7 @@ extern "C" {
 	extern void isr_43();
 	extern void isr_46();
 	extern void isr_47();
+	extern void isr_0x69();
 
 	void div0();
 	void double_fault();

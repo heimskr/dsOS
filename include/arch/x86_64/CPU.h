@@ -15,6 +15,10 @@ namespace x86_64 {
 		asm volatile("wrmsr" :: "a" (low), "d" (high), "c" (reg));
 	}
 
+	inline void wrmsr(uint32_t reg, uint64_t addr) {
+		wrmsr(reg, addr & 0xffffffff, addr >> 32);
+	}
+
 	inline uint64_t rdmsr(uint32_t reg) {
 		uint32_t low, high;
 		asm volatile ("rdmsr" : "=a" (low), "=d" (high) : "c" (reg));

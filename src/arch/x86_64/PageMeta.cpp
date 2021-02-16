@@ -101,12 +101,17 @@ namespace x86_64 {
 		return (((uint64_t) address) & ~0xfff) | MMU_PRESENT | MMU_WRITABLE;
 	}
 
-	PageMeta4K::PageMeta4K(): PageMeta(nullptr, nullptr), pages(-1) {}
+	PageMeta4K::PageMeta4K(): PageMeta(nullptr, nullptr), pages(-1) {
+
+	}
 	
 	PageMeta4K::PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_):
 	PageMeta(physical_start, virtual_start), pages(pages_) {
-		bitmap = new (bitmap_address) bitmap_t[Thorn::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t))];
-		// printf("Bitmap size: %lu bytes\n", Thorn::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
+		const size_t bitmap_count = Thorn::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t));
+		bitmap = new (bitmap_address) bitmap_t[bitmap_count];
+		const size_t page_count = Thorn::Util::updiv(bitmap_count * sizeof(bitmap_t), 4096UL);
+		for (size_t i = 0; i < page_count; ++i)
+			assignAddress(static_cast<char *>(bitmap_address) + 4096 * i);
 	}
 
 	size_t PageMeta4K::bitmapSize() const {

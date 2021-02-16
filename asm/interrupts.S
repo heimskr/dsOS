@@ -140,6 +140,7 @@ fsfmt: .asciz "%%fs: 0x%x\n"
 gsfmt: .asciz "%%gs: 0x%x\n"
 addrfmt: .asciz "addr: 0x%lx\n"
 gpffmt: .asciz "General protection fault!\n"
+syscallfmt: .asciz "Syscall\n"
 
 .data
 ticks: .8byte 0
@@ -164,6 +165,7 @@ addr14: .8byte 0
 	isr_noerrc 43, irq11
 	isr_noerrc 46, irq14
 	isr_noerrc 47, irq15
+	// isr_noerrc 0x69, syscall_handler
 
 .global isr_8
 .type isr_8, @function
@@ -321,4 +323,35 @@ isr_33:
 	add $8, %rsp
 	popall
 	sti
+	iretq
+
+.global isr_0x69
+.type isr_0x69, @function
+isr_0x69:
+	cli
+	pushall
+	print0 $syscallfmt
+	print1 $addrfmt, 120(%rsp)
+	print1 $raxfmt, 104(%rsp)
+	print1 $rbxfmt, 96(%rsp)
+	print1 $rcxfmt, 88(%rsp)
+	print1 $rdxfmt, 80(%rsp)
+	print1 $rdifmt, 72(%rsp)
+	print1 $rsifmt, 64(%rsp)
+	print1 $r8fmt, 56(%rsp)
+	print1 $r9fmt, 48(%rsp)
+	print1 $r10fmt, 40(%rsp)
+	print1 $r11fmt, 32(%rsp)
+	print1 $r12fmt, 24(%rsp)
+	print1 $r13fmt, 16(%rsp)
+	print1 $r14fmt, 8(%rsp)
+	print1 $r15fmt, 0(%rsp)
+	print1 $rbpfmt, %rbp
+	print1 $rspfmt, %rsp
+	print1 $csfmt, %cs
+	print1 $dsfmt, %ds
+	print1 $esfmt, %es
+	print1 $fsfmt, %fs
+	print1 $gsfmt, %gs
+	1: hlt; jmp 1b
 	iretq

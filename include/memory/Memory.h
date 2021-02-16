@@ -18,10 +18,13 @@ namespace Thorn {
 			};
 
 		private:
+			static constexpr size_t PAGE_SIZE = 4096;
+
 			// size_t align;
 			size_t allocated = 0;
 			char *start, *high, *end;
 			BlockMeta *base = nullptr;
+			uintptr_t highestAllocated = 0;
 
 			uintptr_t realign(uintptr_t);
 			BlockMeta * findFreeBlock(BlockMeta * &last, size_t);

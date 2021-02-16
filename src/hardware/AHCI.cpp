@@ -495,12 +495,18 @@ namespace Thorn::AHCI {
 		start();
 		registers->ci = registers->ci | (1 << slot);
 
-		while(registers->ci & (1 << slot)) {
+		spin = 100;
+		while((registers->ci & (1 << slot)) && spin--) {
 			if (registers->is & HBA_PxIS_TFES) {
 				printf("[Port::access] Disk error (serr: %x)\n", registers->serr);
 				stop();
 				return AccessStatus::DiskError;
 			}
+		}
+
+		if (spin <= 0) {
+			printf("[Port::access] Port is hung\n");
+			return AccessStatus::Hung;
 		}
 
 		spin = 100;

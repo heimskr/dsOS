@@ -22,7 +22,7 @@ namespace x86_64 {
 			virtual size_t pagesUsed() const = 0;
 			virtual bool isFree(size_t index) const = 0;
 			virtual operator bool() const = 0;
-			virtual bool assignAddress(volatile void *virtual_address, volatile void *physical_address,
+			virtual bool assignAddress(volatile void *virtual_address, volatile void *physical_address = nullptr,
 			                           uint64_t extra_meta = 0);
 			virtual bool identityMap(volatile void *, uint64_t extra_meta = 0);
 			/** Returns true if there was an entry for the given address. */

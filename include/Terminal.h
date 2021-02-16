@@ -15,7 +15,7 @@ namespace Thorn {
 		static uint8_t tabSize;
 		static uint16_t *buffer;
 
-		enum class VGAColor: int {
+		enum class VGAColor: uint8_t {
 			Black = 0,
 			Blue = 1,
 			Green = 2,
@@ -31,7 +31,7 @@ namespace Thorn {
 			LightRed = 12,
 			LightMagenta = 13,
 			LightBrown = 14,
-			White = 15,
+			White = 15
 		};
 
 		static constexpr uint8_t vgaEntryColor(VGAColor fg, VGAColor bg) {

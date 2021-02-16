@@ -16,7 +16,7 @@ QEMU_MAIN    ?= -s -drive file=$(ISO_FILE),if=none,media=cdrom,format=raw,id=dri
 # QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none,format=raw -device ide-hd,drive=disk,bus=ahci.0
 QEMU_EXTRA   ?= -drive format=raw,file=disk.img
 
-QEMU_EXTRA   := $(QEMU_EXTRA) -no-shutdown -d cpu_reset,int
+# QEMU_EXTRA   := $(QEMU_EXTRA) -no-shutdown -d cpu_reset,int
 # QEMU_EXTRA   := $(QEMU_EXTRA) -device qemu-xhci -device usb-kbd
 # QEMU_EXTRA   := $(QEMU_EXTRA) -device usb-mouse
 QEMU_EXTRA   := $(QEMU_EXTRA) -enable-kvm

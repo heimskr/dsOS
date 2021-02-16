@@ -144,6 +144,10 @@ namespace Thorn {
 			if (old == *(rbp + 1))
 				return;
 			printf("[ 0x%lx ] (%d)\n", *(rbp + 1), i);
+			if (i == 64) {
+				printf("[ ... ]\n");
+				return;
+			}
 			old = *(rbp + 1);
 			rbp = (uintptr_t *) *rbp;
 		}
@@ -156,6 +160,10 @@ namespace Thorn {
 			if (old == *(rbp + 1))
 				return;
 			printf("[ 0x%lx ] (%d)\n", *(rbp + 1), i);
+			if (i == 64) {
+				printf("[ ... ]\n");
+				return;
+			}
 			old = *(rbp + 1);
 			rbp = (uintptr_t *) *rbp;
 		}

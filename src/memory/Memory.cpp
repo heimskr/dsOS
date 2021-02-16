@@ -2,14 +2,20 @@
 
 #include "memory/Memory.h"
 #include "memory/memset.h"
+#include "Kernel.h"
 #include "Options.h"
 
 Thorn::Memory *global_memory = nullptr;
+
+// #define DEBUG_ALLOCATION
+
+#define PROACTIVE_PAGING
 
 namespace Thorn {
 	Memory::Memory(char *start_, char *high_): start(start_), high(high_), end(start_) {
 		start = (char *) realign((uintptr_t) start);
 		global_memory = this;
+		highestAllocated = reinterpret_cast<uintptr_t>(start_);
 	}
 
 	Memory::Memory(): Memory((char *) 0, (char *) 0) {}
@@ -44,6 +50,14 @@ namespace Thorn {
 
 		if (last)
 			last->next = block;
+
+#ifdef PROACTIVE_PAGING
+		auto &pager = Kernel::getPager();
+		while (highestAllocated <= (uintptr_t) block) {
+			pager.assignAddress(reinterpret_cast<void *>(highestAllocated));
+			highestAllocated += PAGE_SIZE;
+		}
+#endif
 
 		block->size = size;
 		block->next = nullptr;
@@ -163,6 +177,7 @@ namespace Thorn {
 		printf("setBounds(0x%lx, 0x%lx)\n", new_start, new_high);
 #endif
 		start = (char *) realign((uintptr_t) new_start);
+		highestAllocated = reinterpret_cast<uintptr_t>(start);
 		high = new_high;
 		end = new_start;
 	}
