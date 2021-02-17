@@ -92,9 +92,14 @@ namespace Thorn {
 		pager.assignSelf();
 		pager.clear();
 
+		kernelPML4.print(false);
+
+		initPhysicalMemoryMap();
+
 		x86_64::APIC::init(*this);
 
-		memory.setBounds((char *) 0xfffff00000000000UL, (char *) 0xfffffffffffff000UL);
+		memory.setBounds((char *) 0xfffff00000000000UL,
+			(char *) Util::downalign((uintptr_t) physicalMemoryMap - 4096, 4096));
 
 		printf("Memory: 0x%lx through 0x%lx\n", memoryLow, memoryHigh);
 		printf("Core count: %d\n", x86_64::coreCount());
@@ -237,6 +242,37 @@ namespace Thorn {
 		pagesLength = Util::downalign((memoryHigh - memoryLow) * 4096 / 4097, 4096);
 		pagesStart = (void *) Util::downalign((uintptr_t) ((char *) memoryHigh - pagesLength), 4096);
 		pageDescriptorsLength = (uintptr_t) pagesStart - memoryLow;
+	}
+
+	void Kernel::initPhysicalMemoryMap() {
+		physicalMemoryMap = (void *) Util::downalign((0xfffffffffffff000UL - memoryHigh), 4096);
+		printf("physicalMemoryMap = 0x%lx\n", physicalMemoryMap);
+		printf("Mapping all physical memory...\n");
+		const bool old_disable_memset = pager.disableMemset;
+		const bool old_disable_present_check = pager.disablePresentCheck;
+		pager.disableMemset = true;
+		pager.disablePresentCheck = true;
+		pager.physicalMemoryMap = physicalMemoryMap;
+		size_t x = 0;
+		for (uintptr_t i = 0x1000000; i <= memoryHigh; i += 4096) {
+			// printf("i=0x%lx\n", i);
+			if (x++ % 512 == 0) {
+				printf("i = 0x%lx\n", i);
+			}
+			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
+		}
+		for (uintptr_t i = Util::downalign(memoryLow, 4096); i < 0x1000000; i += 4096) {
+			// printf("i=0x%lx\n", i);
+			if (x++ % 512 == 0) {
+				printf("i = 0x%lx\n", i);
+			}
+			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
+		}
+		printf("Highest mapped: 0x%lx + 0x%lx ~= 0x%lx\n", physicalMemoryMap, memoryHigh, (char *) physicalMemoryMap + memoryHigh);
+		pager.disableMemset = old_disable_memset;
+		pager.disablePresentCheck = old_disable_present_check;
+		pager.physicalMemoryMapReady = true;
+		printf("...finished mapping physical memory.\n");
 	}
 
 	void Kernel::initPageDescriptors() {

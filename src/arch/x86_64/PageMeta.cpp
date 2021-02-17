@@ -38,9 +38,20 @@ namespace x86_64 {
 
 	bool PageMeta::assignAddress(volatile void *virtual_address, volatile void *physical_address, uint64_t extra_meta) {
 		using PTW = PageTableWrapper;
-		return assign(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
-		              PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
-		              physical_address, extra_meta);
+		uintptr_t out;
+		if (physicalMemoryMapReady) {
+			out = assign(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
+			             PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
+			             physical_address, extra_meta);
+		} else {
+			out = assignBeforePMM(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
+			                      PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
+			                      physical_address, extra_meta);
+		}
+
+		if ((uintptr_t) physical_address == 0xfee00000)
+			printf("assignAddress(0x%lx) -> 0x%lx\n", virtual_address, out);
+		return out;
 	}
 
 	bool PageMeta::identityMap(volatile void *address, uint64_t extra_meta) {
@@ -165,22 +176,23 @@ namespace x86_64 {
 			return 0;
 		}
 
-		Thorn::Kernel *kernel = Thorn::Kernel::instance;
-		if (!kernel) {
-			printf("Kernel instance is null!\n");
-			for (;;) asm("hlt");
-		}
+		Thorn::Kernel &kernel = Thorn::Kernel::getInstance();
 
-		PageTableWrapper &wrapper = kernel->kernelPML4;
+		auto access = [&](uint64_t *ptr) -> uint64_t * {
+			return (uint64_t *) ((uintptr_t) physicalMemoryMap + (uintptr_t) ptr);
+		};
+
+		PageTableWrapper &wrapper = kernel.kernelPML4;
 		if (!Thorn::Util::isCanonical(wrapper.entries)) {
 			printf("PML4 (0x%lx) isn't canonical!\n", wrapper.entries);
 			for (;;) asm("hlt");
 		}
-		if (!isPresent(wrapper.entries[pml4_index])) {
+		if (disablePresentCheck || !isPresent(wrapper.entries[pml4_index])) {
 			// Allocate a page for a new PDPT if the PML4E is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				wrapper.entries[pml4_index] = addressToEntry(free_addr);
-				memset(free_addr, 0, 4096);
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -189,15 +201,17 @@ namespace x86_64 {
 
 		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdpt)) {
-			kernel->kernelPML4.print(false);
+			wrapper.print(false);
 			printf("PDPT (0x%lx) isn't canonical!\n", pdpt);
 			for (;;) asm("hlt");
 		}
-		if (!isPresent(pdpt[pdpt_index])) {
+		pdpt = access(pdpt);
+		if (disablePresentCheck || !isPresent(pdpt[pdpt_index])) {
 			// Allocate a page for a new PDT if the PDPE is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
-				memset(free_addr, 0, 4096);
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -206,15 +220,17 @@ namespace x86_64 {
 
 		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdt)) {
-			kernel->kernelPML4.print(false);
+			wrapper.print(false);
 			printf("PDT (0x%lx) isn't canonical!\n", pdt);
 			for (;;) asm("hlt");
 		}
-		if (!isPresent(pdt[pdt_index])) {
+		pdt = access(pdt);
+		if (disablePresentCheck || !isPresent(pdt[pdt_index])) {
 			// Allocate a page for a new PT if the PDE is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdt[pdt_index] = addressToEntry(free_addr);
-				memset(free_addr, 0, 4096);
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -224,18 +240,121 @@ namespace x86_64 {
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
 		uintptr_t assigned = 0;
 		if (!Thorn::Util::isCanonical(pt)) {
-			kernel->kernelPML4.print(false);
+			wrapper.print(false);
 			printf("PT (0x%lx) isn't canonical!\n", pt);
 			for (;;) asm("hlt");
 		}
+		pt = access(pt);
+		if (disablePresentCheck || !isPresent(pt[pt_index])) {
+			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
+			if (physical_address) {
+				pt[pt_index] = addressToEntry(physical_address);
+			} else if (void *free_addr = allocateFreePhysicalAddress()) {
+				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
+			} else {
+				printf("No free pages!\n");
+				for (;;) asm("hlt");
+			}
+			assigned = pt[pt_index];
+		} else {
+			// Nothing really needed to be done anyway...
+		}
 
+		return assigned;
+	}
+
+	uintptr_t PageMeta4K::assignBeforePMM(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
+	                                      uint16_t pt_index, volatile void *physical_address, uint64_t extra_meta) {
+		// serprintf("\e[32massignBeforePMM\e[0m %u, %u, %u, %u, 0x%lx, 0x%lx\n", pml4_index, pdpt_index, pdt_index, pt_index, physical_address, extra_meta);
+
+		if (pages == -1) {
+			printf("[PageMeta4K::assign] pages == -1\n");
+			return 0;
+		}
+
+		Thorn::Kernel &kernel = Thorn::Kernel::getInstance();
+
+		constexpr uintptr_t magic = 0x1000000;
+
+		auto access = [&](uint64_t *ptr) -> uint64_t * {
+			if ((uintptr_t) ptr < magic)
+				return ptr;
+			return (uint64_t *) ((uintptr_t) physicalMemoryMap + (uintptr_t) ptr);
+		};
+
+		PageTableWrapper &wrapper = kernel.kernelPML4;
+		if (!Thorn::Util::isCanonical(wrapper.entries)) {
+			printf("PML4 (0x%lx) isn't canonical!\n", wrapper.entries);
+			for (;;) asm("hlt");
+		}
+		if (!isPresent(wrapper.entries[pml4_index])) {
+			// Allocate a page for a new PDPT if the PML4E is empty.
+			if (void *free_addr = allocateFreePhysicalAddress()) {
+				wrapper.entries[pml4_index] = addressToEntry(free_addr);
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
+			} else {
+				printf("No free pages!\n");
+				for (;;) asm("hlt");
+			}
+		}
+
+		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
+		if (!Thorn::Util::isCanonical(pdpt)) {
+			wrapper.print(false);
+			printf("PDPT (0x%lx) isn't canonical!\n", pdpt);
+			for (;;) asm("hlt");
+		}
+		pdpt = access(pdpt);
+		if (!isPresent(access(pdpt)[pdpt_index])) {
+			// Allocate a page for a new PDT if the PDPE is empty.
+			if (void *free_addr = allocateFreePhysicalAddress()) {
+				pdpt[pdpt_index] = addressToEntry(free_addr);
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
+			} else {
+				printf("No free pages!\n");
+				for (;;) asm("hlt");
+			}
+		}
+
+		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
+		if (!Thorn::Util::isCanonical(pdt)) {
+			wrapper.print(false);
+			printf("PDT (0x%lx) isn't canonical!\n", pdt);
+			for (;;) asm("hlt");
+		}
+		pdt = access(pdt);
+		if (!isPresent(pdt[pdt_index])) {
+			// Allocate a page for a new PT if the PDE is empty.
+			if (void *free_addr = allocateFreePhysicalAddress()) {
+				pdt[pdt_index] = addressToEntry(free_addr);
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
+			} else {
+				printf("No free pages!\n");
+				for (;;) asm("hlt");
+			}
+		}
+
+		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
+		uintptr_t assigned = 0;
+		if (!Thorn::Util::isCanonical(pt)) {
+			wrapper.print(false);
+			printf("PT (0x%lx) isn't canonical!\n", pt);
+			for (;;) asm("hlt");
+		}
+		pt = access(pt);
 		if (!isPresent(pt[pt_index])) {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {
 				pt[pt_index] = addressToEntry(physical_address);
 			} else if (void *free_addr = allocateFreePhysicalAddress()) {
 				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
-				memset(free_addr, 0, 4096);
+				if (!disableMemset)
+					memset(free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");

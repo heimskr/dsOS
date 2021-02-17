@@ -25,6 +25,10 @@ namespace Thorn {
 			/** The area where actual pages are stored. */
 			void *pagesStart = nullptr;
 
+			/** A region at the very top of virtual memory is mapped to all physical memory. This address stores the
+			 *  start of that region. */
+			void *physicalMemoryMap = nullptr;
+
 			/** The size of the area where actual pages are stored in bytes. */
 			size_t pagesLength = 0;
 
@@ -34,6 +38,8 @@ namespace Thorn {
 			/** Carves the usable region of physical memory into a section for page descriptors and a section for
 			 *  pages. */
 			void arrangeMemory();
+
+			void initPhysicalMemoryMap();
 
 			/** Sets all page descriptors to zero. */
 			void initPageDescriptors();

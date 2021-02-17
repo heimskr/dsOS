@@ -140,6 +140,7 @@ fsfmt: .asciz "%%fs: 0x%x\n"
 gsfmt: .asciz "%%gs: 0x%x\n"
 addrfmt: .asciz "addr: 0x%lx\n"
 gpffmt: .asciz "General protection fault!\n"
+pffmt: .asciz "Page fault!\n"
 syscallfmt: .asciz "Syscall\n"
 
 .data
@@ -254,6 +255,66 @@ isr_13:
 .type isr_14, @function
 isr_14:
 	cli
+
+	mov %rbp, (isr_rbp)
+
+	push %rax
+	push %rbx
+	push %rcx
+	push %rdx
+	push %rdi
+	push %rsi
+	push %r8
+	push %r9
+	push %r10
+	push %r11
+	push %r12
+	push %r13
+	push %r14
+	push %r15
+
+	mov (isr_rbp), %rdi
+	call _ZN5Thorn6Kernel9backtraceEPm
+
+	print0 $pffmt
+	print1 $addrfmt, 120(%rsp)
+	print1 $raxfmt, 104(%rsp)
+	print1 $rbxfmt, 96(%rsp)
+	print1 $rcxfmt, 88(%rsp)
+	print1 $rdxfmt, 80(%rsp)
+	print1 $rdifmt, 72(%rsp)
+	print1 $rsifmt, 64(%rsp)
+	print1 $r8fmt, 56(%rsp)
+	print1 $r9fmt, 48(%rsp)
+	print1 $r10fmt, 40(%rsp)
+	print1 $r11fmt, 32(%rsp)
+	print1 $r12fmt, 24(%rsp)
+	print1 $r13fmt, 16(%rsp)
+	print1 $r14fmt, 8(%rsp)
+	print1 $r15fmt, 0(%rsp)
+	print1 $rbpfmt, %rbp
+	print1 $rspfmt, %rsp
+	print1 $csfmt, %cs
+	print1 $dsfmt, %ds
+	print1 $esfmt, %es
+	print1 $fsfmt, %fs
+	print1 $gsfmt, %gs
+
+	pop %r15
+	pop %r14
+	pop %r13
+	pop %r12
+	pop %r11
+	pop %r10
+	pop %r9
+	pop %r8
+	pop %rsi
+	pop %rdi
+	pop %rdx
+	pop %rcx
+	pop %rbx
+	pop %rax
+
 	push %rax
 	movq 16(%rsp), %rax
 	mov %rax, (addr14)

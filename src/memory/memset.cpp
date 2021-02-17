@@ -18,8 +18,12 @@
 #include "hardware/Serial.h"
 #include "lib/printf.h"
 #include "memory/memset.h"
+#include "Kernel.h"
 
 extern "C" void * memset(void *dstpp, int c, size_t len) {
+	if ((uintptr_t) dstpp == 0x14b4000)
+		Thorn::Kernel::backtrace();
+
 	long int dstp = (long int) dstpp;
 	if (len >= 8) {
 		size_t xlen;

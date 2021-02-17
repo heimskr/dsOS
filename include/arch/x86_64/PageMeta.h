@@ -11,6 +11,9 @@ namespace x86_64 {
 		public:
 			void *physicalStart;
 			void *virtualStart;
+			bool disableMemset = false, disablePresentCheck = false;
+			void *physicalMemoryMap = nullptr;
+			bool physicalMemoryMapReady = false;
 			virtual size_t pageCount() const = 0;
 			virtual size_t pageSize() const = 0;
 			virtual void clear() = 0;
@@ -39,37 +42,44 @@ namespace x86_64 {
 			inline bool isPresent(uint64_t entry) {
 				return entry & MMU_PRESENT;
 			}
+
+			virtual uintptr_t assignBeforePMM(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
+				uint16_t pt_index, volatile void *physical_address = nullptr, uint64_t extra_meta = 0) = 0;
 	} __attribute__((packed));
 
-
 	/** Number of 4KiB pages is PageCount + 1 to account for the other fields in PageMeta and PageMeta4K. */
-	struct PageMeta4K: public PageMeta {
-		using bitmap_t = int64_t;
+	class PageMeta4K: public PageMeta {
+		protected:
+			virtual uintptr_t assignBeforePMM(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
+				uint16_t pt_index, volatile void *physical_address = nullptr, uint64_t extra_meta = 0) override;
 
-		/** Number of pages. */
-		int pages;
+		public:
+			using bitmap_t = int64_t;
 
-		/** Bits are 0 if the corresponding page is free, 1 if allocated. */
-		bitmap_t *bitmap = nullptr;
+			/** Number of pages. */
+			int pages;
 
-		PageMeta4K();
+			/** Bits are 0 if the corresponding page is free, 1 if allocated. */
+			bitmap_t *bitmap = nullptr;
 
-		/** bitmap_address must be within a mapped page. */
-		PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_);
+			PageMeta4K();
 
-		/** Returns the size of the bitmap array in bytes. */
-		size_t bitmapSize() const;
-		virtual size_t pageCount() const override;
-		virtual size_t pageSize() const override;
-		virtual void clear() override;
-		virtual int findFree(size_t start = 0) const override;
-		virtual void mark(int index, bool used) override;
-		virtual uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
-		                         volatile void *physical_address = nullptr, uint64_t extra_meta = 0) override;
-		/** Allocates pages for the bitmap array. */
-		void assignSelf();
-		virtual operator bool() const override;
-		virtual size_t pagesUsed() const override;
-		virtual bool isFree(size_t index) const override;
+			/** bitmap_address must be within a mapped page. */
+			PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_);
+
+			/** Returns the size of the bitmap array in bytes. */
+			size_t bitmapSize() const;
+			virtual size_t pageCount() const override;
+			virtual size_t pageSize() const override;
+			virtual void clear() override;
+			virtual int findFree(size_t start = 0) const override;
+			virtual void mark(int index, bool used) override;
+			virtual uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+									volatile void *physical_address = nullptr, uint64_t extra_meta = 0) override;
+			/** Allocates pages for the bitmap array. */
+			void assignSelf();
+			virtual operator bool() const override;
+			virtual size_t pagesUsed() const override;
+			virtual bool isFree(size_t index) const override;
 	} __attribute__((packed));
 }
