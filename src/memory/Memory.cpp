@@ -53,7 +53,7 @@ namespace Thorn {
 
 #ifdef PROACTIVE_PAGING
 		auto &pager = Kernel::getPager();
-		while (highestAllocated <= (uintptr_t) block) {
+		while (highestAllocated <= (uintptr_t) block + size) {
 			pager.assignAddress(reinterpret_cast<void *>(highestAllocated));
 			highestAllocated += PAGE_SIZE;
 		}
@@ -64,7 +64,6 @@ namespace Thorn {
 		block->free = 0;
 
 		end = reinterpret_cast<char *>(block) + block->size + sizeof(BlockMeta) + 1;
-
 		return block;
 	}
 
