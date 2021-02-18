@@ -89,6 +89,8 @@ namespace Thorn {
 		uintptr_t physical_start = (bitmap_base + 5'000'000UL) & ~0xfff; // 5 MB is enough to map over 150 GB.
 		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
 
+		printf("physical_start = 0x%lx\n", physical_start);
+
 		pager.assignSelf();
 		pager.clear();
 
@@ -251,28 +253,12 @@ namespace Thorn {
 		const bool old_disable_memset = pager.disableMemset;
 		const bool old_disable_present_check = pager.disablePresentCheck;
 		pager.disableMemset = true;
-		pager.disablePresentCheck = true;
+		pager.disablePresentCheck = false;
 		pager.physicalMemoryMap = physicalMemoryMap;
-		size_t x = 0;
-		for (uintptr_t i = 0x1000000; i <= memoryHigh; i += 4096) {
-			// printf("i=0x%lx\n", i);
-			if (x++ % 512 == 0) {
-				// printf("0x%lx -> 0x%lx\n", (char *) physicalMemoryMap + i, i);
-			}
+		for (uintptr_t i = 0x1000000; i <= memoryHigh; i += 4096)
 			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
-		}
-		// printf("Middle point.\n");
-		x = 0;
-		for (uintptr_t i = 0; i < 0x1000000; i += 4096) {
-			// printf("i=0x%lx\n", i);
-			if (x++ % 512 == 0) {
-				// printf("0x%lx -> 0x%lx\n", (char *) physicalMemoryMap + i, i);
-			}
+		for (uintptr_t i = 0; i < 0x1000000; i += 4096)
 			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
-		}
-		// printf("Printing PML4.\n");
-		// kernelPML4.print(false);
-		// printf("Highest mapped: 0x%lx + 0x%lx ~= 0x%lx\n", physicalMemoryMap, memoryHigh, (char *) physicalMemoryMap + memoryHigh);
 		pager.disableMemset = old_disable_memset;
 		pager.disablePresentCheck = old_disable_present_check;
 		pager.physicalMemoryMapReady = true;

@@ -187,12 +187,11 @@ namespace x86_64 {
 			printf("PML4 (0x%lx) isn't canonical!\n", wrapper.entries);
 			for (;;) asm("hlt");
 		}
-		if (disablePresentCheck || !isPresent(wrapper.entries[pml4_index])) {
+		if (!isPresent(wrapper.entries[pml4_index])) {
 			// Allocate a page for a new PDPT if the PML4E is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				wrapper.entries[pml4_index] = addressToEntry(free_addr);
-				if (!disableMemset)
-					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
+				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -206,19 +205,16 @@ namespace x86_64 {
 			for (;;) asm("hlt");
 		}
 		pdpt = access(pdpt);
-		if (disablePresentCheck || !isPresent(pdpt[pdpt_index])) {
+		if (!isPresent(pdpt[pdpt_index])) {
 			// Allocate a page for a new PDT if the PDPE is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
-				if (!disableMemset)
-					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
+				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
 			}
 		}
-
-		// printf("pdpt = 0x%lx, pdpt_index = %d\n", pdpt, pdpt_index);
 
 		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdt)) {
@@ -227,12 +223,11 @@ namespace x86_64 {
 			for (;;) asm("hlt");
 		}
 		pdt = access(pdt);
-		if (disablePresentCheck || !isPresent(pdt[pdt_index])) {
+		if (!isPresent(pdt[pdt_index])) {
 			// Allocate a page for a new PT if the PDE is empty.
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdt[pdt_index] = addressToEntry(free_addr);
-				if (!disableMemset)
-					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
+				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -247,14 +242,13 @@ namespace x86_64 {
 			for (;;) asm("hlt");
 		}
 		pt = access(pt);
-		if (disablePresentCheck || !isPresent(pt[pt_index])) {
+		if (!isPresent(pt[pt_index])) {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {
 				pt[pt_index] = addressToEntry(physical_address);
 			} else if (void *free_addr = allocateFreePhysicalAddress()) {
 				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
-				if (!disableMemset)
-					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
+				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
