@@ -44,6 +44,7 @@ namespace Thorn {
 
 	extern InputContext mainContext;
 
+	void sha1(const std::vector<std::string> &, InputContext &);
 	void parseElf(const std::vector<std::string> &, InputContext &);
 	void mode(const std::vector<std::string> &, InputContext &);
 	void records(const std::vector<std::string> &, InputContext &);

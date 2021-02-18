@@ -18,7 +18,7 @@ namespace Thorn {
 			};
 
 		private:
-			static constexpr size_t PAGE_SIZE = 4096;
+			static constexpr size_t PAGE_LENGTH = 4096;
 
 			// size_t align;
 			size_t allocated = 0;

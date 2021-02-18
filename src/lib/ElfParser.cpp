@@ -30,6 +30,8 @@ namespace Elf {
 		Elf64_Shdr *shdr = (Elf64_Shdr *) (programText.c_str() + ehdr->e_shoff);
 		int shnum = ehdr->e_shnum;
 
+		printf("ehdr->e_shstrndx: 0x%x\n", ehdr->e_shstrndx);
+
 		Elf64_Shdr *sh_strtab = &shdr[ehdr->e_shstrndx];
 		const char * const sh_strtab_p = (const char *) programText.c_str() + sh_strtab->sh_offset;
 
