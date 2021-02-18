@@ -192,7 +192,7 @@ namespace x86_64 {
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				wrapper.entries[pml4_index] = addressToEntry(free_addr);
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -201,8 +201,8 @@ namespace x86_64 {
 
 		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdpt)) {
-			wrapper.print(false);
 			printf("PDPT (0x%lx) isn't canonical!\n", pdpt);
+			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
 		pdpt = access(pdpt);
@@ -211,17 +211,19 @@ namespace x86_64 {
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
 			}
 		}
 
+		// printf("pdpt = 0x%lx, pdpt_index = %d\n", pdpt, pdpt_index);
+
 		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdt)) {
-			wrapper.print(false);
 			printf("PDT (0x%lx) isn't canonical!\n", pdt);
+			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
 		pdt = access(pdt);
@@ -230,7 +232,7 @@ namespace x86_64 {
 			if (void *free_addr = allocateFreePhysicalAddress()) {
 				pdt[pdt_index] = addressToEntry(free_addr);
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -240,8 +242,8 @@ namespace x86_64 {
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
 		uintptr_t assigned = 0;
 		if (!Thorn::Util::isCanonical(pt)) {
-			wrapper.print(false);
 			printf("PT (0x%lx) isn't canonical!\n", pt);
+			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
 		pt = access(pt);
@@ -252,7 +254,7 @@ namespace x86_64 {
 			} else if (void *free_addr = allocateFreePhysicalAddress()) {
 				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -303,8 +305,8 @@ namespace x86_64 {
 
 		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdpt)) {
-			wrapper.print(false);
 			printf("PDPT (0x%lx) isn't canonical!\n", pdpt);
+			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
 		pdpt = access(pdpt);
@@ -322,10 +324,11 @@ namespace x86_64 {
 
 		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdt)) {
-			wrapper.print(false);
 			printf("PDT (0x%lx) isn't canonical!\n", pdt);
+			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
+		const uint64_t *old_pdt = pdt;
 		pdt = access(pdt);
 		if (!isPresent(pdt[pdt_index])) {
 			// Allocate a page for a new PT if the PDE is empty.
@@ -342,8 +345,10 @@ namespace x86_64 {
 		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
 		uintptr_t assigned = 0;
 		if (!Thorn::Util::isCanonical(pt)) {
-			wrapper.print(false);
 			printf("PT (0x%lx) isn't canonical!\n", pt);
+			printf("PDT: 0x%lx -> 0x%lx\n", old_pdt, pdt);
+			printf("pdt_index: 0x%x\n", pdt_index);
+			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
 		pt = access(pt);

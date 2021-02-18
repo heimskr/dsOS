@@ -92,7 +92,7 @@ namespace Thorn {
 		pager.assignSelf();
 		pager.clear();
 
-		kernelPML4.print(false);
+		// kernelPML4.print(false, false);
 
 		initPhysicalMemoryMap();
 
@@ -257,18 +257,22 @@ namespace Thorn {
 		for (uintptr_t i = 0x1000000; i <= memoryHigh; i += 4096) {
 			// printf("i=0x%lx\n", i);
 			if (x++ % 512 == 0) {
-				printf("i = 0x%lx\n", i);
+				// printf("0x%lx -> 0x%lx\n", (char *) physicalMemoryMap + i, i);
 			}
 			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
 		}
-		for (uintptr_t i = Util::downalign(memoryLow, 4096); i < 0x1000000; i += 4096) {
+		// printf("Middle point.\n");
+		x = 0;
+		for (uintptr_t i = 0; i < 0x1000000; i += 4096) {
 			// printf("i=0x%lx\n", i);
 			if (x++ % 512 == 0) {
-				printf("i = 0x%lx\n", i);
+				// printf("0x%lx -> 0x%lx\n", (char *) physicalMemoryMap + i, i);
 			}
 			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
 		}
-		printf("Highest mapped: 0x%lx + 0x%lx ~= 0x%lx\n", physicalMemoryMap, memoryHigh, (char *) physicalMemoryMap + memoryHigh);
+		// printf("Printing PML4.\n");
+		// kernelPML4.print(false);
+		// printf("Highest mapped: 0x%lx + 0x%lx ~= 0x%lx\n", physicalMemoryMap, memoryHigh, (char *) physicalMemoryMap + memoryHigh);
 		pager.disableMemset = old_disable_memset;
 		pager.disablePresentCheck = old_disable_present_check;
 		pager.physicalMemoryMapReady = true;

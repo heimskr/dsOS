@@ -18,7 +18,7 @@ namespace x86_64 {
 
 			void clear();
 
-			void print(bool putc = true, bool show_pdpt = true, bool show_pdt = true,
+			void print(bool putc = true, bool indirect = true, bool show_pdpt = true, bool show_pdt = true,
 			           PTDisplay pt = PTDisplay::Condensed);
 
 			uint64_t getPML4E(uint16_t pml4_index) const;
@@ -48,9 +48,9 @@ namespace x86_64 {
 
 		private:
 			void printMeta(uint64_t);
-			void printPDPT(size_t i_shift, uint64_t pml4e, bool show_pdt, PTDisplay);
-			void printPDT(size_t j_shift, uint64_t pdpe, PTDisplay);
-			void printPT(size_t k_shift, uint64_t pde);
-			void printCondensed(size_t k_shift, uint64_t pde);
+			void printPDPT(bool indirect, size_t i_shift, uint64_t pml4e, bool show_pdt, PTDisplay);
+			void printPDT(bool indirect, size_t j_shift, uint64_t pdpe, PTDisplay);
+			void printPT(bool indirect, size_t k_shift, uint64_t pde);
+			void printCondensed(bool indirect, size_t k_shift, uint64_t pde);
 	};
 }
