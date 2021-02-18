@@ -4,8 +4,8 @@
 #include "Kernel.h"
 
 // #define DEBUG_WRITES
-#define VERIFY_WRITES
-#define VERIFY_WRITES_QUIETLY
+// #define VERIFY_WRITES
+// #define VERIFY_WRITES_QUIETLY
 
 namespace Thorn::FS {
 	int Partition::read(void *buffer, size_t size, off_t offset) {

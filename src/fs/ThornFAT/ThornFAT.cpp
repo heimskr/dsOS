@@ -1058,6 +1058,19 @@ namespace Thorn::FS::ThornFAT {
 		DBGF("initFAT", "sizeof: Filename[%lu], Times[%lu], block_t[%lu], FileType[%lu], mode_t[%lu], DirEntry[%lu], "
 			"Superblock[%lu]", sizeof(Filename), sizeof(Times), sizeof(block_t), sizeof(FileType), sizeof(mode_t),
 			sizeof(DirEntry), sizeof(Superblock));
+
+		DBG("initFAT", "Zeroing out FAT.");
+		size_t position = block_size;
+		size_t remaining = table_size * block_size;
+		static char zeros[512] = {};
+		while (512 <= remaining) {
+			partition->write(zeros, 512, position);
+			position += 512;
+			remaining -= 512;
+		}
+
+		partition->write(zeros, remaining, position);
+
 		// These blocks point to the FAT, so they're not valid regions to write data.
 		writeOffset = block_size;
 		DBGF("initFAT", "Writing UNUSABLE %lu times to %lu", table_size + 1, writeOffset);
@@ -1066,11 +1079,6 @@ namespace Thorn::FS::ThornFAT {
 		DBGF("initFAT", "Writing FINAL 1 time to %lu", writeOffset);
 		writeMany(FINAL, 1);
 		++written;
-		// Might be sensitize to sizeof(block_t).
-		size_t times = Util::blocks2count(table_size, block_size) - written;
-		DBGF("initFAT", "Writing 0 %lu times to %lu (table_size = %lu, written = %lu)", times, writeOffset, table_size,
-			written);
-		writeMany(static_cast<block_t>(0), times);
 	}
 
 	void ThornFATDriver::initData(size_t, size_t table_size) {
