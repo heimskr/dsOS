@@ -61,6 +61,7 @@ namespace Thorn::Keyboard {
 
 	uint8_t getModifier(InputKey);
 	bool hasModifier(Modifier);
+	bool isModifier(Modifier);
 
 	void onKey(InputKey, bool down);
 

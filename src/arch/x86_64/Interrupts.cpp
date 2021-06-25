@@ -12,6 +12,7 @@
 #include "Kernel.h"
 #include "Options.h"
 #include "Terminal.h"
+#include "Test.h"
 
 // #define DEBUG_PAGE_FAULTS
 #define DEADLY_PAGE_FAULTS
@@ -134,7 +135,11 @@ void spurious_interrupt() {
 }
 
 void irq1() {
-	scancodes_fifo.push(Thorn::Ports::inb(0x60));
+	uint8_t byte = Thorn::Ports::inb(0x60);
+	// Keyboard::InputKey key = static_cast<Keyboard::InputKey>(byte);
+	if (Thorn::PS2Keyboard::scanmapNormal[byte].key == Thorn::Keyboard::InputKey::KeyLeftAlt)
+		looping = false;
+	scancodes_fifo.push(byte);
 	x86_64::PIC::sendEOI(1);
 }
 

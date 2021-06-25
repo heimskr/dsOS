@@ -110,6 +110,10 @@ namespace Thorn::Keyboard {
 		return (modifiers & static_cast<uint8_t>(modifier)) != 0;
 	}
 
+	bool isModifier(Modifier modifier) {
+		return modifiers == static_cast<uint8_t>(modifier);
+	}
+
 	InputKey transform(InputKey key) {
 		if (numlock) {
 			switch (key) {

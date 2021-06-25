@@ -181,7 +181,9 @@ namespace Thorn {
 		backtrace();
 	}
 
-	void Kernel::onKey(Keyboard::InputKey, bool) {
+	void Kernel::onKey(Keyboard::InputKey /* key */, bool /* down */) {
+		// if (!down && key == Keyboard::InputKey::KeyC && Keyboard::isModifier(Keyboard::Modifier::Ctrl))
+			// looping = false;
 	}
 
 	void Kernel::detectMemory() {

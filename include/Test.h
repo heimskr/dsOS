@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+extern volatile bool looping;
+
 namespace Thorn::FS {
 	struct Partition;
 	namespace ThornFAT {

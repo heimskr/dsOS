@@ -8,16 +8,16 @@
 // #define VERIFY_WRITES_QUIETLY
 
 namespace Thorn::FS {
-	int Partition::read(void *buffer, size_t size, off_t offset) {
+	int Partition::read(void *buffer, size_t size, off_t byte_offset) {
 		readRecords.emplace_back(size, offset);
 		// printf("\e[32m[read(buffer, %lu, %ld)]\e[0m\n", size, offset);
-		return parent->read(buffer, size, offset);
+		return parent->read(buffer, size, offset + byte_offset);
 	}
 
-	int Partition::write(const void *buffer, size_t size, off_t offset) {
-		writeRecords.emplace_back(size, offset);
+	int Partition::write(const void *buffer, size_t size, off_t byte_offset) {
+		writeRecords.emplace_back(size, byte_offset);
 #ifdef DEBUG_WRITES
-		printf("\e[32m[\e[31mwrite\e[32m(buffer, %lu, %ld)]\e[0m", size, offset);
+		printf("\e[32m[\e[31mwrite\e[32m(buffer, %lu, %ld)]\e[0m", size, byte_offset);
 		if (size == 320) {
 			printf(":");
 			for (size_t i = 0; i < size; ++i)
@@ -27,14 +27,14 @@ namespace Thorn::FS {
 			printf("\n");
 #endif
 #ifndef VERIFY_WRITES
-		return parent->write(buffer, size, offset);
+		return parent->write(buffer, size, offset + byte_offset);
 #else
-		int status = parent->write(buffer, size, offset);
+		int status = parent->write(buffer, size, offset + byte_offset);
 		if (status != 0)
 			return status;
 		char *verify = new char[size];
 		memset(verify, 0, size);
-		status = parent->read(verify, size, offset);
+		status = parent->read(verify, size, offset + byte_offset);
 		if (status != 0)
 			return status;
 		size_t mistakes = 0;

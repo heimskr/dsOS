@@ -29,6 +29,8 @@
 #include "lib/printf.h"
 #include "lib/SHA1.h"
 
+volatile bool looping = false;
+
 namespace Thorn {
 	void runTests() {
 		testPS2Keyboard();
@@ -382,6 +384,13 @@ namespace Thorn {
 			parseElf(pieces, mainContext);
 		} else if (pieces[0] == "sha1") {
 			sha1(pieces, mainContext);
+		} else if (pieces[0] == "loop") {
+			tprintf("Looping...\n");
+			looping = true;
+			while (looping) {
+				Serial::write(0b11110000, mainContext.portBase);
+			}
+			tprintf("Done.\n");
 		} else if (pieces[0] == "0") {
 			handleInput("init ahci");
 			handleInput("sel cont 0");
