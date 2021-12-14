@@ -1,5 +1,5 @@
 #if defined(__linux__)
-#warning "You are not using a cross-compiler. You will most certainly run into trouble."
+#warning "You are not using a cross compiler. You will most certainly run into trouble."
 #endif
 
 #if !defined(__x86_64__)
@@ -87,7 +87,8 @@ namespace Thorn {
 		// These three lines are incredibly janky. Fixing them is important.
 		uintptr_t bitmap_base = 0xa00000UL;
 		uintptr_t physical_start = (bitmap_base + 5'000'000UL) & ~0xfff; // 5 MB is enough to map over 150 GB.
-		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
+		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base,
+			(memoryHigh - physical_start) / 4096);
 
 		printf("physical_start = 0x%lx\n", physical_start);
 

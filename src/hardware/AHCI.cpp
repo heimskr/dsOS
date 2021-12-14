@@ -16,35 +16,46 @@ namespace Thorn::AHCI {
 	}
 
 	void Controller::init(Kernel &kernel) {
-		uint16_t command = device->getCommand();
 		memset(ports, 0, sizeof(ports));
-		command = (command & ~PCI::COMMAND_INT_DISABLE) | PCI::COMMAND_MEMORY | PCI::COMMAND_MASTER;
-		device->setCommand(command);
-		abar = (HBAMemory *) (uintptr_t) (device->getBAR(5) & ~0xf);
+
+		device->setBusMastering(true);
+		device->setInterrupts(true);
+		device->setMemorySpace(true);
+
+		abar = (HBAMemory *) device->getBAR(5);
 		printf("abar: 0x%lx\n", abar);
+
 		kernel.pager.identityMap(abar, MMU_CACHE_DISABLED);
 		kernel.pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
+
 		printf("cap=%x cap2=%x", abar->cap, abar->cap2);
 		printf(" caps =");
 		for (uint8_t capability: device->capabilities)
 			printf(" 0x%x", capability);
 		printf(", vs=%x\n", abar->vs);
+
 		uint8_t irq = device->allocateVector(PCI::Vector::Any);
 		if (irq == 0xff)
 			printf("[AHCI::Controller::init] Failed to allocate vector\n");
 		printf("[AHCI::Controller::init] Assigning IRQ %d\n", irq);
+
+		uint32_t pi = abar->pi;
+
 		while (!(abar->ghc & GHC_ENABLE)) {
 			abar->ghc = abar->ghc | GHC_ENABLE;
 			// TODO: how to wait without interfering with preemption?
 			Kernel::wait(1, 1000);
 		}
+
 		// abar->ghc = abar->ghc | GHC_ENABLE | GHC_HR;
 		// abar->ghc = abar->ghc | GHC_ENABLE;
 		abar->ghc = abar->ghc | GHC_IE;
+
 		printf("[AHCI::Controller::init] Enabled: %y (0x%x)\n", abar->ghc & GHC_ENABLE, abar->ghc);
+
 		x86_64::IDT::add(irq, +[] { printf("SATA IRQ triggered\n"); });
+
 		abar->is = 0xffffffff;
-		uint32_t pi = abar->pi;
 
 		for (int i = 0; i < 32; ++i) {
 			if ((pi >> i) & 1) {

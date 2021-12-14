@@ -305,6 +305,34 @@ namespace Thorn::PCI {
 		return ::Thorn::PCI::writeInt(bdf, offset, val);
 	}
 
+	void Device::setBusMastering(bool enable) {
+		if (enable)
+			writeWord(COMMAND, readWord(COMMAND) | COMMAND_MASTER);
+		else
+			writeWord(COMMAND, readWord(COMMAND) & ~COMMAND_MASTER);
+	}
+
+	void Device::setInterrupts(bool enable) {
+		if (enable)
+			writeWord(COMMAND, readWord(COMMAND) & ~COMMAND_INT_DISABLE);
+		else
+			writeWord(COMMAND, readWord(COMMAND) | COMMAND_INT_DISABLE);
+	}
+
+	void Device::setMemorySpace(bool enable) {
+		if (enable)
+			writeWord(COMMAND, readWord(COMMAND) | COMMAND_MEMORY);
+		else
+			writeWord(COMMAND, readWord(COMMAND) & ~COMMAND_MEMORY);
+	}
+
+	void Device::setIOSpace(bool enable) {
+		if (enable)
+			writeWord(COMMAND, readWord(COMMAND) | COMMAND_IO);
+		else
+			writeWord(COMMAND, readWord(COMMAND) & ~COMMAND_IO);
+	}
+
 	void scan() {
 		// HeaderNative header;
 		printf("Scanning.\n");

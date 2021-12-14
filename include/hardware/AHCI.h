@@ -394,7 +394,7 @@ namespace Thorn::AHCI {
 		uint8_t vendor[0x100 - 0xa0];
 
 		// 0x100–0x10ff: Port control registers
-		HBAPort ports[32];
+		volatile HBAPort ports[32];
 	};
 
 	class Controller {

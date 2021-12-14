@@ -528,7 +528,7 @@ namespace Thorn::FS::ThornFAT {
 		}
 
 		// TODO: implement time.
-		DirEntry newfile(times == NULL? Times(0, 0, 0) : *times, length, type);
+		DirEntry newfile(times == nullptr? Times(0, 0, 0) : *times, length, type);
 		block_t free_block = findFreeBlock();
 		if (noalloc) {
 			// We provide an option not to allocate space for the file. This is helpful for fat_rename, when we just

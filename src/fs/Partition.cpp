@@ -8,13 +8,13 @@
 // #define VERIFY_WRITES_QUIETLY
 
 namespace Thorn::FS {
-	int Partition::read(void *buffer, size_t size, off_t byte_offset) {
+	int Partition::read(void *buffer, size_t size, size_t byte_offset) {
 		readRecords.emplace_back(size, offset);
 		// printf("\e[32m[read(buffer, %lu, %ld)]\e[0m\n", size, offset);
 		return parent->read(buffer, size, offset + byte_offset);
 	}
 
-	int Partition::write(const void *buffer, size_t size, off_t byte_offset) {
+	int Partition::write(const void *buffer, size_t size, size_t byte_offset) {
 		writeRecords.emplace_back(size, byte_offset);
 #ifdef DEBUG_WRITES
 		printf("\e[32m[\e[31mwrite\e[32m(buffer, %lu, %ld)]\e[0m", size, byte_offset);

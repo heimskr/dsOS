@@ -31,7 +31,7 @@ namespace Thorn::FS::ThornFAT::Util {
 
 
 	std::optional<std::string> pathLast(const char *path) {
-		if (path == NULL)
+		if (!path)
 			return std::nullopt;
 
 		const size_t len = strlen(path);
@@ -76,7 +76,7 @@ namespace Thorn::FS::ThornFAT::Util {
 	}
 
 	std::optional<std::string> pathParent(const char *path) {
-		if (path == NULL)
+		if (!path)
 			return std::nullopt;
 
 		const size_t len = strlen(path);
@@ -165,7 +165,7 @@ void dbgtrace(const char *source, int line, const char *s) {
 	(void) line;
 	(void) s;
 #ifdef ENABLE_BACKTRACE
-	if (!DEBUG_ENABLED || logfile == NULL)
+	if (!DEBUG_ENABLED || !logfile)
 		return;
 
 	void *callstack[64];

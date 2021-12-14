@@ -214,6 +214,10 @@ namespace Thorn::PCI {
 		void writeByte(uint32_t offset, uint8_t  val);
 		void writeWord(uint32_t offset, uint16_t val);
 		void writeInt (uint32_t offset, uint32_t val);
+		void setBusMastering(bool = true);
+		void setInterrupts(bool = true);
+		void setMemorySpace(bool = true);
+		void setIOSpace(bool = true);
 	};
 
 	std::vector<BDF> getDevices(uint32_t base_class, uint32_t subclass);
