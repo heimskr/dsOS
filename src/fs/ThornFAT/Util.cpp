@@ -72,7 +72,7 @@ namespace Thorn::FS::ThornFAT::Util {
 		// so we subtract 1 to remove the slash. We need to subtract 1 again if the string ends in a slash because we
 		// don't want to include the terminal slash in the result.
 		const size_t out_len = len - last_slash - 1 - (terminal_slash? 1 : 0);
-		return {std::string(path, last_slash + 1).substr(0, out_len)};
+		return {std::string(path + last_slash + 1).substr(0, out_len)};
 	}
 
 	std::optional<std::string> pathParent(const char *path) {
