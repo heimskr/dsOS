@@ -20,9 +20,12 @@ namespace Thorn::Device {
 			AHCI::Port::AccessStatus status = AHCI::Port::AccessStatus::Success;
 			for (size_t i = 0, max = size / AHCI::Port::BLOCKSIZE; i < max; ++i) {
 				status = port->write(offset / AHCI::Port::BLOCKSIZE + i, AHCI::Port::BLOCKSIZE, buffer);
-				if (status != AHCI::Port::AccessStatus::Success)
+				if (status != AHCI::Port::AccessStatus::Success) {
+					printf("[%d] Whoops: %d\n", __LINE__, status);
 					return static_cast<int>(status);
+				}
 			}
+			printf("[%d] Whoops: %d\n", __LINE__, status);
 			return static_cast<int>(status);
 		}
 
@@ -36,8 +39,10 @@ namespace Thorn::Device {
 		char *buffer = new char[chunk_size];
 		for (size_t i = 0, max = size / chunk_size; i < max; ++i) {
 			AHCI::Port::AccessStatus status = port->writeBytes(chunk_size, offset + chunk_size * i, buffer);
-			if (status != AHCI::Port::AccessStatus::Success)
+			if (status != AHCI::Port::AccessStatus::Success) {
+				printf("[%d] Whoops: %d\n", __LINE__, status);
 				return static_cast<int>(status);
+			}
 		}
 		delete[] buffer;
 

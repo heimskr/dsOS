@@ -232,27 +232,27 @@ namespace Thorn::AHCI {
 		uint32_t rsv3;            // Reserved
 	};
 
-	struct HBAPort {
-		volatile uint32_t clb;       // 0x00: Command list base address, 1 KiB-aligned
-		volatile uint32_t clbu;      // 0x04: Command list base address upper 32 bits
-		volatile uint32_t fb;        // 0x08: FIS base address, 256-byte aligned
-		volatile uint32_t fbu;       // 0x0c: FIS base address upper 32 bits
-		volatile uint32_t is;        // 0x10: Interrupt status
-		volatile uint32_t ie;        // 0x14: Interrupt enable
-		volatile uint32_t cmd;       // 0x18: Command and status
-		volatile uint32_t rsv0;      // 0x1c: Reserved
-		volatile uint32_t tfd;       // 0x20: Task file data
-		volatile uint32_t sig;       // 0x24: Signature
-		volatile uint32_t ssts;      // 0x28: SATA status (SCR0:SStatus)
-		volatile uint32_t sctl;      // 0x2c: SATA control (SCR2:SControl)
-		volatile uint32_t serr;      // 0x30: SATA error (SCR1:SError)
-		volatile uint32_t sact;      // 0x34: SATA active (SCR3:SActive)
-		volatile uint32_t ci;        // 0x38: Command issue
-		volatile uint32_t sntf;      // 0x3c: SATA notification (SCR4:SNotification)
-		volatile uint32_t fbs;       // 0x40: FIS-based switch control
-		volatile uint32_t devslp;    // 0x44–0x6f: Device sleep
-		volatile uint32_t vendor[4]; // 0x70–0x7f: vendor specific
-	};
+	typedef volatile struct TagHBAPort {
+		uint32_t clb;       // 0x00: Command list base address, 1 KiB-aligned
+		uint32_t clbu;      // 0x04: Command list base address upper 32 bits
+		uint32_t fb;        // 0x08: FIS base address, 256-byte aligned
+		uint32_t fbu;       // 0x0c: FIS base address upper 32 bits
+		uint32_t is;        // 0x10: Interrupt status
+		uint32_t ie;        // 0x14: Interrupt enable
+		uint32_t cmd;       // 0x18: Command and status
+		uint32_t rsv0;      // 0x1c: Reserved
+		uint32_t tfd;       // 0x20: Task file data
+		uint32_t sig;       // 0x24: Signature
+		uint32_t ssts;      // 0x28: SATA status (SCR0:SStatus)
+		uint32_t sctl;      // 0x2c: SATA control (SCR2:SControl)
+		uint32_t serr;      // 0x30: SATA error (SCR1:SError)
+		uint32_t sact;      // 0x34: SATA active (SCR3:SActive)
+		uint32_t ci;        // 0x38: Command issue
+		uint32_t sntf;      // 0x3c: SATA notification (SCR4:SNotification)
+		uint32_t fbs;       // 0x40: FIS-based switch control
+		uint32_t devslp;    // 0x44–0x6f: Device sleep
+		uint32_t vendor[4]; // 0x70–0x7f: vendor specific
+	} __attribute__((packed)) HBAPort;
 
 	struct HBACommandHeader {
 		// DWORD 0
@@ -270,7 +270,7 @@ namespace Thorn::AHCI {
 		uint16_t prdtl; // Physical region descriptor table length in entries
 
 		// DWORD 1
-		volatile uint32_t prdbc; // Physical region descriptor byte count transferred
+		uint32_t prdbc; // Physical region descriptor byte count transferred
 
 		// DWORDs 2 & 3
 		uint32_t ctba;  // Command table descriptor base address
@@ -279,9 +279,9 @@ namespace Thorn::AHCI {
 		// DWORDs 4 - 7
 		uint32_t rsv1[4]; // Reserved
 
-		void setCTBA(void *) volatile;
-		void * getCTBA() const volatile;
-	};
+		void setCTBA(void *);
+		void * getCTBA() const;
+	} __attribute__((packed));
 
 	struct HBAFIS {
 		// 0x00
@@ -331,7 +331,29 @@ namespace Thorn::AHCI {
 		HBAPRDTEntry prdtEntry[1];
 	};
 
-	struct HBAMemory;
+	typedef volatile struct TagHBAMemory {
+		// 0x00 - 0x2B, Generic Host Control
+		uint32_t cap;     // 0x00: Host capability
+		uint32_t ghc;     // 0x04: Global host control
+		uint32_t is;      // 0x08: Interrupt status
+		uint32_t pi;      // 0x0c: Port implemented
+		uint32_t vs;      // 0x10: Version
+		uint32_t ccc_ctl; // 0x14: Command completion coalescing control
+		uint32_t ccc_pts; // 0x18: Command completion coalescing ports
+		uint32_t em_loc;  // 0x1c: Enclosure management location
+		uint32_t em_ctl;  // 0x20: Enclosure management control
+		uint32_t cap2;    // 0x24: Host capabilities extended
+		uint32_t bohc;    // 0x28: BIOS/OS handoff control and status
+
+		// 0x2c–0x9f: Reserved
+		uint8_t rsv0[0xa0 - 0x2c];
+
+		// 0xa0–0xff: Vendor specific registers
+		uint8_t vendor[0x100 - 0xa0];
+
+		// 0x100–0x10ff: Port control registers
+		HBAPort ports[32];
+	} __attribute__((packed)) HBAMemory;
 
 	class Port {
 		private:
@@ -340,8 +362,8 @@ namespace Thorn::AHCI {
 
 		public:
 			static constexpr size_t BLOCKSIZE = 512;
-			volatile HBAPort *registers = nullptr;
-			volatile HBAMemory *abar = nullptr;
+			HBAPort *registers = nullptr;
+			HBAMemory *abar = nullptr;
 			HBACommandHeader *commandList = nullptr;
 			HBAFIS *fis = nullptr;
 			HBACommandTable *commandTables[8];
@@ -349,7 +371,7 @@ namespace Thorn::AHCI {
 			void *physicalBuffers[8];
 			DeviceType type = DeviceType::Null;
 
-			Port(volatile HBAPort *, volatile HBAMemory *);
+			Port(HBAPort *, HBAMemory *);
 
 			enum class AccessStatus: uint8_t {Success = 0, DiskError = 1, BadSlot = 2, Hung = 3};
 
@@ -373,34 +395,10 @@ namespace Thorn::AHCI {
 			ATA::DeviceInfo & getInfo();
 	};
 
-	struct HBAMemory {
-		// 0x00 - 0x2B, Generic Host Control
-		uint32_t cap;     // 0x00: Host capability
-		uint32_t ghc;     // 0x04: Global host control
-		uint32_t is;      // 0x08: Interrupt status
-		uint32_t pi;      // 0x0c: Port implemented
-		uint32_t vs;      // 0x10: Version
-		uint32_t ccc_ctl; // 0x14: Command completion coalescing control
-		uint32_t ccc_pts; // 0x18: Command completion coalescing ports
-		uint32_t em_loc;  // 0x1c: Enclosure management location
-		uint32_t em_ctl;  // 0x20: Enclosure management control
-		uint32_t cap2;    // 0x24: Host capabilities extended
-		uint32_t bohc;    // 0x28: BIOS/OS handoff control and status
-
-		// 0x2c–0x9f: Reserved
-		uint8_t rsv0[0xa0 - 0x2c];
-
-		// 0xa0–0xff: Vendor specific registers
-		uint8_t vendor[0x100 - 0xa0];
-
-		// 0x100–0x10ff: Port control registers
-		volatile HBAPort ports[32];
-	};
-
 	class Controller {
 		public:
 			PCI::Device *device;
-			volatile HBAMemory *abar;
+			HBAMemory *abar;
 			Port *ports[32];
 
 			Controller(PCI::Device *);

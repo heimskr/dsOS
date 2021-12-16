@@ -40,10 +40,12 @@ namespace x86_64 {
 		using PTW = PageTableWrapper;
 		uintptr_t out;
 		if (physicalMemoryMapReady) {
+			if ((uintptr_t) physical_address == 0xfee00000) printf("Assigning after PMM.\n");
 			out = assign(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
 			             PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
 			             physical_address, extra_meta);
 		} else {
+			if ((uintptr_t) physical_address == 0xfee00000) printf("Assigning before PMM.\n");
 			out = assignBeforePMM(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
 			                      PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
 			                      physical_address, extra_meta);
@@ -245,7 +247,7 @@ namespace x86_64 {
 		if (!isPresent(pt[pt_index])) {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {
-				pt[pt_index] = addressToEntry(physical_address);
+				pt[pt_index] = addressToEntry(physical_address) | extra_meta;
 			} else if (void *free_addr = allocateFreePhysicalAddress()) {
 				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
 				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);

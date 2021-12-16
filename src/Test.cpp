@@ -91,14 +91,14 @@ namespace Thorn {
 						return;
 					}
 					controller.init(*Kernel::instance);
-					volatile AHCI::HBAMemory *abar = controller.abar;
+					AHCI::HBAMemory *abar = controller.abar;
 					printf("Controller at %x:%x:%x (abar = 0x%llx):", bus, device, function, abar);
 					printf(" %dL.%dP ", controller.device->getInterruptLine(), controller.device->getInterruptPin());
 					printf(" cap=%b", abar->cap);
 					printf("\n");
 
 					for (int i = 0; i < 32; ++i) {
-						volatile AHCI::HBAPort &port = abar->ports[i];
+						AHCI::HBAPort &port = abar->ports[i];
 						if (port.clb == 0)
 							continue;
 

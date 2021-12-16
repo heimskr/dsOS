@@ -180,8 +180,8 @@ namespace Thorn::PCI {
 
 	void Device::init() {
 		if (readStatus() & STATUS_CAPABILITIES) {
-			uint8_t ptr = readWord(CAPABILITIES_PTR);
-			uint16_t cap = readWord(ptr);
+			uint8_t ptr = readWord(CAPABILITIES_PTR) & 0xfc;
+			uint16_t cap = readInt(ptr);
 			do {
 				if ((cap & 0xff) == CAP_ID_MSI) {
 					msiPointer = ptr;

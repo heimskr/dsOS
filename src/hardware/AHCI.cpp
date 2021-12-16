@@ -34,6 +34,11 @@ namespace Thorn::AHCI {
 			printf(" 0x%x", capability);
 		printf(", vs=%x\n", abar->vs);
 
+		abar->ghc = abar->ghc | GHC_HR;
+		while (abar->ghc & GHC_HR) {
+			Kernel::wait(1, 1000);
+		}
+
 		uint8_t irq = device->allocateVector(PCI::Vector::Any);
 		if (irq == 0xff)
 			printf("[AHCI::Controller::init] Failed to allocate vector\n");
@@ -59,7 +64,7 @@ namespace Thorn::AHCI {
 
 		for (int i = 0; i < 32; ++i) {
 			if ((pi >> i) & 1) {
-				volatile HBAPort &port = abar->ports[i];
+				HBAPort &port = abar->ports[i];
 
 				/*
 				// Disable transitions to partial or slumber state
@@ -207,7 +212,7 @@ namespace Thorn::AHCI {
 		}
 	}
 
-	Port::Port(volatile HBAPort *port, volatile HBAMemory *memory): registers(port), abar(memory) {
+	Port::Port(HBAPort *port, HBAMemory *memory): registers(port), abar(memory) {
 		registers->cmd = registers->cmd & ~HBA_PxCMD_ST;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
 		stop();
@@ -327,48 +332,50 @@ namespace Thorn::AHCI {
 	}
 
 	void Port::rebase() {
-		// printf("initial tfd: %u / %b\n", tfd, tfd);
+		printf("initial tfd: %u / %b\n", registers->tfd, registers->tfd);
 		abar->ghc = 1 << 31;
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 		abar->ghc = 1;
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 		abar->ghc = 1 << 31;
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 		abar->ghc = 2;
-		// printf("tfd before stop: %u / %b\n", tfd, tfd);
+		printf("tfd before stop: %u / %b\n", registers->tfd, registers->tfd);
 		stop();
-		// printf("tfd after stop:  %u / %b\n", tfd, tfd);
+		printf("tfd after stop:  %u / %b\n", registers->tfd, registers->tfd);
 		registers->cmd = registers->cmd & ~HBA_PxCMD_CR;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FR;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_ST;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
-		// printf("tfd after cmds:  %u / %b\n", tfd, tfd);
+		printf("tfd after cmds:  %u / %b\n", registers->tfd, registers->tfd);
 		// cmd = cmd & ~0xc009;
 		registers->serr = 0xffff;
 		registers->is = 0;
 
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 		x86_64::PageMeta4K &pager = Kernel::getPager();
 
-		if (registers->clb || registers->clbu)
-			// printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(getCLB()));
+		if (registers->clb || registers->clbu) {
+			printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(getCLB()));
 			pager.freeEntry(getCLB());
+		}
 		void *addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
 		memset(addr, 0, 1024);
 
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 
-		if (registers->fb || registers->fbu)
-			// printf("Freeing FB: 0x%lx :: %d\n", getFB(), pager.freeEntry(getFB()));
+		if (registers->fb || registers->fbu) {
+			printf("Freeing FB: 0x%lx :: %d\n", getFB(), pager.freeEntry(getFB()));
 			pager.freeEntry(getFB());
+		}
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		setFB(addr);
 		memset(addr, 0, 256);
 
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 
 		HBACommandHeader *header = (HBACommandHeader *) getCLB();
 		addr = pager.allocateFreePhysicalAddress();
@@ -381,12 +388,12 @@ namespace Thorn::AHCI {
 			memset(header[i].getCTBA(), 0, 256);
 		}
 
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(addr, MMU_CACHE_DISABLED);
 		base = (uintptr_t) addr;
-		// printf("CTBA base: 0x%lx\n", base);
+		printf("CTBA base: 0x%lx\n", base);
 
 		for (int i = 0; i < 16; ++i) {
 			header[i].prdtl = 8;
@@ -394,12 +401,12 @@ namespace Thorn::AHCI {
 			memset(header[i].getCTBA(), 0, 256);
 		}
 
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 		start();
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 		registers->is = 0;
 		registers->ie = 0;
-		// printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, tfd, tfd);
+		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 	}
 
 	void Port::start() {
@@ -683,12 +690,12 @@ namespace Thorn::AHCI {
 		return info;
 	}
 
-	void HBACommandHeader::setCTBA(void *address) volatile {
+	void HBACommandHeader::setCTBA(void *address) {
 		ctba  = (reinterpret_cast<uintptr_t>(address)) & 0xffffffff;
 		ctbau = (reinterpret_cast<uintptr_t>(address)) >> 32;
 	}
 
-	void * HBACommandHeader::getCTBA() const volatile {
+	void * HBACommandHeader::getCTBA() const {
 		return (void *) ((uintptr_t) ctba | ((uintptr_t) ctbau << 32));
 	}
 }

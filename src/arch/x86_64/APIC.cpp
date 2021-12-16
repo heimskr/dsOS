@@ -22,8 +22,9 @@ namespace x86_64::APIC {
 		apic_base = (uint32_t *) (msr & 0xffffff000);
 		wrmsr(MSR, msr | ENABLE, msr >> 32);
 		printf("APIC base: 0x%lx, ID: 0x%lx\n", apic_base, apic_base + REGISTER_APICID);
-		kernel.pager.identityMap((void *) apic_base);
+		kernel.pager.identityMap((void *) apic_base, MMU_CACHE_DISABLED);
 		printf("Identity-mapped APIC base.\n");
+		printf("&apic_base[REGISTER_SPURIOUS]: 0x%lx\n", &apic_base[REGISTER_SPURIOUS]);
 		apic_base[REGISTER_SPURIOUS] = SPURIOUS_ENABLE | BSP_VECTOR_SPURIOUS;
 		PIC::remap(PIC::PIC1_REMAP_DEST, PIC::PIC2_REMAP_DEST);
 		PIC::disable();
