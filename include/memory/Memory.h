@@ -1,10 +1,11 @@
-#ifndef MEMORY_MEMORY_H_
-#define MEMORY_MEMORY_H_
+#pragma once
 
 #include "Defs.h"
 #include "lib/printf.h"
 
 #define MEMORY_ALIGN 32
+#define DECLARE_MEMORY_OPERATORS
+#define SKIP_MEMORY_DECLARATIONS
 
 void spin(size_t time = 3);
 
@@ -61,41 +62,42 @@ extern "C" {
 extern Thorn::Memory *global_memory;
 
 #define MEMORY_OPERATORS_SET
-#ifdef __clang__
-void * operator new(size_t size);
-void * operator new[](size_t size);
-void * operator new(size_t, void *ptr);
-void * operator new[](size_t, void *ptr);
-void operator delete(void *ptr)   noexcept;
-void operator delete[](void *ptr) noexcept;
-void operator delete(void *, void *)   noexcept;
-void operator delete[](void *, void *) noexcept;
-void operator delete(void *, unsigned long)   noexcept;
-void operator delete[](void *, unsigned long) noexcept;
-#else
-#ifndef __cpp_exceptions
-inline void * operator new(size_t size)   throw() { return malloc(size); }
-inline void * operator new[](size_t size) throw() { return malloc(size); }
-inline void * operator new(size_t, void *ptr)   throw() { return ptr; }
-inline void * operator new[](size_t, void *ptr) throw() { return ptr; }
-inline void operator delete(void *ptr)   throw() { free(ptr); }
-inline void operator delete[](void *ptr) throw() { free(ptr); }
-inline void operator delete(void *, void *)   throw() {}
-inline void operator delete[](void *, void *) throw() {}
-inline void operator delete(void *, unsigned long)   throw() {}
-inline void operator delete[](void *, unsigned long) throw() {}
-#else
-inline void * operator new(size_t size)   { return malloc(size); }
-inline void * operator new[](size_t size) { return malloc(size); }
-inline void * operator new(size_t, void *ptr)   { return ptr; }
-inline void * operator new[](size_t, void *ptr) { return ptr; }
-inline void operator delete(void *ptr)   noexcept { free(ptr); }
-inline void operator delete[](void *ptr) noexcept { free(ptr); }
-inline void operator delete(void *, void *)   noexcept {}
-inline void operator delete[](void *, void *) noexcept {}
-inline void operator delete(void *, unsigned long)   noexcept {}
-inline void operator delete[](void *, unsigned long) noexcept {}
-#endif
-#endif
 
+#ifndef SKIP_MEMORY_DECLARATIONS
+	#if defined(__clang__) || defined(DECLARE_MEMORY_OPERATORS)
+		void * operator new(size_t size);
+		void * operator new[](size_t size);
+		void * operator new(size_t, void *ptr);
+		void * operator new[](size_t, void *ptr);
+		void operator delete(void *ptr)   noexcept;
+		void operator delete[](void *ptr) noexcept;
+		void operator delete(void *, void *)   noexcept;
+		void operator delete[](void *, void *) noexcept;
+		void operator delete(void *, unsigned long)   noexcept;
+		void operator delete[](void *, unsigned long) noexcept;
+	#else
+		#ifndef __cpp_exceptions
+			inline void * operator new(size_t size)   throw() { return malloc(size); }
+			inline void * operator new[](size_t size) throw() { return malloc(size); }
+			inline void * operator new(size_t, void *ptr)   throw() { return ptr; }
+			inline void * operator new[](size_t, void *ptr) throw() { return ptr; }
+			inline void operator delete(void *ptr)   throw() { free(ptr); }
+			inline void operator delete[](void *ptr) throw() { free(ptr); }
+			inline void operator delete(void *, void *)   throw() {}
+			inline void operator delete[](void *, void *) throw() {}
+			inline void operator delete(void *, unsigned long)   throw() {}
+			inline void operator delete[](void *, unsigned long) throw() {}
+		#else
+			inline void * operator new(size_t size)   { return malloc(size); }
+			inline void * operator new[](size_t size) { return malloc(size); }
+			inline void * operator new(size_t, void *ptr)   { return ptr; }
+			inline void * operator new[](size_t, void *ptr) { return ptr; }
+			inline void operator delete(void *ptr)   noexcept { free(ptr); }
+			inline void operator delete[](void *ptr) noexcept { free(ptr); }
+			inline void operator delete(void *, void *)   noexcept {}
+			inline void operator delete[](void *, void *) noexcept {}
+			inline void operator delete(void *, unsigned long)   noexcept {}
+			inline void operator delete[](void *, unsigned long) noexcept {}
+		#endif
+	#endif
 #endif

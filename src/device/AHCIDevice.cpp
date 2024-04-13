@@ -36,15 +36,14 @@ namespace Thorn::Device {
 			chunk_size *= 2;
 		}
 
-		char *buffer = new char[chunk_size];
+		auto buffer = std::make_unique<char[]>(chunk_size);
 		for (size_t i = 0, max = size / chunk_size; i < max; ++i) {
-			AHCI::Port::AccessStatus status = port->writeBytes(chunk_size, offset + chunk_size * i, buffer);
+			AHCI::Port::AccessStatus status = port->writeBytes(chunk_size, offset + chunk_size * i, buffer.get());
 			if (status != AHCI::Port::AccessStatus::Success) {
 				printf("[%d] Whoops: %d\n", __LINE__, status);
 				return static_cast<int>(status);
 			}
 		}
-		delete[] buffer;
 
 		return 0;
 	}

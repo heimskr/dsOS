@@ -54,7 +54,9 @@ namespace Thorn::AHCI {
 
 		// abar->ghc = abar->ghc | GHC_ENABLE | GHC_HR;
 		// abar->ghc = abar->ghc | GHC_ENABLE;
-		abar->ghc = abar->ghc | GHC_IE;
+		// abar->ghc = abar->ghc | GHC_IE;
+
+		abar->ghc = abar->ghc | GHC_IE | GHC_ENABLE | GHC_HR;
 
 		printf("[AHCI::Controller::init] Enabled: %y (0x%x)\n", abar->ghc & GHC_ENABLE, abar->ghc);
 

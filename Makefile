@@ -5,7 +5,7 @@
 CC           := x86_64-elf-gcc
 CPP          := x86_64-elf-g++
 AS           := x86_64-elf-g++
-SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -fno-pie -g -gdwarf-2 -Wall -Wextra -Iinclude -mno-red-zone -mcmodel=kernel
+SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -fno-pie -g -gdwarf-2 -Wall -Wextra -Ifirst_include -Iinclude -mno-red-zone -mcmodel=kernel
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++2a -Drestrict=__restrict__
@@ -35,6 +35,8 @@ SPECIAL   := src/arch/x86_64/Interrupts.cpp
 OBJS       = $(patsubst %.S,%.o,$(ASSEMBLED)) $(patsubst %.cpp,%.o,$(CPPSRC)) $(patsubst %.c,%.o,$(CSRC))
 ISO_FILE  := kernel.iso
 LIBS      := musl/lib/libc.a
+
+CLOC_OPTIONS := . --exclude-dir=musl,iso,first_include,.vscode --fullpath --not-match-f='^.\/(.*PCIIDs.*|(src|include)\/lib\/.*|musl\.patch)$$'
 
 all: kernel
 
@@ -87,6 +89,12 @@ destroy: clean
 	rm -rf musl/obj
 
 $(OBJS):
+
+count:
+	cloc $(CLOC_OPTIONS)
+
+countbf:
+	cloc --by-file $(CLOC_OPTIONS)
 
 DEPFILE  = .dep
 DEPTOKEN = "\# MAKEDEPENDS"

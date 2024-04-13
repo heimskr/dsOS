@@ -65,9 +65,9 @@ namespace Thorn {
 		timer_addr = +[] { waiting = false; };
 		x86_64::APIC::initTimer(frequency);
 		for (;;)
-			if (waiting)
+			if (waiting) {
 				asm("hlt");
-			else {
+			} else {
 				x86_64::APIC::disableTimer();
 				break;
 			}
@@ -82,6 +82,8 @@ namespace Thorn {
 		arrangeMemory();
 		x86_64::IDT::init();
 		initPageDescriptors();
+
+		for (;;) asm("hlt");
 
 
 		// These three lines are incredibly janky. Fixing them is important.
@@ -118,7 +120,7 @@ namespace Thorn {
 		x86_64::PIC::clearIRQ(15);
 
 		x86_64::APIC::initTimer(2);
-		x86_64::APIC::disableTimer();
+		// x86_64::APIC::disableTimer();
 
 		// std::string str(10000, 'a');
 

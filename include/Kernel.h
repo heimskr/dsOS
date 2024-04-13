@@ -1,5 +1,4 @@
-#ifndef KERNEL_H_
-#define KERNEL_H_
+#pragma once
 
 #include <stddef.h>
 
@@ -70,5 +69,3 @@ namespace Thorn {
 			friend void runTests();
 	};
 }
-
-#endif

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Defs.h"
+#include "lib/printf.h"
 #include "fs/ThornFAT/Types.h"
 
 #include <optional>
