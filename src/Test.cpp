@@ -252,18 +252,12 @@ namespace Thorn {
 							}
 							break;
 						case Keyboard::InputKey::KeyEnter:
-							Terminal::clear();
+							handleInput(text);
+							index = 0;
+							text.clear();
 							Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Green, Terminal::VGAColor::Black);
 							tprintf("> ");
 							Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::LightGray, Terminal::VGAColor::Black);
-							if (!Keyboard::hasModifier(Keyboard::Modifier::Shift)) {
-								handleInput(text);
-								text.clear();
-								index = 0;
-							}
-							tprintf("%s", text.c_str());
-							Terminal::row = (2 + text.size()) / Terminal::VGA_WIDTH;
-							Terminal::column = (2 + text.size()) % Terminal::VGA_WIDTH;
 							break;
 						case Keyboard::InputKey::KeyLeftShift:
 						case Keyboard::InputKey::KeyRightShift:
@@ -384,6 +378,8 @@ namespace Thorn {
 			parseElf(pieces, mainContext);
 		} else if (pieces[0] == "sha1") {
 			sha1(pieces, mainContext);
+		} else if (pieces[0] == "clear") {
+			Terminal::clear();
 		} else if (pieces[0] == "loop") {
 			tprintf("Looping...\n");
 			looping = true;
