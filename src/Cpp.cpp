@@ -5,5 +5,5 @@ extern "C" void __cxa_pure_virtual() {
 	Terminal::setColor(Terminal::vgaEntryColor(Terminal::VGAColor::White, Terminal::VGAColor::Red));
 	Terminal::row = Terminal::column = 0;
 	Terminal::write("Pure virtual function call!");
-	while (1);
+	for (;;) asm("hlt");
 }

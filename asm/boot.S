@@ -116,7 +116,7 @@ page_table_loop:
 
 	# page_tables[i * 0x1000 + j * 8] = pt_entry
 	movl %eax, page_tables(%edx)
-	
+
 	inc %edi
 	cmp $512, %edi
 	jne page_table_loop

@@ -63,7 +63,7 @@ namespace Thorn::Util {
 		return address < 0x0000800000000000 || 0xffff800000000000 <= address;
 	}
 
-	inline bool isCanonical(void *address) {
+	inline bool isCanonical(volatile void *address) {
 		return isCanonical((uintptr_t) address);
 	}
 }

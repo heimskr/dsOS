@@ -36,8 +36,8 @@
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
 
-extern void *multiboot_data;
-extern unsigned int multiboot_magic;
+extern volatile void *multiboot_data;
+extern volatile unsigned int multiboot_magic;
 
 extern void *tmp_stack;
 
@@ -46,6 +46,10 @@ extern void *tmp_stack;
 void schedule();
 
 static bool waiting = true;
+
+#define XSTR(x) #x
+#define HELLO_(x) Thorn::Serial::write(__FILE__ ":" XSTR(x) "\n")
+#define HELLO HELLO_(__LINE__)
 
 namespace Thorn {
 	Kernel * Kernel::instance = nullptr;
@@ -64,13 +68,14 @@ namespace Thorn {
 		timer_max = num_ticks;
 		timer_addr = +[] { waiting = false; };
 		x86_64::APIC::initTimer(frequency);
-		for (;;)
+		for (;;) {
 			if (waiting) {
 				asm("hlt");
 			} else {
 				x86_64::APIC::disableTimer();
 				break;
 			}
+		}
 	}
 
 	void Kernel::main() {
@@ -78,19 +83,15 @@ namespace Thorn {
 		Terminal::write("Hello, kernel world!\n");
 		if (Serial::init())
 			Serial::write("\n\n\n");
+		x86_64::IDT::init();
 		detectMemory();
 		arrangeMemory();
-		x86_64::IDT::init();
 		initPageDescriptors();
 
-		for (;;) asm("hlt");
-
-
 		// These three lines are incredibly janky. Fixing them is important.
-		uintptr_t bitmap_base = 0xa00000UL;
-		uintptr_t physical_start = (bitmap_base + 5'000'000UL) & ~0xfff; // 5 MB is enough to map over 150 GB.
-		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000UL, (void *) bitmap_base,
-			(memoryHigh - physical_start) / 4096);
+		uintptr_t bitmap_base = 0xa00000ul;
+		uintptr_t physical_start = (bitmap_base + 5'000'000ul) & ~0xfff; // 5 MB is enough to map over 150 GB.
+		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000ul, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
 
 		printf("physical_start = 0x%lx\n", physical_start);
 
@@ -103,8 +104,7 @@ namespace Thorn {
 
 		x86_64::APIC::init(*this);
 
-		memory.setBounds((char *) 0xfffff00000000000UL,
-			(char *) Util::downalign((uintptr_t) physicalMemoryMap - 4096, 4096));
+		memory.setBounds((char *) 0xfffff00000000000ul, (char *) Util::downalign((uintptr_t) physicalMemoryMap - 4096, 4096));
 
 		printf("Memory: 0x%lx through 0x%lx\n", memoryLow, memoryHigh);
 		printf("Core count: %d\n", x86_64::coreCount());
@@ -204,8 +204,8 @@ namespace Thorn {
 		}
 
 		for (tag = (multiboot_tag *) (addr + 8);
-			tag->type != MULTIBOOT_TAG_TYPE_END;
-			tag = (multiboot_tag *) ((multiboot_uint8_t *) tag + ((tag->size + 7) & ~7))) {
+		     tag->type != MULTIBOOT_TAG_TYPE_END;
+		     tag = (multiboot_tag *) ((multiboot_uint8_t *) tag + ((tag->size + 7) & ~7))) {
 
 			switch (tag->type) {
 				case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
@@ -252,12 +252,12 @@ namespace Thorn {
 	}
 
 	void Kernel::initPhysicalMemoryMap() {
-		physicalMemoryMap = (void *) Util::downalign((0xfffffffffffff000UL - memoryHigh), 4096);
+		physicalMemoryMap = (void *) Util::downalign((0xfffffffffffff000ul - memoryHigh), 4096);
 		printf("physicalMemoryMap = 0x%lx\n", physicalMemoryMap);
 		printf("Mapping all physical memory...\n");
 		const bool old_disable_memset = pager.disableMemset;
 		const bool old_disable_present_check = pager.disablePresentCheck;
-		pager.disableMemset = true;
+		pager.disableMemset = false;
 		pager.disablePresentCheck = false;
 		pager.physicalMemoryMap = physicalMemoryMap;
 		for (uintptr_t i = 0x1000000; i <= memoryHigh; i += 4096)

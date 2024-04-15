@@ -7,6 +7,9 @@
 
 extern bool abouttodie;
 
+extern uint64_t low_page_directory_table;
+extern uint64_t high_page_directory_table;
+
 namespace x86_64 {
 	PageMeta::PageMeta(void *physical_start, void *virtual_start):
 		physicalStart(physical_start), virtualStart(virtual_start) {}
@@ -45,7 +48,8 @@ namespace x86_64 {
 			             PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
 			             physical_address, extra_meta);
 		} else {
-			if ((uintptr_t) physical_address == 0xfee00000) printf("Assigning before PMM.\n");
+			if ((uintptr_t) physical_address == 0xfee00000)
+				printf("Assigning before PMM (virtual 0x%lx -> physical 0x%lx).\n", virtual_address, physical_address);
 			out = assignBeforePMM(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
 			                      PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
 			                      physical_address, extra_meta);
@@ -117,7 +121,7 @@ namespace x86_64 {
 	PageMeta4K::PageMeta4K(): PageMeta(nullptr, nullptr), pages(-1) {
 
 	}
-	
+
 	PageMeta4K::PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_):
 	PageMeta(physical_start, virtual_start), pages(pages_) {
 		const size_t bitmap_count = Thorn::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t));
@@ -274,12 +278,12 @@ namespace x86_64 {
 
 		Thorn::Kernel &kernel = Thorn::Kernel::getInstance();
 
-		constexpr uintptr_t magic = 0x1000000;
+		constexpr uintptr_t magic = 0x2000000;
 
-		auto access = [&](uint64_t *ptr) -> uint64_t * {
+		auto access = [&](volatile uint64_t *ptr) -> volatile uint64_t * {
 			if ((uintptr_t) ptr < magic)
 				return ptr;
-			return (uint64_t *) ((uintptr_t) physicalMemoryMap + (uintptr_t) ptr);
+			return (volatile uint64_t *) ((uintptr_t) physicalMemoryMap + (uintptr_t) ptr);
 		};
 
 		PageTableWrapper &wrapper = kernel.kernelPML4;
@@ -299,7 +303,7 @@ namespace x86_64 {
 			}
 		}
 
-		uint64_t *pdpt = (uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
+		volatile uint64_t *pdpt = (volatile uint64_t *) (wrapper.entries[pml4_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdpt)) {
 			printf("PDPT (0x%lx) isn't canonical!\n", pdpt);
 			wrapper.print(false);
@@ -318,13 +322,13 @@ namespace x86_64 {
 			}
 		}
 
-		uint64_t *pdt = (uint64_t *) (pdpt[pdpt_index] & ~0xfff);
+		volatile uint64_t *pdt = (volatile uint64_t *) (pdpt[pdpt_index] & ~0xfff);
 		if (!Thorn::Util::isCanonical(pdt)) {
 			printf("PDT (0x%lx) isn't canonical!\n", pdt);
 			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
-		const uint64_t *old_pdt = pdt;
+		const volatile uint64_t *old_pdt = pdt;
 		pdt = access(pdt);
 		if (!isPresent(pdt[pdt_index])) {
 			// Allocate a page for a new PT if the PDE is empty.
@@ -338,12 +342,13 @@ namespace x86_64 {
 			}
 		}
 
-		uint64_t *pt = (uint64_t *) (pdt[pdt_index] & ~0xfff);
+		volatile uint64_t *pt = (volatile uint64_t *) (pdt[pdt_index] & ~0xfff);
 		uintptr_t assigned = 0;
 		if (!Thorn::Util::isCanonical(pt)) {
 			printf("PT (0x%lx) isn't canonical!\n", pt);
 			printf("PDT: 0x%lx -> 0x%lx\n", old_pdt, pdt);
 			printf("pdt_index: 0x%x\n", pdt_index);
+			printf("PML4 %u -> PDPT %u -> PDT %u -> PT %u\n", pml4_index, pdpt_index, pdt_index, pt_index);
 			wrapper.print(false);
 			for (;;) asm("hlt");
 		}

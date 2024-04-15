@@ -7,17 +7,18 @@
 
 namespace x86_64 {
 	PageTableWrapper::PageTableWrapper(uint64_t *entries_, Type type_): entries(entries_), type(type_) {}
-	
+
 	void PageTableWrapper::clear() {
-		memset(entries, 0, PML4_SIZE);
+		volatile auto memset_volatile = (void (* volatile)(volatile void *, int, size_t)) memset;
+		memset_volatile(entries, 0, PML4_SIZE);
 	}
 
 	void PageTableWrapper::print(bool putc, bool indirect, bool show_pdpt, bool show_pdt, PTDisplay pt_display) {
 		bool old_putc = printf_putc;
 		printf_putc = putc;
-		printf("Entries: 0x%lx\n", entries);
+		printf("Entries: 0x%p\n", entries);
 		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i) {
-			const uint64_t &pml4e = entries[i];
+			const volatile uint64_t &pml4e = entries[i];
 			if (pml4e) {
 				printf("%d (0x%lx): 0x%lx (PML4E)", i, &pml4e, pml4e & ~0xfffL);
 				printMeta(pml4e);

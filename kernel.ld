@@ -32,5 +32,6 @@ SECTIONS {
 
 	_kernel_virtual_end = .;
 
-	_kernel_physical_end = (LOADADDR(.bss) + SIZEOF(.bss) + 0xFFF) & 0xFFFFFFFFFFFFF000;
+	/* The multiplier is a (hopefully) temporary hack. */
+	_kernel_physical_end = (2 * (LOADADDR(.bss) + SIZEOF(.bss) + 0xFFF)) & 0xFFFFFFFFFFFFF000;
 }

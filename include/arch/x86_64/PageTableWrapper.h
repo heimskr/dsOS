@@ -8,11 +8,11 @@
 namespace x86_64 {
 	class PageTableWrapper {
 		public:
-			enum class Type {PML4, PDP, PD, PT};
-			enum class PTDisplay {Full, Condensed, Hidden};
+			enum class Type {Invalid = 0, PML4, PDP, PD, PT};
+			enum class PTDisplay {Invalid = 0, Full, Condensed, Hidden};
 
-			uint64_t *entries;
-			Type type;
+			volatile uint64_t *entries = nullptr;
+			Type type{};
 
 			PageTableWrapper(uint64_t *, Type);
 
