@@ -1243,7 +1243,7 @@ namespace Thorn {
 			tprintf("Driver isn't ready. Try init driver.\n");
 		} else {
 			tprintf("Creating partition...\n");
-			context.driver->make(sizeof(FS::ThornFAT::DirEntry) * 5);
+			context.driver->make(sizeof(FS::ThornFAT::DirEntry) * 8);
 			tprintf("Initialized ThornFAT partition.\n");
 		}
 	}

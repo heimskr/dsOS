@@ -18,11 +18,19 @@ namespace Thorn::Device {
 		if (offset % AHCI::Port::BLOCKSIZE == 0 && size % AHCI::Port::BLOCKSIZE == 0) {
 			char buffer[AHCI::Port::BLOCKSIZE] = {0};
 			AHCI::Port::AccessStatus status = AHCI::Port::AccessStatus::Success;
+			size_t last_pct = 0;
+			printf("0%%\n");
 			for (size_t i = 0, max = size / AHCI::Port::BLOCKSIZE; i < max; ++i) {
 				status = port->write(offset / AHCI::Port::BLOCKSIZE + i, AHCI::Port::BLOCKSIZE, buffer);
 				if (status != AHCI::Port::AccessStatus::Success) {
 					printf("[%d] Whoops: %d\n", __LINE__, status);
 					return static_cast<int>(status);
+				}
+
+				if (size_t new_pct = i * 100 / max; new_pct != last_pct) {
+					last_pct = new_pct;
+					serprintf("\e[F");
+					printf("%lu%%\n", new_pct);
 				}
 			}
 			printf("[%d] Whoops: %d\n", __LINE__, status);

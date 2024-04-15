@@ -11,6 +11,8 @@ namespace Thorn::AHCI {
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};
 
+	constexpr static int SPIN_COUNT = 10000;
+
 	Controller::Controller(PCI::Device *device_): device(device_) {
 		memset(ports, 0, sizeof(ports));
 	}
@@ -174,7 +176,7 @@ namespace Thorn::AHCI {
 		cfis->countLow = cfis->countHigh = 0;
 		cfis->control = 0;
 
-		spin = 100;
+		spin = SPIN_COUNT;
 		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 			Kernel::wait(1, 1000);
 
@@ -190,7 +192,7 @@ namespace Thorn::AHCI {
 		registers->sact = registers->sact | (1 << slot);
 		registers->ci = registers->ci | (1 << slot);
 
-		spin = 100;
+		spin = SPIN_COUNT;
 		while ((registers->ci & (1 << slot)) && spin--) {
 			if (registers->is & HBA_PxIS_TFES) {  // Task file error
 				printf("[Port::identify] Disk error 1 (serr: %x)\n", registers->serr);
@@ -202,7 +204,7 @@ namespace Thorn::AHCI {
 
 		stop();
 
-		spin = 100;
+		spin = SPIN_COUNT;
 		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 			Kernel::wait(1, 1000);
 
@@ -420,7 +422,7 @@ namespace Thorn::AHCI {
 	void Port::stop() {
 		registers->cmd = registers->cmd & ~HBA_PxCMD_ST;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
-		int spin = 100;
+		int spin = SPIN_COUNT;
 		while (spin--) {
 			if (!(registers->cmd & HBA_PxCMD_FR) && !(registers->cmd & HBA_PxCMD_CR))
 				break;
@@ -500,7 +502,7 @@ namespace Thorn::AHCI {
 		fis.countHigh = (count >> 8) & 0xff;
 		fis.control = 8;
 
-		int spin = 100;
+		int spin = SPIN_COUNT;
 		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 			Kernel::wait(1, 1000);
 
@@ -515,7 +517,7 @@ namespace Thorn::AHCI {
 		start();
 		registers->ci = registers->ci | (1 << slot);
 
-		spin = 100;
+		spin = SPIN_COUNT;
 		while((registers->ci & (1 << slot)) && spin--) {
 			if (registers->is & HBA_PxIS_TFES) {
 				printf("[Port::access] Disk error (serr: %x)\n", registers->serr);
@@ -529,7 +531,7 @@ namespace Thorn::AHCI {
 			return AccessStatus::Hung;
 		}
 
-		spin = 100;
+		spin = SPIN_COUNT;
 		while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 			Kernel::wait(1, 1000);
 
