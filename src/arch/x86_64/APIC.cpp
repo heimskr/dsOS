@@ -10,6 +10,7 @@
 volatile uint32_t *apic_base;
 
 static bool timer_calibrated = false;
+static bool waiting = true;
 
 namespace x86_64::APIC {
 	uint32_t lastTPS = 0;
@@ -135,5 +136,21 @@ namespace x86_64::APIC {
 	void disableTimer() {
 		apic_base[REGISTER_LVT_TIMER] = DISABLE;
 		ticks = 0;
+	}
+
+	void wait(size_t num_ticks, uint32_t frequency) {
+		waiting = true;
+		ticks = 0;
+		timer_max = num_ticks;
+		timer_addr = +[] { waiting = false; };
+		x86_64::APIC::initTimer(frequency);
+		for (;;) {
+			if (waiting) {
+				asm("hlt");
+			} else {
+				x86_64::APIC::disableTimer();
+				break;
+			}
+		}
 	}
 }

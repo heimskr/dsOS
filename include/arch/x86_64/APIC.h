@@ -2,7 +2,8 @@
 
 // Based on code from RTEMS (https://www.rtems.org/), licensed under the GPL.
 
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 extern void (*timer_addr)();
 extern uint64_t timer_max;
@@ -64,6 +65,8 @@ namespace x86_64::APIC {
 	void reloadTimer(uint32_t initcnt);
 	uint32_t calibrateTimer();
 	void disableTimer();
+
+	void wait(size_t num_ticks, uint32_t frequency);
 }
 
 extern volatile uint32_t *apic_base;

@@ -18,8 +18,7 @@ namespace x86_64 {
 
 			void clear();
 
-			void print(bool putc = true, bool indirect = true, bool show_pdpt = true, bool show_pdt = true,
-			           PTDisplay pt = PTDisplay::Condensed);
+			void print(bool putc = true, bool indirect = true, bool show_pdpt = true, bool show_pdt = true, PTDisplay pt = PTDisplay::Condensed);
 
 			uint64_t getPML4E(uint16_t pml4_index) const;
 			uint64_t getPDPE(uint16_t pml4_index, uint16_t pdpt_index) const;

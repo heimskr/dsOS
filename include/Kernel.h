@@ -1,12 +1,15 @@
 #pragma once
 
-#include <stddef.h>
-
 #include "kernel_core.h"
 #include "arch/x86_64/PageMeta.h"
 #include "arch/x86_64/PageTableWrapper.h"
 #include "hardware/Keyboard.h"
 #include "memory/Memory.h"
+
+#include "Lockable.h"
+#include "Process.h"
+
+#include <cstddef>
 
 namespace Thorn {
 	class Kernel {
@@ -14,6 +17,9 @@ namespace Thorn {
 			uintptr_t memoryLow = 0;
 			uintptr_t memoryHigh = 0;
 			Memory memory;
+
+			std::unique_ptr<Lockable<ProcessMap, RecursiveMutex>> processes;
+			PID lastPID = 1;
 
 			/** The area where page descriptors are stored. */
 			char *pageDescriptors = nullptr;
@@ -39,9 +45,13 @@ namespace Thorn {
 			/** Sets all page descriptors to zero. */
 			void initPageDescriptors();
 
+			PID nextPID();
+
 		public:
 			x86_64::PageTableWrapper kernelPML4;
 			x86_64::PageMeta4K pager;
+
+			constexpr static PID MaxPID = std::numeric_limits<PID>::max() / 2;
 
 			/** A region at the very top of virtual memory is mapped to all physical memory. This address stores the
 			 *  start of that region. */
@@ -55,12 +65,16 @@ namespace Thorn {
 
 			void main();
 
+			Process & makeProcess();
+
 			static void wait(size_t num_ticks, uint32_t frequency = 1);
 			static void perish();
 
 			void schedule();
 
 			void onKey(Keyboard::InputKey, bool down);
+
+			void initPointers();
 
 			static void backtrace();
 			static void backtrace(uintptr_t *);

@@ -32,6 +32,8 @@
 volatile bool looping = false;
 
 namespace Thorn {
+	void loaderTest();
+
 	void runTests() {
 		testPS2Keyboard();
 	}
@@ -380,6 +382,8 @@ namespace Thorn {
 			sha1(pieces, mainContext);
 		} else if (pieces[0] == "clear") {
 			Terminal::clear();
+		} else if (pieces[0] == "loader") {
+			loaderTest();
 		} else if (pieces[0] == "loop") {
 			tprintf("Looping...\n");
 			looping = true;

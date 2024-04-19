@@ -28,7 +28,8 @@ QEMU_EXTRA   := $(QEMU_EXTRA) -cpu host -smp cpus=1,cores=12,maxcpus=12
 
 ASSEMBLED := $(shell find asm/*.S)
 CSRC      := $(shell find src -name \*.c)
-CPPSRC    := $(shell find src -name \*.cpp)
+CPPSRC    := $(shell find src -name \*.cpp) src/progs.cpp
+PROGSRC   := $(shell find progs -name \*.cpp)
 
 SOURCES    = $(ASSEMBLED) $(CPPSRC) $(CSRC)
 SPECIAL   := src/arch/x86_64/Interrupts.cpp
@@ -56,6 +57,7 @@ $(patsubst %.S,%.o,$(1)): $(1)
 endef
 
 $(foreach fname,$(filter-out $(SPECIAL),$(CPPSRC)),$(eval $(call CPP_TEMPLATE,$(fname))))
+$(foreach fname,$(PROGSRC),$(eval $(call CPP_TEMPLATE,$(fname))))
 $(foreach fname,$(CSRC),$(eval $(call C_TEMPLATE,$(fname))))
 $(foreach fname,$(ASSEMBLED),$(eval $(call ASSEMBLED_TEMPLATE,$(fname))))
 
@@ -64,6 +66,12 @@ src/arch/x86_64/Interrupts.o: src/arch/x86_64/Interrupts.cpp include/arch/x86_64
 
 kernel: $(OBJS) kernel.ld $(LIBS)
 	x86_64-elf-g++ -z max-page-size=0x1000 $(CPPFLAGS) -Wl,--build-id=none -T kernel.ld -o $@ $(OBJS) $(LIBS)
+
+src/progs.cpp include/progs.h: $(PROGSRC:.cpp=.o)
+	echo "#include <cstddef>" > src/progs.cpp
+	$(foreach fname,$^,bin2c prog_$(patsubst progs/%.o,%,$(fname)) < "$(fname)" | tail -n+2 >> src/progs.cpp)
+	(echo "#pragma once"; echo "#include <cstddef>") > include/progs.h
+	$(foreach fname,$^,(echo "extern const char *prog_$(patsubst progs/%.o,%,$(fname));"; echo "extern const size_t prog_$(patsubst progs/%.o,%,$(fname))_len;") >> include/progs.h)
 
 musl/lib/libc.a:
 	$(MAKE) -C musl

@@ -45,8 +45,6 @@ extern void *tmp_stack;
 
 void schedule();
 
-static bool waiting = true;
-
 #define XSTR(x) #x
 #define HELLO_(x) Thorn::Serial::write(__FILE__ ":" XSTR(x) "\n")
 #define HELLO HELLO_(__LINE__)
@@ -63,19 +61,7 @@ namespace Thorn {
 	}
 
 	void Kernel::wait(size_t num_ticks, uint32_t frequency) {
-		waiting = true;
-		ticks = 0;
-		timer_max = num_ticks;
-		timer_addr = +[] { waiting = false; };
-		x86_64::APIC::initTimer(frequency);
-		for (;;) {
-			if (waiting) {
-				asm("hlt");
-			} else {
-				x86_64::APIC::disableTimer();
-				break;
-			}
-		}
+		x86_64::APIC::wait(num_ticks, frequency);
 	}
 
 	void Kernel::main() {
@@ -126,6 +112,9 @@ namespace Thorn {
 
 		// UHCI::init();
 		// IDE::init();
+
+		initPointers();
+
 		PS2Keyboard::init();
 
 		// PCI::printDevices();
@@ -187,6 +176,10 @@ namespace Thorn {
 	void Kernel::onKey(Keyboard::InputKey /* key */, bool /* down */) {
 		// if (!down && key == Keyboard::InputKey::KeyC && Keyboard::isModifier(Keyboard::Modifier::Ctrl))
 			// looping = false;
+	}
+
+	void Kernel::initPointers() {
+		processes = std::make_unique<decltype(processes)::element_type>();
 	}
 
 	void Kernel::detectMemory() {
@@ -272,6 +265,38 @@ namespace Thorn {
 
 	void Kernel::initPageDescriptors() {
 		memset(pageDescriptors, 0, pageDescriptorsLength);
+	}
+
+	PID Kernel::nextPID() {
+		if (lastPID >= MaxPID) {
+			lastPID = 1;
+		}
+
+		Lock<RecursiveMutex> lock;
+		auto &procs = processes->get(lock);
+
+		if (procs.size() >= MaxPID - 5) {
+			printf("Too many processes!\n");
+			perish();
+		}
+
+		PID candidate = lastPID + 1;
+
+		auto iter = procs.find(candidate);
+
+		for (;;) {
+			if (iter == procs.end())
+				return lastPID = candidate;
+
+			if (++iter == procs.end())
+				return lastPID = candidate + 1;
+
+			auto next = iter->first;
+			if (++candidate < next)
+				return lastPID = candidate;
+
+			iter = procs.find(candidate);
+		}
 	}
 
 	void Kernel::perish() {
