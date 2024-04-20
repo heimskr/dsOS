@@ -108,6 +108,21 @@ namespace Thorn {
 				lock();
 			}
 
+			Lock(const Lock<M> &) = delete;
+
+			Lock(Lock<M> &&other) {
+				mutex = other.mutex;
+				other.mutex = nullptr;
+			}
+
+			Lock<M> & operator=(const Lock<M> &) = delete;
+
+			Lock<M> & operator=(Lock<M> &&other) {
+				mutex = other.mutex;
+				other.mutex = nullptr;
+				return *this;
+			}
+
 			~Lock() {
 				if (mutex)
 					unlock();
@@ -120,7 +135,7 @@ namespace Thorn {
 						asm("hlt");
 				}
 
-				mutex.load()->lock();
+				mutex->lock();
 			}
 
 			void unlock() {
@@ -130,7 +145,7 @@ namespace Thorn {
 						asm("hlt");
 				}
 
-				mutex.load()->unlock();
+				mutex->unlock();
 			}
 
 			void release() {
@@ -142,6 +157,6 @@ namespace Thorn {
 			}
 
 		private:
-			Atomic<M *> mutex = nullptr;
+			M *mutex = nullptr;
 	};
 }

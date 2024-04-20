@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if 0
+
 #include "include/overridable_function.h"
 #include <__assert>
 #include <__memory/aligned_alloc.h>
@@ -224,3 +226,5 @@ _LIBCPP_WEAK void operator delete[](void* ptr, size_t, std::align_val_t alignmen
 // ------------------ END COPY ------------------
 
 #endif // !__GLIBCXX__ && !_LIBCPP_ABI_VCRUNTIME
+
+#endif // 0

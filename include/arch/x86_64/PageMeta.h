@@ -7,10 +7,11 @@
 #include "mmu.h"
 
 namespace x86_64 {
+	class PageTableWrapper;
+
 	class PageMeta {
 		public:
 			void *physicalStart = nullptr;
-			void *virtualStart = nullptr;
 			void *physicalMemoryMap = nullptr;
 			bool disableMemset = false, disablePresentCheck = false;
 			bool physicalMemoryMapReady = false;
@@ -19,52 +20,54 @@ namespace x86_64 {
 			virtual void clear() = 0;
 			virtual int findFree(size_t start = 0) const = 0;
 			virtual void * allocateFreePhysicalAddress(size_t consecutive_count = 1);
+			uintptr_t allocateFreePhysicalFrame(size_t consecutive_count = 1);
 			virtual void mark(int index, bool used) = 0;
-			virtual uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+			virtual uintptr_t assign(PageTableWrapper &, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
 			                         volatile void *physical_address = nullptr, uint64_t extra_meta = 0) = 0;
 			virtual size_t pagesUsed() const = 0;
 			virtual bool isFree(size_t index) const = 0;
 			virtual operator bool() const = 0;
-			virtual bool assignAddress(volatile void *virtual_address, volatile void *physical_address = nullptr, uint64_t extra_meta = 0);
-			virtual bool identityMap(volatile void *, uint64_t extra_meta = 0);
+			virtual bool assignAddress(PageTableWrapper &, volatile void *virtual_address, volatile void *physical_address = nullptr,
+			                           uint64_t extra_meta = 0);
+			virtual bool identityMap(PageTableWrapper &, volatile void *, uint64_t extra_meta = 0);
 			/** Returns true if there was an entry for the given address. */
-			virtual bool modifyEntry(volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier);
+			virtual bool modifyEntry(PageTableWrapper &, volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier);
 			/** Returns true if there was an entry for the given address. */
-			virtual bool andMeta(volatile void *virtual_address, uint64_t meta);
+			virtual bool andMeta(PageTableWrapper &, volatile void *virtual_address, uint64_t meta);
 			/** Returns true if there was an entry for the given address. */
-			virtual bool orMeta(volatile void *virtual_address, uint64_t meta);
-			virtual bool freeEntry(volatile void *virtual_address);
+			virtual bool orMeta(PageTableWrapper &, volatile void *virtual_address, uint64_t meta);
+			virtual bool freeEntry(PageTableWrapper &, volatile void *virtual_address);
 
 		protected:
-			PageMeta(void *physical_start, void *virtual_start);
+			explicit PageMeta(void *physical_start);
 			uint64_t addressToEntry(volatile void *) const;
 			inline bool isPresent(uint64_t entry) {
 				return entry & MMU_PRESENT;
 			}
 
-			virtual uintptr_t assignBeforePMM(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
+			virtual uintptr_t assignBeforePMM(PageTableWrapper &, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
 				uint16_t pt_index, volatile void *physical_address = nullptr, uint64_t extra_meta = 0) = 0;
 	};
 
 	/** Number of 4KiB pages is PageCount + 1 to account for the other fields in PageMeta and PageMeta4K. */
 	class PageMeta4K: public PageMeta {
 		protected:
-			virtual uintptr_t assignBeforePMM(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
+			virtual uintptr_t assignBeforePMM(PageTableWrapper &, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
 				uint16_t pt_index, volatile void *physical_address = nullptr, uint64_t extra_meta = 0) override;
 
 		public:
-			using bitmap_t = int64_t;
+			using Bitmap = int64_t;
 
 			/** Number of pages. */
 			int pages;
 
 			/** Bits are 0 if the corresponding page is free, 1 if allocated. */
-			bitmap_t *bitmap = nullptr;
+			Bitmap *bitmap = nullptr;
 
 			PageMeta4K();
 
 			/** bitmap_address must be within a mapped page. */
-			PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_);
+			PageMeta4K(void *physical_start, void *bitmap_address, int pages_);
 
 			/** Returns the size of the bitmap array in bytes. */
 			size_t bitmapSize() const;
@@ -73,10 +76,10 @@ namespace x86_64 {
 			void clear() override;
 			int findFree(size_t start = 0) const override;
 			void mark(int index, bool used) override;
-			uintptr_t assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+			uintptr_t assign(PageTableWrapper &, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
 			                 volatile void *physical_address = nullptr, uint64_t extra_meta = 0) override;
 			/** Allocates pages for the bitmap array. */
-			void assignSelf();
+			void assignSelf(PageTableWrapper &);
 			operator bool() const override;
 			size_t pagesUsed() const override;
 			bool isFree(size_t index) const override;

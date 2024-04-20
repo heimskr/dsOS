@@ -76,13 +76,18 @@ namespace Thorn {
 
 		// These three lines are incredibly janky. Fixing them is important.
 		uintptr_t bitmap_base = 0xa00000ul;
-		uintptr_t physical_start = (bitmap_base + 5'000'000ul) & ~0xfff; // 5 MB is enough to map over 150 GB.
-		pager = x86_64::PageMeta4K((void *) physical_start, (void *) 0xffff80800000ul, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
+		uintptr_t physical_start = (bitmap_base + (1ul << 23)) & ~0xfff; // 8 MiB is enough to map 256 GiB.
 
-		printf("physical_start = 0x%lx\n", physical_start);
+		{
+			Lock<Mutex> lock;
+			auto &pager = lockedPager.get(lock);
+			pager = x86_64::PageMeta4K((void *) physical_start, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
 
-		pager.assignSelf();
-		pager.clear();
+			printf("physical_start = 0x%lx\n", physical_start);
+
+			pager.assignSelf(kernelPML4);
+			pager.clear();
+		}
 
 		// kernelPML4.print(false, false);
 
@@ -180,6 +185,18 @@ namespace Thorn {
 
 	void Kernel::initPointers() {
 		processes = std::make_unique<decltype(processes)::element_type>();
+		pageFrameProcesses = std::make_unique<decltype(pageFrameProcesses)::element_type>();
+	}
+
+	Process & Kernel::makeProcess() {
+		Lock<RecursiveMutex> lock;
+		auto &procs = processes->get(lock);
+
+		PID pid = nextPID();
+		assert(!procs.contains(pid));
+		Process &out = procs[pid];
+		out.init();
+		return out;
 	}
 
 	void Kernel::detectMemory() {
@@ -248,15 +265,17 @@ namespace Thorn {
 		physicalMemoryMap = (void *) Util::downalign((0xfffffffffffff000ul - memoryHigh), 4096);
 		printf("physicalMemoryMap = 0x%lx\n", physicalMemoryMap);
 		printf("Mapping all physical memory...\n");
+		Lock<Mutex> pager_lock;
+		auto &pager = getPager(pager_lock);
 		const bool old_disable_memset = pager.disableMemset;
 		const bool old_disable_present_check = pager.disablePresentCheck;
 		pager.disableMemset = false;
 		pager.disablePresentCheck = false;
 		pager.physicalMemoryMap = physicalMemoryMap;
 		for (uintptr_t i = 0x1000000; i <= memoryHigh; i += 4096)
-			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
+			// pager.assignAddress(kernelPML4, (char *) physicalMemoryMap + i, (void *) i);
 		for (uintptr_t i = 0; i < 0x1000000; i += 4096)
-			pager.assignAddress((char *) physicalMemoryMap + i, (void *) i);
+			// pager.assignAddress(kernelPML4, (char *) physicalMemoryMap + i, (void *) i);
 		pager.disableMemset = old_disable_memset;
 		pager.disablePresentCheck = old_disable_present_check;
 		pager.physicalMemoryMapReady = true;
@@ -304,13 +323,9 @@ namespace Thorn {
 			asm("hlt");
 	}
 
-	x86_64::PageMeta4K & Kernel::getPager() {
-		if (!instance) {
-			printf("Kernel instance is null!\n");
-			perish();
-		}
-
-		return instance->pager;
+	x86_64::PageMeta4K & Kernel::getPager(Lock<Mutex> &lock) {
+		verifyInstance();
+		return instance->lockedPager.get(lock);
 	}
 }
 

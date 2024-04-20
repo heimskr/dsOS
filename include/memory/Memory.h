@@ -4,8 +4,8 @@
 #include "lib/printf.h"
 
 #define MEMORY_ALIGN 32
-#define DECLARE_MEMORY_OPERATORS
-#define SKIP_MEMORY_DECLARATIONS
+// #define DECLARE_MEMORY_OPERATORS
+// #define SKIP_MEMORY_DECLARATIONS
 
 void spin(size_t time = 3);
 
@@ -59,9 +59,15 @@ extern "C" {
 	int posix_memalign(void **memptr, size_t alignment, size_t size);
 }
 
+void * malloc(size_t size, size_t alignment);
+
 extern Thorn::Memory *global_memory;
 
 #define MEMORY_OPERATORS_SET
+
+namespace std {
+	struct nothrow_t;
+}
 
 #ifndef SKIP_MEMORY_DECLARATIONS
 	#if defined(__clang__) || defined(DECLARE_MEMORY_OPERATORS)
@@ -78,7 +84,9 @@ extern Thorn::Memory *global_memory;
 	#else
 		#ifndef __cpp_exceptions
 			inline void * operator new(size_t size)   throw() { return malloc(size); }
+			inline void * operator new(size_t size, const std::nothrow_t &)   throw() { return malloc(size); }
 			inline void * operator new[](size_t size) throw() { return malloc(size); }
+			inline void * operator new(size_t size, std::align_val_t &align, const std::nothrow_t &) noexcept { return malloc(size, size_t(align)); }
 			inline void * operator new(size_t, void *ptr)   throw() { return ptr; }
 			inline void * operator new[](size_t, void *ptr) throw() { return ptr; }
 			inline void operator delete(void *ptr)   throw() { free(ptr); }
@@ -90,6 +98,7 @@ extern Thorn::Memory *global_memory;
 		#else
 			inline void * operator new(size_t size)   { return malloc(size); }
 			inline void * operator new[](size_t size) { return malloc(size); }
+			inline void * operator new(size_t size, std::align_val_t &align, const std::nothrow_t &) noexcept { return malloc(size, size_t(align)); }
 			inline void * operator new(size_t, void *ptr)   { return ptr; }
 			inline void * operator new[](size_t, void *ptr) { return ptr; }
 			inline void operator delete(void *ptr)   noexcept { free(ptr); }

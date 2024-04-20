@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <map>
+#include <optional>
 
 namespace Thorn {
 	using PID = uint32_t;
@@ -12,8 +13,11 @@ namespace Thorn {
 	struct Process {
 		PID pid;
 
-		x86_64::PageMeta4K pager;
-		x86_64::PageTableWrapper pageTable;
+		std::optional<x86_64::PageTableWrapper> pageTable;
+
+		void init();
+
+		void allocatePage(uintptr_t virtual_address);
 	};
 
 	using ProcessMap = std::map<PID, Process>;

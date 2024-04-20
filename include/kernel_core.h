@@ -6,6 +6,8 @@
 #define KERNEL_BOOT_STACK_SIZE 0x4000
 #define KERNEL_BOOT_STACK_ALIGNMENT 0x1000
 
+#define THORN_PAGE_SIZE 4096
+
 #ifndef __ASSEMBLER__
 #include <stdint.h>
 extern "C" uint64_t pml4;

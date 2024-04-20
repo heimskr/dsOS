@@ -37,8 +37,14 @@ namespace Thorn::UHCI {
 
 		enableInterrupts();
 		Ports::outw(address + FRAME_NUMBER, 0);
-		auto &pager = Kernel::getPager();
-		void *physical = pager.allocateFreePhysicalAddress();
+
+		void *physical;
+		{
+			Lock<Mutex> pager_lock;
+			auto &pager = Kernel::getPager(pager_lock);
+			physical = pager.allocateFreePhysicalAddress();
+		}
+
 		if (0xffffffff < reinterpret_cast<uintptr_t>(physical)) {
 			printf("[UHCI::Controller::init] Allocated page can't be represented with 32 bits!\n");
 			return;

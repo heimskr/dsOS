@@ -10,6 +10,10 @@
 #ifndef _LIBCPP_NEW
 #define _LIBCPP_NEW
 
+#include "memory/Memory.h"
+
+#define HIDE_NEW_OPERATORS
+
 /*
     new synopsis
 
@@ -202,7 +206,7 @@ inline constexpr destroying_delete_t destroying_delete{};
 #  define _THROW_BAD_ALLOC
 #endif
 
-#if !defined(_LIBCPP_ABI_VCRUNTIME)
+#if !defined(HIDE_NEW_OPERATORS) && !defined(_LIBCPP_ABI_VCRUNTIME)
 
 _LIBCPP_NODISCARD_AFTER_CXX17 _LIBCPP_OVERRIDABLE_FUNC_VIS void* operator new(std::size_t __sz) _THROW_BAD_ALLOC;
 _LIBCPP_NODISCARD_AFTER_CXX17 _LIBCPP_OVERRIDABLE_FUNC_VIS void*
@@ -253,7 +257,7 @@ _LIBCPP_NODISCARD_AFTER_CXX17 inline _LIBCPP_HIDE_FROM_ABI void* operator new[](
 inline _LIBCPP_HIDE_FROM_ABI void operator delete(void*, void*) _NOEXCEPT {}
 inline _LIBCPP_HIDE_FROM_ABI void operator delete[](void*, void*) _NOEXCEPT {}
 
-#endif // !_LIBCPP_ABI_VCRUNTIME
+#endif // !HIDE_NEW_OPERATORS && !_LIBCPP_ABI_VCRUNTIME
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 

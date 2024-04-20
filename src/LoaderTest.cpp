@@ -9,11 +9,12 @@ namespace Thorn {
 			Kernel::perish();
 		}
 
-		x86_64::PageMeta4K &pager = Kernel::getPager();
-		Kernel &kernel = *Kernel::instance;
+		// Lock<Mutex> pager_lock;
+		// x86_64::PageMeta4K &pager = Kernel::getPager(pager_lock);
+		// Kernel &kernel = *Kernel::instance;
 
-		void *page = pager.allocateFreePhysicalAddress();
-		memset(page, 0, pager.pageSize());
+		// void *page = pager.allocateFreePhysicalAddress();
+		// memset(page, 0, pager.pageSize());
 
 		// kernel.processes
 

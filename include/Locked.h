@@ -4,10 +4,12 @@
 
 namespace Thorn {
 	template <typename T, typename M = Mutex>
-	class Lockable {
+	class Locked {
 		public:
+			using LockedType = T;
+
 			template <typename... Args>
-			Lockable(Args &&...args):
+			Locked(Args &&...args):
 				object(std::forward<Args>(args)...) {}
 
 			T & get(Lock<M> &lock) {

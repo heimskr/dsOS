@@ -27,8 +27,12 @@ namespace Thorn::AHCI {
 		abar = (HBAMemory *) device->getBAR(5);
 		printf("abar: 0x%lx\n", abar);
 
-		kernel.pager.identityMap(abar, MMU_CACHE_DISABLED);
-		kernel.pager.identityMap((char *) abar + 0x1000, MMU_CACHE_DISABLED);
+		{
+			Lock<Mutex> pager_lock;
+			auto &pager = kernel.getPager(pager_lock);
+			pager.identityMap(kernel.kernelPML4, abar, MMU_CACHE_DISABLED);
+			pager.identityMap(kernel.kernelPML4, (char *) abar + 0x1000, MMU_CACHE_DISABLED);
+		}
 
 		printf("cap=%x cap2=%x", abar->cap, abar->cap2);
 		printf(" caps =");
@@ -223,18 +227,21 @@ namespace Thorn::AHCI {
 
 		if (!Kernel::instance) {
 			printf("[Port::Port] Kernel instance is null!\n");
-			for (;;) asm("hlt");
+			Kernel::perish();
 		}
 
-		auto &pager = Kernel::instance->pager;
+		Lock<Mutex> pager_lock;
+		auto &pager = Kernel::instance->getPager(pager_lock);
+		auto &wrapper = Kernel::instance->kernelPML4;
 
 		void *addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
 		memset(addr, 0, 4096);
 
 		addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
+
 		setFB(addr);
 		memset(addr, 0, 4096);
 
@@ -253,12 +260,14 @@ namespace Thorn::AHCI {
 			commandList[i].prdtl = 1;
 
 			addr = pager.allocateFreePhysicalAddress();
-			pager.identityMap(addr, MMU_CACHE_DISABLED);
+			pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 			commandList[i].ctba = (uintptr_t) addr & 0xffffffff;
 			commandList[i].ctbau = (uintptr_t) addr >> 32;
 			commandTables[i] = (HBACommandTable *) addr;
 			memset(addr, 0, 4096);
 		}
+
+		pager_lock.unlock();
 
 		registers->sctl = registers->sctl | (SCTL_PORT_IPM_NOPART | SCTL_PORT_IPM_NOSLUM | SCTL_PORT_IPM_NODSLP);
 
@@ -314,8 +323,10 @@ namespace Thorn::AHCI {
 			return;
 		}
 
+		pager_lock.lock();
+
 		for (unsigned i = 0; i < 8; ++i) {
-			pager.identityMap(physicalBuffers[i] = pager.allocateFreePhysicalAddress());
+			pager.identityMap(wrapper, physicalBuffers[i] = pager.allocateFreePhysicalAddress());
 			// buffers[i] = Memory::KernelAllocate4KPages(1);
 			// Memory::KernelMapVirtualMemory4K(physBuffers[i], (uintptr_t)buffers[i], 1);
 		}
@@ -357,25 +368,28 @@ namespace Thorn::AHCI {
 		registers->is = 0;
 
 		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
-		x86_64::PageMeta4K &pager = Kernel::getPager();
+
+		Lock<Mutex> pager_lock;
+		auto &pager = Kernel::getPager(pager_lock);
+		auto &wrapper = Kernel::instance->kernelPML4;
 
 		if (registers->clb || registers->clbu) {
-			printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(getCLB()));
-			pager.freeEntry(getCLB());
+			printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(wrapper, getCLB()));
+			pager.freeEntry(wrapper, getCLB());
 		}
 		void *addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
 		memset(addr, 0, 1024);
 
 		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 
 		if (registers->fb || registers->fbu) {
-			printf("Freeing FB: 0x%lx :: %d\n", getFB(), pager.freeEntry(getFB()));
-			pager.freeEntry(getFB());
+			printf("Freeing FB: 0x%lx :: %d\n", getFB(), pager.freeEntry(wrapper, getFB()));
+			pager.freeEntry(wrapper, getFB());
 		}
 		addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		setFB(addr);
 		memset(addr, 0, 256);
 
@@ -383,7 +397,7 @@ namespace Thorn::AHCI {
 
 		HBACommandHeader *header = (HBACommandHeader *) getCLB();
 		addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		uintptr_t base = reinterpret_cast<uintptr_t>(addr);
 
 		for (int i = 0; i < 16; ++i) {
@@ -395,7 +409,7 @@ namespace Thorn::AHCI {
 		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 
 		addr = pager.allocateFreePhysicalAddress();
-		pager.identityMap(addr, MMU_CACHE_DISABLED);
+		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		base = (uintptr_t) addr;
 		printf("CTBA base: 0x%lx\n", base);
 

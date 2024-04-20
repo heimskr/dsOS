@@ -9,6 +9,8 @@
 #include <__verbose_abort>
 #include <new>
 
+#if 0
+
 namespace std { // purposefully not versioned
 
 #ifndef __GLIBCXX__
@@ -28,3 +30,5 @@ void __throw_bad_alloc() {
 #endif // !LIBSTDCXX
 
 } // namespace std
+
+#endif // 0

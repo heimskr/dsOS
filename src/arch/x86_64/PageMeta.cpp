@@ -11,8 +11,8 @@ extern uint64_t low_page_directory_table;
 extern uint64_t high_page_directory_table;
 
 namespace x86_64 {
-	PageMeta::PageMeta(void *physical_start, void *virtual_start):
-		physicalStart(physical_start), virtualStart(virtual_start) {}
+	PageMeta::PageMeta(void *physical_start):
+		physicalStart(physical_start) {}
 
 	void * PageMeta::allocateFreePhysicalAddress(size_t consecutive_count) {
 		if (consecutive_count == 0)
@@ -39,20 +39,23 @@ namespace x86_64 {
 		}
 	}
 
-	bool PageMeta::assignAddress(volatile void *virtual_address, volatile void *physical_address, uint64_t extra_meta) {
+	uintptr_t PageMeta::allocateFreePhysicalFrame(size_t consecutive_count) {
+		return reinterpret_cast<uintptr_t>(allocateFreePhysicalAddress(consecutive_count)) / THORN_PAGE_SIZE;
+	}
+
+	bool PageMeta::assignAddress(PageTableWrapper &wrapper, volatile void *virtual_address, volatile void *physical_address, uint64_t extra_meta) {
 		using PTW = PageTableWrapper;
 		uintptr_t out;
 		if (physicalMemoryMapReady) {
 			if ((uintptr_t) physical_address == 0xfee00000) printf("Assigning after PMM.\n");
-			out = assign(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
+			out = assign(wrapper, PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
 			             PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
 			             physical_address, extra_meta);
 		} else {
 			if ((uintptr_t) physical_address == 0xfee00000)
 				printf("Assigning before PMM (virtual 0x%lx -> physical 0x%lx).\n", virtual_address, physical_address);
-			out = assignBeforePMM(PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
-			                      PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
-			                      physical_address, extra_meta);
+			out = assignBeforePMM(wrapper, PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address), PTW::getPDTIndex(virtual_address),
+			                      PTW::getPTIndex(virtual_address), physical_address, extra_meta);
 		}
 
 		if ((uintptr_t) physical_address == 0xfee00000)
@@ -60,11 +63,11 @@ namespace x86_64 {
 		return out;
 	}
 
-	bool PageMeta::identityMap(volatile void *address, uint64_t extra_meta) {
-		return assignAddress(address, address, extra_meta);
+	bool PageMeta::identityMap(PageTableWrapper &wrapper, volatile void *address, uint64_t extra_meta) {
+		return assignAddress(wrapper, address, address, extra_meta);
 	}
 
-	bool PageMeta::modifyEntry(volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier) {
+	bool PageMeta::modifyEntry(PageTableWrapper &wrapper, volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier) {
 		Thorn::Kernel *kernel = Thorn::Kernel::instance;
 		if (!kernel) {
 			printf("Kernel instance is null!\n");
@@ -77,7 +80,6 @@ namespace x86_64 {
 		const uint16_t pdpt_index = PTW::getPDPTIndex(virtual_address);
 		const uint16_t pdt_index = PTW::getPDTIndex(virtual_address);
 		const uint16_t pt_index = PTW::getPTIndex(virtual_address);
-		PageTableWrapper &wrapper = kernel->kernelPML4;
 		if (!isPresent(wrapper.entries[pml4_index]))
 			return false;
 
@@ -97,44 +99,43 @@ namespace x86_64 {
 		return true;
 	}
 
-	bool PageMeta::andMeta(volatile void *virtual_address, uint64_t meta) {
-		return modifyEntry(virtual_address, [meta](uint64_t entry) {
+	bool PageMeta::andMeta(PageTableWrapper &wrapper, volatile void *virtual_address, uint64_t meta) {
+		return modifyEntry(wrapper, virtual_address, [meta](uint64_t entry) {
 			return entry & meta;
 		});
 	}
 
-	bool PageMeta::orMeta(volatile void *virtual_address, uint64_t meta) {
-		return modifyEntry(virtual_address, [meta](uint64_t entry) {
+	bool PageMeta::orMeta(PageTableWrapper &wrapper, volatile void *virtual_address, uint64_t meta) {
+		return modifyEntry(wrapper, virtual_address, [meta](uint64_t entry) {
 			return entry | meta;
 		});
 	}
 
-	bool PageMeta::freeEntry(volatile void *virtual_address) {
+	bool PageMeta::freeEntry(PageTableWrapper &wrapper, volatile void *virtual_address) {
 		// printf("\e[31mfreeEntry\e[0m 0x%lx\n", virtual_address);
-		return modifyEntry(virtual_address, [](uint64_t) { return 0; });
+		return modifyEntry(wrapper, virtual_address, [](uint64_t) { return 0; });
 	}
 
 	uint64_t PageMeta::addressToEntry(volatile void *address) const {
 		return (((uint64_t) address) & ~0xfff) | MMU_PRESENT | MMU_WRITABLE;
 	}
 
-	PageMeta4K::PageMeta4K(): PageMeta(nullptr, nullptr), pages(-1) {
+	PageMeta4K::PageMeta4K():
+		PageMeta(nullptr), pages(-1) {}
 
-	}
-
-	PageMeta4K::PageMeta4K(void *physical_start, void *virtual_start, void *bitmap_address, int pages_):
-	PageMeta(physical_start, virtual_start), pages(pages_) {
-		const size_t bitmap_count = Thorn::Util::updiv(pages_, 8 * (int) sizeof(bitmap_t));
-		bitmap = new (bitmap_address) bitmap_t[bitmap_count];
-		const size_t page_count = Thorn::Util::updiv(bitmap_count * sizeof(bitmap_t), 4096UL);
+	PageMeta4K::PageMeta4K(void *physical_start, void *bitmap_address, int pages_):
+	PageMeta(physical_start), pages(pages_) {
+		const size_t bitmap_count = Thorn::Util::updiv(pages_, 8 * (int) sizeof(Bitmap));
+		bitmap = new (bitmap_address) Bitmap[bitmap_count];
+		const size_t page_count = Thorn::Util::updiv(bitmap_count * sizeof(Bitmap), 4096UL);
 		for (size_t i = 0; i < page_count; ++i)
-			assignAddress(static_cast<char *>(bitmap_address) + 4096 * i);
+			assignAddress(Thorn::Kernel::instance->kernelPML4, static_cast<char *>(bitmap_address) + 4096 * i);
 	}
 
 	size_t PageMeta4K::bitmapSize() const {
 		if (pages == -1 || !bitmap)
 			return 0;
-		return Thorn::Util::updiv((size_t) pages, 8 * sizeof(bitmap_t)) * sizeof(bitmap_t);
+		return Thorn::Util::updiv((size_t) pages, 8 * sizeof(Bitmap)) * sizeof(Bitmap);
 	}
 
 	size_t PageMeta4K::pageCount() const {
@@ -148,16 +149,16 @@ namespace x86_64 {
 	void PageMeta4K::clear() {
 		if (pages == -1)
 			return;
-		memset(bitmap, 0, Thorn::Util::updiv(pages, 8 * (int) sizeof(bitmap_t)) * sizeof(bitmap_t));
+		memset(bitmap, 0, Thorn::Util::updiv(pages, 8 * (int) sizeof(Bitmap)) * sizeof(Bitmap));
 	}
 
 	int PageMeta4K::findFree(size_t start) const {
 		if (pages != -1)
-			for (size_t i = start; i < pages / (8 * sizeof(bitmap_t)); ++i)
+			for (size_t i = start; i < pages / (8 * sizeof(Bitmap)); ++i)
 				if (bitmap[i] != -1L)
-					for (unsigned int j = 0; j < 8 * sizeof(bitmap_t); ++j)
+					for (unsigned int j = 0; j < 8 * sizeof(Bitmap); ++j)
 						if ((bitmap[i] & (1L << j)) == 0)
-							return i * 8 * sizeof(bitmap_t) + j;
+							return i * 8 * sizeof(Bitmap) + j;
 		return -1;
 	}
 
@@ -168,12 +169,12 @@ namespace x86_64 {
 		}
 
 		if (used)
-			bitmap[index / (8 * sizeof(bitmap_t))] |=   1L << (index % (8 * sizeof(bitmap_t)));
+			bitmap[index / (8 * sizeof(Bitmap))] |=   1L << (index % (8 * sizeof(Bitmap)));
 		else
-			bitmap[index / (8 * sizeof(bitmap_t))] &= ~(1L << (index % (8 * sizeof(bitmap_t))));
+			bitmap[index / (8 * sizeof(Bitmap))] &= ~(1L << (index % (8 * sizeof(Bitmap))));
 	}
 
-	uintptr_t PageMeta4K::assign(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
+	uintptr_t PageMeta4K::assign(PageTableWrapper &wrapper, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
 	                             volatile void *physical_address, uint64_t extra_meta) {
 		// serprintf("\e[32massign\e[0m %u, %u, %u, %u, 0x%lx, 0x%lx\n", pml4_index, pdpt_index, pdt_index, pt_index, physical_address, extra_meta);
 
@@ -182,13 +183,10 @@ namespace x86_64 {
 			return 0;
 		}
 
-		Thorn::Kernel &kernel = Thorn::Kernel::getInstance();
-
 		auto access = [&](uint64_t *ptr) -> uint64_t * {
 			return (uint64_t *) ((uintptr_t) physicalMemoryMap + (uintptr_t) ptr);
 		};
 
-		PageTableWrapper &wrapper = kernel.kernelPML4;
 		if (!Thorn::Util::isCanonical(wrapper.entries)) {
 			printf("PML4 (0x%lx) isn't canonical!\n", wrapper.entries);
 			for (;;) asm("hlt");
@@ -267,7 +265,7 @@ namespace x86_64 {
 		return assigned;
 	}
 
-	uintptr_t PageMeta4K::assignBeforePMM(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
+	uintptr_t PageMeta4K::assignBeforePMM(PageTableWrapper &wrapper, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
 	                                      uint16_t pt_index, volatile void *physical_address, uint64_t extra_meta) {
 		// serprintf("\e[32massignBeforePMM\e[0m %u, %u, %u, %u, 0x%lx, 0x%lx\n", pml4_index, pdpt_index, pdt_index, pt_index, physical_address, extra_meta);
 
@@ -275,8 +273,6 @@ namespace x86_64 {
 			printf("[PageMeta4K::assign] pages == -1\n");
 			return 0;
 		}
-
-		Thorn::Kernel &kernel = Thorn::Kernel::getInstance();
 
 		constexpr uintptr_t magic = 0x2000000;
 
@@ -286,7 +282,6 @@ namespace x86_64 {
 			return (volatile uint64_t *) ((uintptr_t) physicalMemoryMap + (uintptr_t) ptr);
 		};
 
-		PageTableWrapper &wrapper = kernel.kernelPML4;
 		if (!Thorn::Util::isCanonical(wrapper.entries)) {
 			printf("PML4 (0x%lx) isn't canonical!\n", wrapper.entries);
 			for (;;) asm("hlt");
@@ -373,7 +368,7 @@ namespace x86_64 {
 		return assigned;
 	}
 
-	void PageMeta4K::assignSelf() {
+	void PageMeta4K::assignSelf(PageTableWrapper &wrapper) {
 		if (pages == -1) {
 			printf("PageMeta4K::assignSelf failed: pages == -1\n");
 			return;
@@ -387,7 +382,7 @@ namespace x86_64 {
 			pdpti = PageTableWrapper::getPDPTIndex(address);
 			 pdti = PageTableWrapper:: getPDTIndex(address);
 			  pti = PageTableWrapper::  getPTIndex(address);
-			assign(pml4i, pdpti, pdti, pti);
+			assign(wrapper, pml4i, pdpti, pdti, pti);
 		}
 	}
 
@@ -398,7 +393,7 @@ namespace x86_64 {
 	size_t PageMeta4K::pagesUsed() const {
 		size_t out = 0;
 		size_t popcnt = 0;
-		for (size_t i = 0; i < bitmapSize() / sizeof(bitmap_t); ++i) {
+		for (size_t i = 0; i < bitmapSize() / sizeof(Bitmap); ++i) {
 			asm("popcnt %1, %0" : "=r"(popcnt) : "r"(bitmap[i]));
 			out += popcnt;
 		}
@@ -406,7 +401,8 @@ namespace x86_64 {
 	}
 
 	bool PageMeta4K::isFree(size_t index) const {
-		// NB: Change the math here if bitmap_t changes in size.
+		// NB: Change the math here if Bitmap changes in size.
+		static_assert(sizeof(Bitmap) == 8);
 		return (bitmap[index >> 6] & (1 << (index & 63))) != 0;
 	}
 }

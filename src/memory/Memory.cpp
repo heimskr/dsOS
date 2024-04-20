@@ -52,10 +52,14 @@ namespace Thorn {
 			last->next = block;
 
 #ifdef PROACTIVE_PAGING
-		auto &pager = Kernel::getPager();
-		while (highestAllocated <= (uintptr_t) block + size) {
-			pager.assignAddress(reinterpret_cast<void *>(highestAllocated));
-			highestAllocated += PAGE_LENGTH;
+		{
+			Lock<Mutex> pager_lock;
+			auto &pager = Kernel::getPager(pager_lock);
+			auto &wrapper = Kernel::instance->kernelPML4;
+			while (highestAllocated <= (uintptr_t) block + size) {
+				pager.assignAddress(wrapper, reinterpret_cast<void *>(highestAllocated));
+				highestAllocated += PAGE_LENGTH;
+			}
 		}
 #endif
 
@@ -199,6 +203,12 @@ extern "C" void * malloc(size_t size) {
 	return global_memory->allocate(size);
 }
 
+void * malloc(size_t size, size_t alignment) {
+	if (global_memory == nullptr)
+		return nullptr;
+	return global_memory->allocate(size, alignment);
+}
+
 extern "C" void * calloc(size_t count, size_t size) {
 	void *chunk = malloc(count * size);
 	if (chunk)
@@ -211,10 +221,12 @@ extern "C" void free(void *ptr) {
 		global_memory->free(ptr);
 }
 
-extern "C" int posix_memalign(void ** /* memptr */, size_t alignment, size_t /* size */) {
+extern "C" int posix_memalign(void **memptr, size_t alignment, size_t size) {
 	// Return EINVAL if the alignment isn't zero or a power of two or is less than the size of a void pointer.
-	if ((alignment & (alignment - 1)) != 0 || alignment < sizeof(void *))
-		return 22; // EINVAL
+	if (global_memory == nullptr || (alignment & (alignment - 1)) != 0 || alignment < sizeof(void *))
+		return EINVAL;
+
+	*memptr = global_memory->allocate(size, alignment);
 	return 0;
 }
 

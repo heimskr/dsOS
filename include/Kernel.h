@@ -6,19 +6,25 @@
 #include "hardware/Keyboard.h"
 #include "memory/Memory.h"
 
-#include "Lockable.h"
+#include "Locked.h"
 #include "Process.h"
 
 #include <cstddef>
 
 namespace Thorn {
+	using PageFrameNumber = uint64_t;
+
 	class Kernel {
 		private:
 			uintptr_t memoryLow = 0;
 			uintptr_t memoryHigh = 0;
 			Memory memory;
 
-			std::unique_ptr<Lockable<ProcessMap, RecursiveMutex>> processes;
+			Locked<x86_64::PageMeta4K> lockedPager;
+
+			std::unique_ptr<Locked<ProcessMap, RecursiveMutex>> processes;
+			std::unique_ptr<Locked<std::map<PageFrameNumber, PID>>> pageFrameProcesses;
+
 			PID lastPID = 1;
 
 			/** The area where page descriptors are stored. */
@@ -49,7 +55,6 @@ namespace Thorn {
 
 		public:
 			x86_64::PageTableWrapper kernelPML4;
-			x86_64::PageMeta4K pager;
 
 			constexpr static PID MaxPID = std::numeric_limits<PID>::max() / 2;
 
@@ -78,7 +83,20 @@ namespace Thorn {
 
 			static void backtrace();
 			static void backtrace(uintptr_t *);
-			static x86_64::PageMeta4K & getPager();
+
+			static x86_64::PageMeta4K & getPager(Lock<Mutex> &);
+
+			static auto & getPageFrameProcesses(Lock<Mutex> &lock) {
+				verifyInstance();
+				return instance->pageFrameProcesses->get(lock);
+			}
+
+			static void verifyInstance() {
+				if (!instance) {
+					printf("Kernel instance is null!\n");
+					perish();
+				}
+			}
 
 			friend void runTests();
 	};
