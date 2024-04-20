@@ -142,11 +142,13 @@ addrfmt: .asciz "addr: 0x%lx\n"
 gpffmt: .asciz "General protection fault!\n"
 pffmt: .asciz "Page fault!\n"
 syscallfmt: .asciz "Syscall\n"
+offaddrfmt: .asciz "Offending address: 0x%lx\n"
 
 .data
 ticks: .8byte 0
 timer_max: .8byte -1
 isr_rbp: .8byte 0
+isr_rsp: .8byte 0
 addr8: .8byte 0
 addr14: .8byte 0
 // last_scancode: .byte 0
@@ -257,6 +259,7 @@ isr_14:
 	cli
 
 	mov %rbp, (isr_rbp)
+	mov %rsp, (isr_rsp)
 
 	push %rax
 	push %rbx
@@ -273,7 +276,12 @@ isr_14:
 	push %r14
 	push %r15
 
-	mov (isr_rbp), %rdi
+	leaq offaddrfmt, %rdi
+	movq (isr_rsp), %rsi
+	movq 8(%rsi), %rsi
+	callq printf
+
+	movq (isr_rbp), %rdi
 	call _ZN5Thorn6Kernel9backtraceEPm
 
 	print0 $pffmt

@@ -5,7 +5,7 @@
 CC           := x86_64-elf-gcc
 CPP          := x86_64-elf-g++
 AS           := x86_64-elf-g++
-SHARED_FLAGS := -fno-builtin -O3 -nostdlib -ffreestanding -fno-pie -g -gdwarf-2 -Wall -Wextra -Ifirst_include -Iinclude -mno-red-zone -mcmodel=kernel
+SHARED_FLAGS := -fno-builtin -O2 -nostdlib -ffreestanding -fno-pie -g -gdwarf-2 -Wall -Wextra -Ifirst_include -Iinclude -mno-red-zone -mcmodel=kernel
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++2a -Drestrict=__restrict__
@@ -52,7 +52,7 @@ $(patsubst %.c,%.o,$(1)): $(1)
 endef
 
 define ASSEMBLED_TEMPLATE
-$(patsubst %.S,%.o,$(1)): $(1)
+$(patsubst %.S,%.o,$(1)): $(1) 32/paging.S
 	$(AS) $(ASFLAGS) -DARCHX86_64 -c $$< -o $$@
 endef
 
@@ -73,6 +73,9 @@ src/progs.cpp include/progs.h: $(PROGSRC:.cpp=.o)
 	(echo "#pragma once"; echo "#include <cstddef>") > include/progs.h
 	$(foreach fname,$^,(echo "extern const char *prog_$(patsubst progs/%.o,%,$(fname));"; echo "extern const size_t prog_$(patsubst progs/%.o,%,$(fname))_len;") >> include/progs.h)
 
+32/paging.S: 32/paging.cpp
+	$(CPP) -c -fno-asynchronous-unwind-tables -fno-exceptions -fno-rtti -S -m32 -Os -ffreestanding $< -o $@
+
 musl/lib/libc.a:
 	$(MAKE) -C musl
 
@@ -91,7 +94,7 @@ pipe: $(ISO_FILE)
 	qemu-system-x86_64 $(QEMU_MAIN) $(QEMU_EXTRA) < pipe
 
 clean:
-	rm -rf *.o **/*.o `find src -iname "*.o"` kernel iso kernel.iso
+	rm -rf *.o **/*.o `find src -iname "*.o"` kernel iso kernel.iso src/progs.cpp include/progs.h asm/paging.S
 
 destroy: clean
 	rm -rf musl/obj

@@ -12,6 +12,9 @@
 /pvs.*
 /strace_out
 /*.txt
+/asm/paging.S
+/src/progs.cpp
+/include/progs.h
 
 
 # Prerequisites

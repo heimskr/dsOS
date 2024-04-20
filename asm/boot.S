@@ -7,6 +7,7 @@
 #include "multiboot2.h"
 #include "arch/x86_64/msr.h"
 
+
 .SET HEADER_LENGTH, header_end - header_start
 .SET CHECKSUM, -(MULTIBOOT2_HEADER_MAGIC + MULTIBOOT_ARCHITECTURE_I386 + HEADER_LENGTH)
 .section .multiboot
@@ -25,16 +26,31 @@ header_end:
 
 .code32
 
+.section .rodata
+str_nfp: .asciz "No free pages!\n"
+
+.section text
+#include "../32/paging.S"
+
 .section .bss
 .comm pml4, PML4_SIZE, PML4_ALIGNMENT
 .comm low_pdpt, PDPT_SIZE, PDPT_ALIGNMENT
 .comm high_pdpt, PDPT_SIZE, PDPT_ALIGNMENT
-.comm low_page_directory_table, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_1, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_2, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_3, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_4, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_5, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_6, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_7, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_8, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_9, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
+.comm low_page_directory_table_10, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
 .comm high_page_directory_table, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
 .comm tmp_stack, KERNEL_BOOT_STACK_SIZE, KERNEL_BOOT_STACK_ALIGNMENT
 .comm multiboot_magic, 4
 .comm multiboot_data, 8
-.comm page_tables, (PAGE_TABLE_SIZE * 1024), PAGE_TABLE_ALIGNMENT
+.comm page_tables, (PAGE_TABLE_SIZE * 512 * 11), PAGE_TABLE_ALIGNMENT
 .comm __dso_handle, 8
 
 .data
@@ -67,9 +83,45 @@ _start:
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
 	movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_VIRTUAL_START) * PML4_ENTRY_SIZE)
 
-	movl $low_page_directory_table, %eax
+	movl $low_page_directory_table_1, %eax
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
 	movl %eax, low_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_2, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((1 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_3, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((2 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_4, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_5, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_6, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((1 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_7, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((2 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_8, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_9, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
+
+	movl $low_page_directory_table_10, %eax
+	or $(MMU_PRESENT | MMU_WRITABLE), %eax
+	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
 
 	movl $high_page_directory_table, %eax
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
@@ -91,7 +143,16 @@ page_directory_table_loop:
 	mul %ecx
 	addl $page_tables, %eax
 	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_1(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_2(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_3(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_4(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_5(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_6(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_7(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_8(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_9(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
+	movl %eax, low_page_directory_table_10(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 	movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
 
 	mov $0, %edi

@@ -337,7 +337,9 @@ namespace x86_64 {
 			}
 		}
 
+
 		volatile uint64_t *pt = (volatile uint64_t *) (pdt[pdt_index] & ~0xfff);
+		printf("pdt = 0x%lx, index = %u, pt = 0x%lx\n", pdt, pdt_index, pt);
 		uintptr_t assigned = 0;
 		if (!Thorn::Util::isCanonical(pt)) {
 			printf("PT (0x%lx) isn't canonical!\n", pt);

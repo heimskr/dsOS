@@ -1,11 +1,38 @@
 ENTRY(_start)
 
-/* Tell where the various sections of the object files will be put in the final kernel image. */
 SECTIONS {
 	. = 4M;
+	_kernel_physical_start = .;
 
-	/* Multiboot header and .text section. */
-	.text BLOCK(4K) : ALIGN(4K) {
+	.boottext : {
+		asm/boot.o(.multiboot)
+		asm/boot.o(.text)
+	}
+
+	.bootrodata : {
+		asm/boot.o(.rodata)
+	}
+
+	.bootdata : {
+		asm/boot.o(.data)
+		. = ALIGN(4);
+		_bitmap_start = .;
+		. += 8388608 / 512;
+		_bitmap_end = .;
+	}
+
+	.bootbss : {
+		asm/boot.o(.bss)
+		asm/boot.o(COMMON)
+	}
+
+	. = ALIGN(0x1000);
+	_boot_end = .;
+
+	. += 0xFFFFFFFF80000000;
+	_kernel_virtual_start = .;
+
+	.text : AT(_boot_end) {
 		*(.multiboot)
 		*(.text)
 		. = ALIGN(8);
@@ -14,24 +41,20 @@ SECTIONS {
 		_ctors_end = .;
 	}
 
-	/* Read-only data. */
-	.rodata BLOCK(4K) : ALIGN(4K) {
+	.rodata : ALIGN(4K) {
 		*(.rodata)
 	}
 
-	/* Read-write data (initialized) */
-	.data BLOCK(4K) : ALIGN(4K) {
+	.data : ALIGN(4K) {
 		*(.data)
 	}
 
-	/* Read-write data (uninitialized) and stack */
-	.bss BLOCK(4K) : ALIGN(4K) {
+	.bss : ALIGN(4K) {
 		*(COMMON)
-		*(.bss*)
+		*(.bss)
 	}
 
 	_kernel_virtual_end = .;
 
-	/* The multiplier is a (hopefully) temporary hack. */
-	_kernel_physical_end = (2 * (LOADADDR(.bss) + SIZEOF(.bss) + 0xFFF)) & 0xFFFFFFFFFFFFF000;
+	_kernel_physical_end = (LOADADDR (.bss) + SIZEOF (.bss) + 0xFFF) & 0xFFFFFFFFFFFFF000;
 }

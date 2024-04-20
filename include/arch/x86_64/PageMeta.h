@@ -13,7 +13,8 @@ namespace x86_64 {
 		public:
 			void *physicalStart = nullptr;
 			void *physicalMemoryMap = nullptr;
-			bool disableMemset = false, disablePresentCheck = false;
+			bool disableMemset = true;
+			bool disablePresentCheck = false;
 			bool physicalMemoryMapReady = false;
 			virtual size_t pageCount() const = 0;
 			virtual size_t pageSize() const = 0;
