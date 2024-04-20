@@ -12,7 +12,7 @@
 /pvs.*
 /strace_out
 /*.txt
-/asm/paging.S
+/32/paging.S
 /src/progs.cpp
 /include/progs.h
 

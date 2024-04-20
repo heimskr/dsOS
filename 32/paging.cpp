@@ -1,3 +1,5 @@
+#define NO_CONTROL_REGISTER_INCLUDE
+#include "../include/arch/x86_64/kernel.h"
 #include "../include/arch/x86_64/mmu.h"
 
 using uint64_t = unsigned long long;
@@ -7,18 +9,16 @@ using uint8_t  = unsigned char;
 
 using Bitmap = uint32_t;
 
-extern "C" int printf(const char *, ...);
-
-extern volatile char _kernel_physical_start;
-extern volatile Bitmap _bitmap_start;
+extern volatile char _kernel_physical_start[];
+extern volatile Bitmap _bitmap_start[];
 extern volatile Bitmap _bitmap_end;
-extern char str_nfp[];
+extern volatile uint64_t pml4[];
 
 namespace Boot {
 	constexpr static uint64_t pageSize = 2 << 20;
 
 	static inline int getPages() {
-		return 8 * (&_bitmap_end - &_bitmap_start);
+		return 8 * (&_bitmap_end - _bitmap_start);
 	}
 
 	static inline bool isPresent(uint64_t entry) {
@@ -89,7 +89,7 @@ namespace Boot {
 		}
 	}
 
-	void allocate(volatile uint64_t *pml4, uint64_t addr) {
+	void allocate(uint64_t addr) {
 		const auto pml4_index = getPML4Index(addr);
 		const auto pdpt_index = getPDPTIndex(addr);
 		const auto pdt_index  = getPDTIndex(addr);
@@ -98,7 +98,6 @@ namespace Boot {
 			if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
 				pml4[pml4_index] = addressToEntry(free_addr);
 			} else {
-				printf(str_nfp);
 				for (;;) asm("hlt");
 			}
 		}
@@ -109,7 +108,6 @@ namespace Boot {
 			if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
 			} else {
-				printf(str_nfp);
 				for (;;) asm("hlt");
 			}
 		}
@@ -120,13 +118,15 @@ namespace Boot {
 			if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
 				pdt[pdt_index] = addressToEntry(free_addr) | MMU_PDE_TWO_MB;
 			} else {
-				printf(str_nfp);
 				for (;;) asm("hlt");
 			}
 		}
 	}
 
 	extern "C" void setup_paging() {
-		printf(str_nfp);
+		for (uint64_t page = 0; page < 512 * 8; ++page) {
+			allocate((uint64_t) _kernel_physical_start + page * pageSize);
+			allocate((uint64_t) KERNEL_VIRTUAL_START + page * pageSize);
+		}
 	}
 }

@@ -74,7 +74,7 @@ src/progs.cpp include/progs.h: $(PROGSRC:.cpp=.o)
 	$(foreach fname,$^,(echo "extern const char *prog_$(patsubst progs/%.o,%,$(fname));"; echo "extern const size_t prog_$(patsubst progs/%.o,%,$(fname))_len;") >> include/progs.h)
 
 32/paging.S: 32/paging.cpp
-	$(CPP) -c -fno-asynchronous-unwind-tables -fno-exceptions -fno-rtti -S -m32 -Os -ffreestanding $< -o $@
+	$(CPP) -c -fno-asynchronous-unwind-tables -fno-exceptions -fno-rtti -S -m32 -mno-sse -Os -ffreestanding $< -o $@
 
 musl/lib/libc.a:
 	$(MAKE) -C musl
@@ -94,7 +94,7 @@ pipe: $(ISO_FILE)
 	qemu-system-x86_64 $(QEMU_MAIN) $(QEMU_EXTRA) < pipe
 
 clean:
-	rm -rf *.o **/*.o `find src -iname "*.o"` kernel iso kernel.iso src/progs.cpp include/progs.h asm/paging.S
+	rm -rf *.o **/*.o `find src -iname "*.o"` kernel iso kernel.iso src/progs.cpp include/progs.h 32/paging.S
 
 destroy: clean
 	rm -rf musl/obj

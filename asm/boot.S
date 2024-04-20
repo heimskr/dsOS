@@ -26,12 +26,6 @@ header_end:
 
 .code32
 
-.section .rodata
-str_nfp: .asciz "No free pages!\n"
-
-.section text
-#include "../32/paging.S"
-
 .section .bss
 .comm pml4, PML4_SIZE, PML4_ALIGNMENT
 .comm low_pdpt, PDPT_SIZE, PDPT_ALIGNMENT
@@ -52,6 +46,9 @@ str_nfp: .asciz "No free pages!\n"
 .comm multiboot_data, 8
 .comm page_tables, (PAGE_TABLE_SIZE * 512 * 11), PAGE_TABLE_ALIGNMENT
 .comm __dso_handle, 8
+
+.section text
+#include "../32/paging.S"
 
 .data
 .align GDT_TABLE_ALIGNMENT
@@ -75,126 +72,13 @@ _start:
 	movl %ebx, multiboot_data
 	movl $tmp_stack + KERNEL_BOOT_STACK_SIZE, %esp
 
-	movl $low_pdpt, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PML4_ENTRY_SIZE)
-
-	movl $high_pdpt, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, pml4 + (PML4_ADDR_TO_ENTRY_INDEX(KERNEL_VIRTUAL_START) * PML4_ENTRY_SIZE)
-
-	movl $low_page_directory_table_1, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_2, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((1 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_3, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((2 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_4, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_5, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_6, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((1 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_7, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((2 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_8, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_9, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $low_page_directory_table_10, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_pdpt + ((3 + PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_PHYSICAL_START)) * PDPT_ENTRY_SIZE)
-
-	movl $high_page_directory_table, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, high_pdpt + (PDPT_ADDR_TO_ENTRY_INDEX(KERNEL_VIRTUAL_START) * PDPT_ENTRY_SIZE)
-
 	# Disable PIC
 	mov $0xff, %al
 	outb %al, $0xa1
 	outb %al, $0x21
 
-	mov $0, %ecx
+	call setup_paging
 
-	movl $_kernel_physical_end, %esi
-	shrl $TWO_MEGABYTES_SHIFT, %esi
-	addl $3, %esi
-
-page_directory_table_loop:
-	movl $PAGE_TABLE_SIZE, %eax
-	mul %ecx
-	addl $page_tables, %eax
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-	movl %eax, low_page_directory_table_1(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_2(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_3(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_4(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_5(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_6(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_7(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_8(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_9(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, low_page_directory_table_10(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-	movl %eax, high_page_directory_table(, %ecx, PAGE_DIRECTORY_ENTRY_SIZE)
-
-	mov $0, %edi
-
-page_table_loop:
-	movl $FOUR_KILOBYTES, %eax
-	mul %edi
-	movl %eax, %ebx
-	movl $TWO_MEGABYTES, %eax
-	mul %ecx
-	addl %ebx, %eax
-
-	or $(MMU_PRESENT | MMU_WRITABLE), %eax
-
-	# Set edx to to 0x1000 * i + 8 * j (0x1000 * %ecx + 8 * %edi)
-	movl %ecx, %ebx
-	shll $FOUR_KILOBYTES_SHIFT, %ebx
-	movl %ebx, %edx
-	movl %edi, %ebx
-	shll $3, %ebx
-	addl %ebx, %edx
-
-	# page_tables[i * 0x1000 + j * 8] = pt_entry
-	movl %eax, page_tables(%edx)
-
-	inc %edi
-	cmp $512, %edi
-	jne page_table_loop
-
-	inc %ecx
-	cmp %esi, %ecx
-	jne page_directory_table_loop
-
-	# for (int i = 0; i != (kernel_physical_end >> 21) + 1; ++i) {
-	#     int pd_entry = (page_tables + 0x1000 * i) | MMU_PRESENT | MMU_WRITABLE;
-	#      low_page_directory_table[i * 8] = pd_entry;
-	#     high_page_directory_table[i * 8] = pd_entry;
-	#     for (int j = 0; j < 512; ++j) {
-	#         int pt_entry = ((2 << 20) * i + (4 << 10) * j) | MMU_PRESENT | MMU_WRITABLE;
-	#         page_tables[i * 0x1000 + j * 8] = pt_entry;
-	#     }
-	# }
 
 	movl $pml4, %eax
 	movl %eax, %cr3
@@ -209,6 +93,7 @@ page_table_loop:
 	or $MSR_EFER_LME, %eax
 	wrmsr
 
+	// 1: hlt; jmp 1b
 	movl $KERNEL_CR0, %eax
 	movl %eax, %cr0
 
