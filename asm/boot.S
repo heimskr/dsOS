@@ -79,7 +79,6 @@ _start:
 
 	call setup_paging
 
-
 	movl $pml4, %eax
 	movl %eax, %cr3
 
@@ -93,7 +92,6 @@ _start:
 	or $MSR_EFER_LME, %eax
 	wrmsr
 
-	// 1: hlt; jmp 1b
 	movl $KERNEL_CR0, %eax
 	movl %eax, %cr0
 
@@ -117,12 +115,12 @@ _start64:
 	movw %ax, %gs
 	movw %ax, %ss
 
-	mov $0xffffffff80e00000, %rsp
+	movq $0xffffffff80e00000, %rsp
 
 	call kernel_main
 
 	# Should never reach here
 	cli
-	hlt
 1:
+	hlt
 	jmp 1b

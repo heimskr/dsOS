@@ -6,7 +6,7 @@
 #include "Kernel.h"
 
 namespace x86_64 {
-	PageTableWrapper::PageTableWrapper(uint64_t *entries_, Type type_): entries(entries_), type(type_) {}
+	PageTableWrapper::PageTableWrapper(volatile uint64_t *entries_, Type type_): entries(entries_), type(type_) {}
 
 	void PageTableWrapper::clear() {
 		volatile auto memset_volatile = (void (* volatile)(volatile void *, int, size_t)) memset;

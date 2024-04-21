@@ -234,8 +234,8 @@ namespace Thorn {
 					if (memoryLow <= (uintptr_t) this && (uintptr_t) this < memoryHigh)
 						memoryLow = Util::upalign(((uintptr_t) this) + sizeof(Kernel), 4096);
 
-					if (memoryLow <= (uintptr_t) &high_page_directory_table && (uintptr_t) &high_page_directory_table < memoryHigh)
-						memoryLow = Util::upalign(((uintptr_t) &high_page_directory_table) + PAGE_DIRECTORY_SIZE * PAGE_DIRECTORY_ENTRY_SIZE, 4096);
+					// if (memoryLow <= (uintptr_t) &high_page_directory_table && (uintptr_t) &high_page_directory_table < memoryHigh)
+					// 	memoryLow = Util::upalign(((uintptr_t) &high_page_directory_table) + PAGE_DIRECTORY_SIZE * PAGE_DIRECTORY_ENTRY_SIZE, 4096);
 
 #ifdef DEBUG_MMAP
 					printf("mem_lower = %uKB, mem_upper = %uKB\n",
@@ -349,6 +349,6 @@ void schedule() {
 }
 
 extern "C" void kernel_main() {
-	Thorn::Kernel kernel(x86_64::PageTableWrapper(&pml4, x86_64::PageTableWrapper::Type::PML4));
+	Thorn::Kernel kernel(x86_64::PageTableWrapper(pml4, x86_64::PageTableWrapper::Type::PML4));
 	kernel.main();
 }

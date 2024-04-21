@@ -14,7 +14,7 @@ namespace x86_64 {
 			volatile uint64_t *entries = nullptr;
 			Type type{};
 
-			PageTableWrapper(uint64_t *, Type);
+			PageTableWrapper(volatile uint64_t *, Type);
 
 			void clear();
 

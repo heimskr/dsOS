@@ -10,12 +10,14 @@ using uint8_t  = unsigned char;
 using Bitmap = uint32_t;
 
 extern volatile char _kernel_physical_start[];
+extern volatile char _kernel_physical_end;
 extern volatile Bitmap _bitmap_start[];
 extern volatile Bitmap _bitmap_end;
 extern volatile uint64_t pml4[];
 
 namespace Boot {
-	constexpr static uint64_t pageSize = 2 << 20;
+	// constexpr static uint64_t pageSize = 2 << 20;
+	constexpr static uint64_t pageSize = 4096;
 
 	static inline int getPages() {
 		return 8 * (&_bitmap_end - _bitmap_start);
@@ -68,12 +70,14 @@ namespace Boot {
 		if (consecutive_count == 0)
 			return 0;
 
+		uint64_t free_start = (((uint64_t) &_kernel_physical_end) + 0xfff) & ~0xfff;
+
 		if (consecutive_count == 1) {
 			int free_index = findFree(1);
 			if (free_index == -1)
 				return 0;
 			markUsed(free_index);
-			return (uint64_t) &_kernel_physical_start + free_index * pageSize;
+			return free_start + free_index * pageSize;
 		}
 
 		int index = -1;
@@ -83,13 +87,13 @@ namespace Boot {
 				if (!isFree(index + i))
 					goto nope; // sorry
 			markUsed(index);
-			return (uint64_t) &_kernel_physical_start + index * pageSize;
+			return free_start + index * pageSize;
 			nope:
 			continue;
 		}
 	}
 
-	void allocate(uint64_t addr) {
+	void allocate2MiB(uint64_t addr) {
 		const auto pml4_index = getPML4Index(addr);
 		const auto pdpt_index = getPDPTIndex(addr);
 		const auto pdt_index  = getPDTIndex(addr);
@@ -97,6 +101,7 @@ namespace Boot {
 		if (!isPresent(pml4[pml4_index])) {
 			if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
 				pml4[pml4_index] = addressToEntry(free_addr);
+				for (int i = 0; i < 512; ++i) ((uint64_t *) free_addr)[i] = 0;
 			} else {
 				for (;;) asm("hlt");
 			}
@@ -107,6 +112,42 @@ namespace Boot {
 		if (!isPresent(pdpt[pdpt_index])) {
 			if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
+				for (int i = 0; i < 512; ++i) ((uint64_t *) free_addr)[i] = 0;
+			} else {
+				for (;;) asm("hlt");
+			}
+		}
+
+		volatile uint64_t *pdt = (volatile uint64_t *) (pdpt[pdpt_index] & ~0xfff);
+
+		if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
+			pdt[pdt_index] = addressToEntry(free_addr) | MMU_PDE_TWO_MB;
+		} else {
+			for (;;) asm("hlt");
+		}
+	}
+
+	void allocate4KiB(uint64_t addr) {
+		const auto pml4_index = getPML4Index(addr);
+		const auto pdpt_index = getPDPTIndex(addr);
+		const auto pdt_index  = getPDTIndex(addr);
+		const auto pt_index   = getPTIndex(addr);
+
+		if (!isPresent(pml4[pml4_index])) {
+			if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
+				pml4[pml4_index] = addressToEntry(free_addr);
+				for (int i = 0; i < 512; ++i) ((uint64_t *) free_addr)[i] = 0;
+			} else {
+				for (;;) asm("hlt");
+			}
+		}
+
+		volatile uint64_t *pdpt = (volatile uint64_t *) (pml4[pml4_index] & ~0xfff);
+
+		if (!isPresent(pdpt[pdpt_index])) {
+			if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
+				pdpt[pdpt_index] = addressToEntry(free_addr);
+				for (int i = 0; i < 512; ++i) ((uint64_t *) free_addr)[i] = 0;
 			} else {
 				for (;;) asm("hlt");
 			}
@@ -121,10 +162,31 @@ namespace Boot {
 				for (;;) asm("hlt");
 			}
 		}
+
+		volatile uint64_t *pt = (volatile uint64_t *) (pdt[pdt_index] & ~0xfff);
+
+		if (uint64_t free_addr = allocateFreePhysicalAddress(1)) {
+			pt[pt_index] = addressToEntry(free_addr);
+		} else {
+			for (;;) asm("hlt");
+		}
+	}
+
+	static inline void allocate(uint64_t address) {
+		static_assert(pageSize == 4096 || pageSize == 2 << 20);
+
+		if constexpr (pageSize == 4096) {
+			allocate4KiB(address);
+		} else {
+			allocate2MiB(address);
+		}
 	}
 
 	extern "C" void setup_paging() {
-		for (uint64_t page = 0; page < 512 * 8; ++page) {
+		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i)
+			pml4[i] = 0;
+
+		for (uint64_t page = 0; page < 512 * 256; ++page) {
 			allocate((uint64_t) _kernel_physical_start + page * pageSize);
 			allocate((uint64_t) KERNEL_VIRTUAL_START + page * pageSize);
 		}

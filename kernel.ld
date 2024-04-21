@@ -17,7 +17,7 @@ SECTIONS {
 		asm/boot.o(.data)
 		. = ALIGN(4);
 		_bitmap_start = .;
-		. += 8388608 / 512;
+		. += 8388608;
 		_bitmap_end = .;
 	}
 
@@ -27,7 +27,6 @@ SECTIONS {
 	}
 
 	. = ALIGN(0x1000);
-	_boot_end = .;
 
 	. += 0xFFFFFFFF80000000;
 	_kernel_virtual_start = .;
