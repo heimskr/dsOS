@@ -105,8 +105,8 @@ _start:
 .global _start64
 .type _start64, @function
 _start64:
-	// Setup segment selectors
-	movw $0, %ax
+	// Set up segment selectors
+	xor %rax, %rax
 	movw %ax, %ds
 	movw %ax, %es
 	movw %ax, %fs
@@ -114,9 +114,9 @@ _start64:
 	movw %ax, %ss
 
 	movabs $_kernel_virtual_end, %rsp
+	movq %rsp, %rbp
 
-
-	call kernel_main
+	callq kernel_main
 
 	// Should never reach here
 	cli

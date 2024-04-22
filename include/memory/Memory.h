@@ -86,6 +86,7 @@ namespace std {
 			inline void * operator new(size_t size)   throw() { return malloc(size); }
 			inline void * operator new(size_t size, const std::nothrow_t &)   throw() { return malloc(size); }
 			inline void * operator new[](size_t size) throw() { return malloc(size); }
+			inline void * operator new(size_t size, std::align_val_t align) throw() { return malloc(size, size_t(align)); }
 			inline void * operator new(size_t size, std::align_val_t &align, const std::nothrow_t &) noexcept { return malloc(size, size_t(align)); }
 			inline void * operator new(size_t, void *ptr)   throw() { return ptr; }
 			inline void * operator new[](size_t, void *ptr) throw() { return ptr; }
@@ -95,6 +96,7 @@ namespace std {
 			inline void operator delete[](void *, void *) throw() {}
 			inline void operator delete(void *, unsigned long)   throw() {}
 			inline void operator delete[](void *, unsigned long) throw() {}
+			inline void operator delete(void *, unsigned long, std::align_val_t) noexcept {}
 		#else
 			inline void * operator new(size_t size)   { return malloc(size); }
 			inline void * operator new[](size_t size) { return malloc(size); }
@@ -107,6 +109,7 @@ namespace std {
 			inline void operator delete[](void *, void *) noexcept {}
 			inline void operator delete(void *, unsigned long)   noexcept {}
 			inline void operator delete[](void *, unsigned long) noexcept {}
+			inline void operator delete(void *, unsigned long, std::align_val_t) noexcept {}
 		#endif
 	#endif
 #endif

@@ -195,7 +195,8 @@ namespace Boot {
 			allocate(((uint64_t) _kernel_physical_start & ~(pageSize - 1)) + page * pageSize);
 			// allocate((uint64_t) (0x7ffffffff000 & ~(pageSize - 1)) - page * pageSize);
 			// allocate((uint64_t) KERNEL_VIRTUAL_START + page * pageSize);
-			allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (((uint64_t) &_kernel_physical_end + pageSize - 1) & ~(pageSize - 1)) + page * pageSize);
+			// allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (((uint64_t) &_kernel_physical_end + pageSize - 1) & ~(pageSize - 1)) + page * pageSize);
+			allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (uint64_t) _kernel_physical_start + page * pageSize);
 		}
 	}
 }
