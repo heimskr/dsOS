@@ -1,12 +1,11 @@
 /kernel
 /iso
-/kernel.iso
+/kernel.*
 /.dep
 /.metals
 /.vscode
 /lib/*.a
 /*.img
-/serial.txt
 .DS_Store
 ._.DS_Store
 /pvs.*

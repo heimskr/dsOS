@@ -1,12 +1,12 @@
 #ifndef KERNEL_CORE_H_
 #define KERNEL_CORE_H_
 
-#include <arch/x86_64/kernel.h>
+#include "arch/x86_64/kernel.h"
 
 #define KERNEL_BOOT_STACK_SIZE 0x4000
 #define KERNEL_BOOT_STACK_ALIGNMENT 0x1000
 
-#define THORN_PAGE_SIZE 4096
+#define THORN_PAGE_SIZE (2 << 20)
 
 #ifndef __ASSEMBLER__
 #include <stdint.h>

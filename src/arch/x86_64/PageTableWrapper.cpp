@@ -6,7 +6,8 @@
 #include "Kernel.h"
 
 namespace x86_64 {
-	PageTableWrapper::PageTableWrapper(volatile uint64_t *entries_, Type type_): entries(entries_), type(type_) {}
+	PageTableWrapper::PageTableWrapper(volatile uint64_t *entries_, Type type_):
+		entries(entries_), type(type_) {}
 
 	void PageTableWrapper::clear() {
 		volatile auto memset_volatile = (void (* volatile)(volatile void *, int, size_t)) memset;
@@ -168,8 +169,7 @@ namespace x86_64 {
 		return getPDE(pml4_index, pdpt_index, pdt_index) & 0xfff;
 	}
 
-	uint16_t PageTableWrapper::getPTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
-	                              uint16_t pt_index) const {
+	uint16_t PageTableWrapper::getPTMeta(uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index) const {
 		return getPTE(pml4_index, pdpt_index, pdt_index, pt_index) & 0xfff;
 	}
 }

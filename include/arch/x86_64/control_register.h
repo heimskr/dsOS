@@ -12,7 +12,7 @@
 #define CONTROL_REGISTER4_OSXMMEXCPT (1 << 10)
 
 #ifndef __ASSEMBLER__
-#include <cstdint>
+#include <stdint.h>
 namespace x86_64 {
 	uint64_t getCR0();
 	/** This will cause a #UD exception. */

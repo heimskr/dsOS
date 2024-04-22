@@ -44,7 +44,6 @@ header_end:
 .comm tmp_stack, KERNEL_BOOT_STACK_SIZE, KERNEL_BOOT_STACK_ALIGNMENT
 .comm multiboot_magic, 4
 .comm multiboot_data, 8
-.comm page_tables, (PAGE_TABLE_SIZE * 512 * 11), PAGE_TABLE_ALIGNMENT
 .comm __dso_handle, 8
 
 .section text
@@ -72,7 +71,7 @@ _start:
 	movl %ebx, multiboot_data
 	movl $tmp_stack + KERNEL_BOOT_STACK_SIZE, %esp
 
-	# Disable PIC
+	// PIC
 	mov $0xff, %al
 	outb %al, $0xa1
 	outb %al, $0x21
@@ -85,8 +84,7 @@ _start:
 	movl $KERNEL_CR4, %eax
 	movl %eax, %cr4
 
-
-	# Set the long mode enable bit in the EFER.
+	// Set the long mode enable bit in the EFER.
 	movl $MSR_EFER, %ecx
 	rdmsr
 	or $MSR_EFER_LME, %eax
@@ -107,7 +105,7 @@ _start:
 .global _start64
 .type _start64, @function
 _start64:
-	# Setup segment selectors
+	// Setup segment selectors
 	movw $0, %ax
 	movw %ax, %ds
 	movw %ax, %es
@@ -115,11 +113,12 @@ _start64:
 	movw %ax, %gs
 	movw %ax, %ss
 
-	movq $0xffffffff80e00000, %rsp
+	movabs $_kernel_virtual_end, %rsp
+
 
 	call kernel_main
 
-	# Should never reach here
+	// Should never reach here
 	cli
 1:
 	hlt

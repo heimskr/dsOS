@@ -7,6 +7,7 @@ SECTIONS {
 	.boottext : {
 		asm/boot.o(.multiboot)
 		asm/boot.o(.text)
+		/* src/init.o(.text) */
 	}
 
 	.bootrodata : {
@@ -15,10 +16,6 @@ SECTIONS {
 
 	.bootdata : {
 		asm/boot.o(.data)
-		. = ALIGN(4);
-		_bitmap_start = .;
-		. += 8388608;
-		_bitmap_end = .;
 	}
 
 	.bootbss : {
@@ -26,7 +23,13 @@ SECTIONS {
 		asm/boot.o(COMMON)
 	}
 
+	. = ALIGN(8);
+	_bitmap_start = .;
+	. += 8388608;
+	_bitmap_end = .;
+
 	. = ALIGN(0x1000);
+	_boot_end = .;
 
 	. += 0xFFFFFFFF80000000;
 	_kernel_virtual_start = .;
@@ -34,24 +37,35 @@ SECTIONS {
 	.text : AT(_boot_end) {
 		*(.multiboot)
 		*(.text)
+		*(.text.*)
 		. = ALIGN(8);
 		_ctors_start = .;
 		KEEP(*(.init_array .ctors))
 		_ctors_end = .;
 	}
 
-	.rodata : ALIGN(4K) {
+	. = ALIGN(0x1000);
+
+	.rodata : AT ( (LOADADDR (.text) + SIZEOF (.text) + 0xFFF) & 0xFFFFFFFFFFFFF000 ) {
 		*(.rodata)
+		*(.rodata.*)
 	}
 
-	.data : ALIGN(4K) {
+	. = ALIGN(0x1000);
+
+	.data : AT ( (LOADADDR (.rodata) + SIZEOF (.rodata) + 0xFFF) & 0xFFFFFFFFFFFFF000 ) {
 		*(.data)
 	}
 
-	.bss : ALIGN(4K) {
+	. = ALIGN(0x1000);
+
+	.bss : AT ( (LOADADDR (.data) + SIZEOF (.data) + 0xFFF) & 0xFFFFFFFFFFFFF000 ) {
 		*(COMMON)
 		*(.bss)
 	}
+
+	. += (10 << 20);
+	. = ALIGN(0x1000);
 
 	_kernel_virtual_end = .;
 
