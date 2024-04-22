@@ -100,13 +100,12 @@ _start64:
 	movw %ax, %gs
 	movw %ax, %ss
 
-	movabs $_kernel_virtual_end, %rsp
+	movabs $0xfffffffffffff000, %rsp
 	movq %rsp, %rbp
 
 	callq kernel_main
 
 	// Should never reach here
 	cli
-1:
-	hlt
-	jmp 1b
+
+	1: hlt; jmp 1b

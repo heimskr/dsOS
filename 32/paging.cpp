@@ -7,13 +7,11 @@ using Bitmap = uint32_t;
 
 extern volatile char _kernel_physical_start[];
 extern volatile char _kernel_physical_end;
-extern volatile char _boot_end;
 extern volatile Bitmap _bitmap_start[];
 extern volatile Bitmap _bitmap_end;
 extern volatile uint64_t pml4[];
 
 namespace Boot {
-	// constexpr static uint64_t pageSize = 2 << 20;
 	constexpr static uint64_t pageSize = THORN_PAGE_SIZE;
 
 	static inline int getPages() {
@@ -116,12 +114,7 @@ namespace Boot {
 		}
 
 		volatile uint64_t *pdt = (volatile uint64_t *) (pdpt[pdpt_index] & ~0xfff);
-
 		pdt[pdt_index] = addressToEntry(phys) | MMU_PDE_TWO_MB;
-
-		if (pdt[pdt_index] & 0b111101100000) {
-			// asm("movl %0, %%eax; movl %1, %%ebx; movl %2, %%ecx; movl %3, %%edx; 1: hlt; jmp 1b" :: "r"((uint32_t) phys), "r"((uint32_t) (phys >> 32)), "r"((uint32_t) pdt[pdt_index]), "r"((uint32_t) (pdt[pdt_index] >> 32)));
-		}
 	}
 
 	void allocate4KiB(uint64_t virt, uint64_t phys) {
@@ -163,12 +156,6 @@ namespace Boot {
 
 		volatile uint64_t *pt = (volatile uint64_t *) (pdt[pdt_index] & ~0xfff);
 		pt[pt_index] = addressToEntry(phys);
-
-		if (pt[pt_index] & 0b111101100000) {
-			for (;;) asm("hlt");
-		}
-
-		// asm("movq %0, %rax; movq %1, %rbx; 1: hlt; jmp 1b" :: "r"(phys), "r"(pt[pt_index]));
 	}
 
 	static inline void allocate(uint64_t virt, uint64_t phys) {
@@ -186,19 +173,12 @@ namespace Boot {
 	}
 
 	extern "C" void setup_paging() {
-		for (int i = 0; i < PML4_SIZE / PML4_ENTRY_SIZE; ++i)
-			pml4[i] = 0;
-
-		// for (volatile uint64_t i = 0; i < 10'000'000'000; ++i); // Wait for GDB to attach
-
 		for (uint64_t page = 0; page < 512 * (pageSize == 4096? 512 : 1); ++page) {
 			allocate(page * pageSize);
-			// allocate(((uint64_t) &_kernel_physical_start & ~(pageSize - 1)) + page * pageSize);
-			// allocate((uint64_t) (0x7ffffffff000 & ~(pageSize - 1)) - page * pageSize);
-			// allocate((uint64_t) KERNEL_VIRTUAL_START + page * pageSize);
-			// allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (((uint64_t) &_kernel_physical_end + pageSize - 1) & ~(pageSize - 1)) + page * pageSize);
-			// allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (uint64_t) _kernel_physical_start + page * pageSize);
-			// allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (uint64_t) &_boot_end + page * pageSize);
+		}
+
+		for (uint64_t page = 0; page < 1 * (pageSize == 4096? 512 : 1); ++page) {
+			allocate(0xfffffffffffff000 - page * pageSize, allocateFreePhysicalAddress(1));
 		}
 	}
 }
