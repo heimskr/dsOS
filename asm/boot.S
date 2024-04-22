@@ -28,19 +28,6 @@ header_end:
 
 .section .bss
 .comm pml4, PML4_SIZE, PML4_ALIGNMENT
-.comm low_pdpt, PDPT_SIZE, PDPT_ALIGNMENT
-.comm high_pdpt, PDPT_SIZE, PDPT_ALIGNMENT
-.comm low_page_directory_table_1, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_2, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_3, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_4, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_5, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_6, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_7, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_8, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_9, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm low_page_directory_table_10, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
-.comm high_page_directory_table, PAGE_DIRECTORY_SIZE, PAGE_DIRECTORY_ALIGNMENT
 .comm tmp_stack, KERNEL_BOOT_STACK_SIZE, KERNEL_BOOT_STACK_ALIGNMENT
 .comm multiboot_magic, 4
 .comm multiboot_data, 8

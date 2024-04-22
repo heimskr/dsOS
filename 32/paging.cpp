@@ -7,6 +7,7 @@ using Bitmap = uint32_t;
 
 extern volatile char _kernel_physical_start[];
 extern volatile char _kernel_physical_end;
+extern volatile char _boot_end;
 extern volatile Bitmap _bitmap_start[];
 extern volatile Bitmap _bitmap_end;
 extern volatile uint64_t pml4[];
@@ -191,12 +192,13 @@ namespace Boot {
 		// for (volatile uint64_t i = 0; i < 10'000'000'000; ++i); // Wait for GDB to attach
 
 		for (uint64_t page = 0; page < 512 * (pageSize == 4096? 512 : 1); ++page) {
-			// allocate(page * pageSize);
-			allocate(((uint64_t) _kernel_physical_start & ~(pageSize - 1)) + page * pageSize);
+			allocate(page * pageSize);
+			// allocate(((uint64_t) &_kernel_physical_start & ~(pageSize - 1)) + page * pageSize);
 			// allocate((uint64_t) (0x7ffffffff000 & ~(pageSize - 1)) - page * pageSize);
 			// allocate((uint64_t) KERNEL_VIRTUAL_START + page * pageSize);
 			// allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (((uint64_t) &_kernel_physical_end + pageSize - 1) & ~(pageSize - 1)) + page * pageSize);
-			allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (uint64_t) _kernel_physical_start + page * pageSize);
+			// allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (uint64_t) _kernel_physical_start + page * pageSize);
+			// allocate((uint64_t) 0xffffffff80000000 + page * pageSize, (uint64_t) &_boot_end + page * pageSize);
 		}
 	}
 }
