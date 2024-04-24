@@ -30,8 +30,8 @@ namespace Thorn::AHCI {
 		{
 			Lock<Mutex> pager_lock;
 			auto &pager = kernel.getPager(pager_lock);
-			pager.identityMap(kernel.kernelPML4, abar, MMU_CACHE_DISABLED);
-			pager.identityMap(kernel.kernelPML4, (char *) abar + 0x1000, MMU_CACHE_DISABLED);
+			pager.identityMap(kernel.kernelPML4, uintptr_t(abar), MMU_CACHE_DISABLED);
+			pager.identityMap(kernel.kernelPML4, uintptr_t(abar) + 0x1000, MMU_CACHE_DISABLED);
 		}
 
 		printf("cap=%x cap2=%x", abar->cap, abar->cap2);
@@ -234,16 +234,16 @@ namespace Thorn::AHCI {
 		auto &pager = Kernel::instance->getPager(pager_lock);
 		auto &wrapper = Kernel::instance->kernelPML4;
 
-		void *addr = pager.allocateFreePhysicalAddress();
+		uintptr_t addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
-		memset(addr, 0, 4096);
+		memset((void *) addr, 0, 4096);
 
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 
 		setFB(addr);
-		memset(addr, 0, 4096);
+		memset((void *) addr, 0, 4096);
 
 		commandList = (HBACommandHeader *) getCLB();
 		memset(commandList, 0, sizeof(HBACommandHeader));
@@ -264,7 +264,7 @@ namespace Thorn::AHCI {
 			commandList[i].ctba = (uintptr_t) addr & 0xffffffff;
 			commandList[i].ctbau = (uintptr_t) addr >> 32;
 			commandTables[i] = (HBACommandTable *) addr;
-			memset(addr, 0, 4096);
+			memset((void *) addr, 0, 4096);
 		}
 
 		pager_lock.unlock();
@@ -326,7 +326,9 @@ namespace Thorn::AHCI {
 		pager_lock.lock();
 
 		for (unsigned i = 0; i < 8; ++i) {
-			pager.identityMap(wrapper, physicalBuffers[i] = pager.allocateFreePhysicalAddress());
+			uintptr_t addr = pager.allocateFreePhysicalAddress();
+			physicalBuffers[i] = (void *) addr;
+			pager.identityMap(wrapper, addr);
 			// buffers[i] = Memory::KernelAllocate4KPages(1);
 			// Memory::KernelMapVirtualMemory4K(physBuffers[i], (uintptr_t)buffers[i], 1);
 		}
@@ -377,10 +379,10 @@ namespace Thorn::AHCI {
 			printf("Freeing CLB: 0x%lx :: %d\n", getCLB(), pager.freeEntry(wrapper, getCLB()));
 			pager.freeEntry(wrapper, getCLB());
 		}
-		void *addr = pager.allocateFreePhysicalAddress();
+		uintptr_t addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		setCLB(addr);
-		memset(addr, 0, 1024);
+		memset((void *) addr, 0, 1024);
 
 		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 
@@ -391,7 +393,7 @@ namespace Thorn::AHCI {
 		addr = pager.allocateFreePhysicalAddress();
 		pager.identityMap(wrapper, addr, MMU_CACHE_DISABLED);
 		setFB(addr);
-		memset(addr, 0, 256);
+		memset((void *) addr, 0, 256);
 
 		printf("[%s:%d] tfd: %u / %b\n", __FILE__, __LINE__, registers->tfd, registers->tfd);
 
@@ -449,22 +451,22 @@ namespace Thorn::AHCI {
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
 	}
 
-	void Port::setCLB(void *address) {
+	void Port::setCLB(uintptr_t address) {
 		registers->clb  = reinterpret_cast<uintptr_t>(address) & 0xffffffff;
 		registers->clbu = reinterpret_cast<uintptr_t>(address) >> 32;
 	}
 
-	void * Port::getCLB() const {
-		return (void *) (static_cast<uintptr_t>(registers->clb) | (static_cast<uintptr_t>(registers->clbu) << 32));
+	uintptr_t Port::getCLB() const {
+		return static_cast<uintptr_t>(registers->clb) | (static_cast<uintptr_t>(registers->clbu) << 32);
 	}
 
-	void Port::setFB(void *address) {
+	void Port::setFB(uintptr_t address) {
 		registers->fb  = reinterpret_cast<uintptr_t>(address) & 0xffffffff;
 		registers->fbu = reinterpret_cast<uintptr_t>(address) >> 32;
 	}
 
-	void * Port::getFB() const {
-		return (void *) (static_cast<uintptr_t>(registers->fb) | (static_cast<uintptr_t>(registers->fbu) << 32));
+	uintptr_t Port::getFB() const {
+		return static_cast<uintptr_t>(registers->fb) | (static_cast<uintptr_t>(registers->fbu) << 32);
 	}
 
 	Port::AccessStatus Port::access(uint64_t lba, uint32_t count, void *buffer, bool write) {

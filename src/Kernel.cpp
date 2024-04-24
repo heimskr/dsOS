@@ -36,10 +36,14 @@
 #include "arch/x86_64/Interrupts.h"
 #include "arch/x86_64/PIC.h"
 
-extern volatile void *multiboot_data;
-extern volatile unsigned int multiboot_magic;
-
-extern void *tmp_stack;
+extern volatile uint32_t multiboot_magic;
+extern volatile uint64_t multiboot_data;
+extern volatile uint64_t _bitmap_start[];
+extern volatile uint64_t memory_low;
+extern volatile uint64_t memory_high;
+extern volatile uint64_t physical_memory_map;
+extern volatile char _kernel_physical_end;
+bool physical_memory_map_ready = false;
 
 #define DEBUG_MMAP
 
@@ -55,7 +59,7 @@ namespace Thorn {
 	Kernel::Kernel(const x86_64::PageTableWrapper &pml4_): kernelPML4(pml4_) {
 		if (Kernel::instance) {
 			printf("Kernel instantiated twice!\n");
-			for (;;);
+			for (;;) asm("hlt");
 		} else
 			Kernel::instance = this;
 	}
@@ -66,34 +70,35 @@ namespace Thorn {
 
 	void Kernel::main() {
 		Terminal::clear();
-		Terminal::write("Hello, kernel world!\n");
+		Terminal::write("Hello, world!\n");
 		if (Serial::init())
 			Serial::write("\n\n\n");
 		x86_64::IDT::init();
 		detectMemory();
 		HELLO;
 		arrangeMemory();
+		physical_memory_map_ready = true;
 		HELLO;
 		initPageDescriptors();
 		HELLO;
 
 		// These three lines are incredibly janky. Fixing them is important.
-		constexpr uintptr_t bitmap_base = 0x2000000ul;
-		constexpr uintptr_t physical_start = (bitmap_base + (1ul << 23)) & ~0xfff; // 8 MiB is enough to map 256 GiB.
+		const uintptr_t bitmap_base = (uintptr_t) &_bitmap_start;
+		const uintptr_t physical_end =  (uintptr_t) &_kernel_physical_end;
 
 		{
 			Lock<Mutex> lock;
 			auto &pager = lockedPager.get(lock);
-			printf("Initializing pager\n");
-			pager = x86_64::PageMeta4K((void *) physical_start, (void *) bitmap_base, (memoryHigh - physical_start) / 4096);
+			printf("Initializing pager. pml4 is at 0x%lx.\n", kernelPML4.entries);
+			pager = x86_64::PageMeta4K((void *) physical_end, (void *) bitmap_base, (memory_high - physical_end) / 4096);
 
-			printf("physical_start = 0x%lx\n", physical_start);
+			printf("physical_end = 0x%lx\n", physical_end);
 
-			pager.assignSelf(kernelPML4);
-			pager.clear();
+			// pager.assignSelf(kernelPML4);
+			// pager.clear();
 		}
 
-		kernelPML4.print(false, false);
+		// kernelPML4.print(false, false);
 
 		initPhysicalMemoryMap();
 
@@ -101,7 +106,7 @@ namespace Thorn {
 
 		memory.setBounds((char *) 0xfffff00000000000ul, (char *) Util::downalign((uintptr_t) physicalMemoryMap - 4096, 4096));
 
-		printf("Memory: 0x%lx through 0x%lx\n", memoryLow, memoryHigh);
+		printf("Memory: 0x%lx through 0x%lx\n", memory_low, memory_high);
 		printf("Core count: %d\n", x86_64::coreCount());
 
 		// Initialize global variables.
@@ -205,7 +210,7 @@ namespace Thorn {
 
 	void Kernel::detectMemory() {
 		struct multiboot_tag *tag;
-		unsigned long addr = (unsigned long) &multiboot_data;
+		uintptr_t addr = (uintptr_t) multiboot_data;
 
 		if (multiboot_magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
 			printf("Invalid magic number: %d\n", (unsigned) multiboot_magic);
@@ -219,6 +224,10 @@ namespace Thorn {
 
 		printf("\e[32mtag = 0x%lx\e[39m\n", addr + 8);
 
+		// If the kernel is in the memory space given by multiboot, increase memory_low to just past it.
+		if (memory_low <= (uintptr_t) this && (uintptr_t) this < memory_high)
+			memory_low = Util::upalign(((uintptr_t) this) + sizeof(Kernel), 4096);
+
 		for (tag = (multiboot_tag *) (addr + 8);
 		     tag->type != MULTIBOOT_TAG_TYPE_END;
 		     tag = (multiboot_tag *) ((multiboot_uint8_t *) tag + ((tag->size + 7) & ~7))) {
@@ -226,23 +235,6 @@ namespace Thorn {
 			printf("\e[33mtag = 0x%lx\e[39m\n", tag);
 
 			switch (tag->type) {
-				case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
-					memoryLow  = ((multiboot_tag_basic_meminfo *) tag)->mem_lower * 1024;
-					memoryHigh = ((multiboot_tag_basic_meminfo *) tag)->mem_upper * 1024;
-
-					// If the kernel is in the memory space given by multiboot, increase memoryLow to just past it.
-					if (memoryLow <= (uintptr_t) this && (uintptr_t) this < memoryHigh)
-						memoryLow = Util::upalign(((uintptr_t) this) + sizeof(Kernel), 4096);
-
-					// if (memoryLow <= (uintptr_t) &high_page_directory_table && (uintptr_t) &high_page_directory_table < memoryHigh)
-					// 	memoryLow = Util::upalign(((uintptr_t) &high_page_directory_table) + PAGE_DIRECTORY_SIZE * PAGE_DIRECTORY_ENTRY_SIZE, 4096);
-
-#ifdef DEBUG_MMAP
-					printf("mem_lower = %uKB, mem_upper = %uKB\n",
-						((multiboot_tag_basic_meminfo *) tag)->mem_lower,
-						((multiboot_tag_basic_meminfo *) tag)->mem_upper);
-#endif
-					break;
 #ifdef DEBUG_MMAP
 				case MULTIBOOT_TAG_TYPE_MMAP: {
 					multiboot_memory_map_t *mmap;
@@ -263,14 +255,17 @@ namespace Thorn {
 	}
 
 	void Kernel::arrangeMemory() {
-		pageDescriptors = (char *) memoryLow;
-		pagesLength = Util::downalign((memoryHigh - memoryLow) * 4096 / 4097, 4096);
-		pagesStart = (void *) Util::downalign((uintptr_t) ((char *) memoryHigh - pagesLength), 4096);
-		pageDescriptorsLength = (uintptr_t) pagesStart - memoryLow;
+		pageDescriptors = (char *) memory_low;
+		pagesLength = Util::downalign((memory_high - memory_low) * 4096 / 4097, 4096);
+		pagesStart = (void *) Util::downalign((uintptr_t) ((char *) memory_high - pagesLength), 4096);
+		pageDescriptorsLength = (uintptr_t) pagesStart - memory_low;
 	}
 
 	void Kernel::initPhysicalMemoryMap() {
-		physicalMemoryMap = (void *) Util::downalign((0xfffffffffffff000ul - memoryHigh), 4096);
+		printf("memory_low  = 0x%lx\n", memory_low);
+		printf("memory_high = 0x%lx\n", memory_high);
+		// physicalMemoryMap = (void *) Util::downalign((0xfffffffffffff000ul - 1 * 512 * 4096 - memory_high), 4096);
+		physicalMemoryMap = physical_memory_map;
 		printf("physicalMemoryMap = 0x%lx\n", physicalMemoryMap);
 		printf("Mapping all physical memory...\n");
 		Lock<Mutex> pager_lock;
@@ -280,10 +275,8 @@ namespace Thorn {
 		pager.disableMemset = true;
 		pager.disablePresentCheck = false;
 		pager.physicalMemoryMap = physicalMemoryMap;
-		for (uintptr_t i = 0x1000000; i <= memoryHigh; i += 4096)
-			pager.assignAddress(kernelPML4, (char *) physicalMemoryMap + i, (void *) i);
-		for (uintptr_t i = 0; i < 0x1000000; i += 4096)
-			pager.assignAddress(kernelPML4, (char *) physicalMemoryMap + i, (void *) i);
+		// for (uintptr_t i = 0; i <= memory_high; i += 4096)
+		// 	pager.assignAddress(kernelPML4, (char *) physicalMemoryMap + i, (void *) i);
 		pager.disableMemset = old_disable_memset;
 		pager.disablePresentCheck = old_disable_present_check;
 		pager.physicalMemoryMapReady = true;
@@ -346,4 +339,9 @@ void schedule() {
 		Thorn::Kernel::perish();
 	}
 	Thorn::Kernel::instance->schedule();
+}
+
+extern "C" void kernel_main() {
+	Thorn::Kernel kernel(x86_64::PageTableWrapper(pml4, x86_64::PageTableWrapper::Type::PML4));
+	kernel.main();
 }

@@ -35,7 +35,5 @@ SECTIONS {
 	_bitmap_end = .;
 
 	. = ALIGN(0x1000);
-	_boot_end = .;
-
-	_kernel_physical_end = (LOADADDR (.bss) + SIZEOF (.bss) + 0xFFF) & 0xFFFFFFFFFFFFF000;
+	_kernel_physical_end = .;
 }

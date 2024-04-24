@@ -383,10 +383,10 @@ namespace Thorn::AHCI {
 			void rebase();
 			void start();
 			void stop();
-			void setCLB(void *);
-			void * getCLB() const;
-			void setFB(void *);
-			void * getFB() const;
+			void setCLB(uintptr_t);
+			uintptr_t getCLB() const;
+			void setFB(uintptr_t);
+			uintptr_t getFB() const;
 			AccessStatus access(uint64_t lba, uint32_t count, void *buffer, bool write);
 			AccessStatus read(uint64_t lba, uint32_t count, void *buffer);
 			AccessStatus readBytes(size_t count, size_t offset, void *buffer);

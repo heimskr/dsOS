@@ -31,6 +31,9 @@ header_end:
 .comm tmp_stack, KERNEL_BOOT_STACK_SIZE, KERNEL_BOOT_STACK_ALIGNMENT
 .comm multiboot_magic, 4
 .comm multiboot_data, 8
+.comm memory_low, 8
+.comm memory_high, 8
+.comm physical_memory_map, 8
 .comm __dso_handle, 8
 
 .section text

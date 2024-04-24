@@ -5,7 +5,7 @@
 CC           := x86_64-elf-gcc
 CPP          := x86_64-elf-g++
 AS           := x86_64-elf-g++
-SHARED_FLAGS := -fno-builtin -O2 -nostdlib -fno-asynchronous-unwind-tables -ffreestanding -fno-pie -g -gdwarf-2 -Wall -Wextra -Ifirst_include -Iinclude -mno-red-zone -mcmodel=kernel
+SHARED_FLAGS := -fno-builtin -O1 -nostdlib -fno-asynchronous-unwind-tables -ffreestanding -fno-pie -g -gdwarf-2 -Wall -Wextra -Ifirst_include -Iinclude -mno-red-zone -mcmodel=kernel
 CPPCFLAGS    := $(SHARED_FLAGS) -I./include/lib -I./musl/arch/x86_64 -I./musl/arch/generic -I./musl/obj/src/internal -I./musl/src/include -I./musl/src/internal -I./musl/obj/include -I./musl/include -D_GNU_SOURCE
 CFLAGS       := $(CPPCFLAGS) -std=c11
 CPPFLAGS     := $(CPPCFLAGS) -Iinclude/lib/libcxx -fno-exceptions -fno-rtti -std=c++2a -Drestrict=__restrict__
@@ -16,12 +16,11 @@ QEMU_MAIN    ?= -s -drive file=$(ISO_FILE),if=none,media=cdrom,format=raw,id=dri
 QEMU_EXTRA   ?= -drive id=disk,file=disk.img,if=none,format=raw -device ide-hd,drive=disk,bus=ahci.0
 # QEMU_EXTRA   ?= -drive format=raw,file=disk.img
 
-QEMU_EXTRA   := $(QEMU_EXTRA) -no-reboot -no-shutdown -d cpu_reset,int
+# QEMU_EXTRA   := $(QEMU_EXTRA) -no-reboot -no-shutdown -d cpu_reset,int
 # QEMU_EXTRA   := $(QEMU_EXTRA) -no-shutdown -d int
 # QEMU_EXTRA   := $(QEMU_EXTRA) -device qemu-xhci -device usb-kbd
 # QEMU_EXTRA   := $(QEMU_EXTRA) -device usb-mouse
-# QEMU_EXTRA   := $(QEMU_EXTRA) -enable-kvm
-# QEMU_EXTRA   := $(QEMU_EXTRA) -cpu host -smp cpus=1,cores=12,maxcpus=12
+# QEMU_EXTRA   := $(QEMU_EXTRA) -enable-kvm -cpu host -smp cpus=1,cores=12,maxcpus=12
 # QEMU_EXTRA   := $(QEMU_EXTRA) -M accel=tcg
 # QEMU_EXTRA   := $(QEMU_EXTRA) -machine q35,kernel-irqchip=split,accel=kvm
 # QEMU_EXTRA   := $(QEMU_EXTRA) -S

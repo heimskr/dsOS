@@ -1,7 +1,7 @@
 #include "arch/x86_64/kernel.h"
 #include "arch/x86_64/mmu.h"
 #include "kernel_core.h"
-
+#include "multiboot2.h"
 
 using Bitmap = uint32_t;
 
@@ -10,6 +10,11 @@ extern volatile char _kernel_physical_end;
 extern volatile Bitmap _bitmap_start[];
 extern volatile Bitmap _bitmap_end;
 extern volatile uint64_t pml4[];
+extern volatile uint32_t multiboot_magic;
+extern volatile uint64_t multiboot_data;
+extern volatile uint64_t memory_low;
+extern volatile uint64_t memory_high;
+extern volatile uint64_t physical_memory_map;
 
 namespace Boot {
 	constexpr static uint64_t pageSize = THORN_PAGE_SIZE;
@@ -172,12 +177,46 @@ namespace Boot {
 		allocate(virt, virt);
 	}
 
+	static void detectMemory() {
+		struct multiboot_tag *tag;
+		uint64_t addr = multiboot_data;
+
+		if (multiboot_magic != MULTIBOOT2_BOOTLOADER_MAGIC) {
+			for (;;) asm("hlt");
+		}
+
+		if (addr & 7) {
+			for (;;) asm("hlt");
+		}
+
+		for (tag = (multiboot_tag *) (addr + 8);
+		     tag->type != MULTIBOOT_TAG_TYPE_END;
+		     tag = (multiboot_tag *) ((multiboot_uint8_t *) tag + ((tag->size + 7) & ~7))) {
+			switch (tag->type) {
+				case MULTIBOOT_TAG_TYPE_BASIC_MEMINFO:
+					memory_low  = ((multiboot_tag_basic_meminfo *) tag)->mem_lower * 1024;
+					memory_high = ((multiboot_tag_basic_meminfo *) tag)->mem_upper * 1024;
+					break;
+			}
+		}
+	}
+
 	extern "C" void setup_paging() {
 		for (uint64_t page = 0; page < 512 * (pageSize == 4096? 512 : 1); ++page) {
 			allocate(page * pageSize);
 		}
 
-		for (uint64_t page = 0; page < 1 * (pageSize == 4096? 512 : 1); ++page) {
+		detectMemory();
+
+		constexpr uint64_t stack_pages = 1 * (pageSize == 4096? 512 : 1);
+
+		physical_memory_map = (0xfffffffffffff000ull - stack_pages * pageSize - memory_high) & ~0xfff;
+
+		for (uint64_t i = 0; i <= memory_high; i += 4096)
+			allocate(physical_memory_map + i, i);
+
+		// Allocate space for kernel stack
+		for (uint64_t page = 0; page < stack_pages; ++page) {
 			allocate(0xfffffffffffff000 - page * pageSize, allocateFreePhysicalAddress(1));
 		}
 	}

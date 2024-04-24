@@ -7,7 +7,7 @@
 #include "lib/printf.h"
 #include "Kernel.h"
 
-volatile uint32_t *apic_base;
+volatile uint32_t *apic_base = nullptr;
 
 static bool timer_calibrated = false;
 static bool waiting = true;
@@ -18,14 +18,14 @@ namespace x86_64::APIC {
 	void init(Thorn::Kernel &kernel) {
 		timer_calibrated = false;
 		lastTPS = 0;
-		printf("Initializing APIC.\n");
+		printf("Initializing APIC. pmm = 0x%lx\n", physical_memory_map);
 		uint64_t msr = rdmsr(MSR);
-		apic_base = (uint32_t *) (msr & 0xffffff000);
+		apic_base = (volatile uint32_t *) (msr & 0xffffff000);
 		wrmsr(MSR, msr | ENABLE, msr >> 32);
 		printf("APIC base: 0x%lx, ID: 0x%lx\n", apic_base, apic_base + REGISTER_APICID);
 		{
 			Thorn::Lock<Thorn::Mutex> pager_lock;
-			kernel.getPager(pager_lock).identityMap(kernel.kernelPML4, (void *) apic_base, MMU_CACHE_DISABLED);
+			kernel.getPager(pager_lock).identityMap(kernel.kernelPML4, msr & 0xffffff000, MMU_CACHE_DISABLED);
 		}
 		printf("Identity-mapped APIC base.\n");
 		printf("&apic_base[REGISTER_SPURIOUS]: 0x%lx\n", &apic_base[REGISTER_SPURIOUS]);
@@ -36,6 +36,7 @@ namespace x86_64::APIC {
 
 	void initTimer(uint32_t frequency) {
 		uint32_t ticks_per_second = lastTPS;
+
 		if (!timer_calibrated) {
 			uint32_t tick_collections[TIMER_NUM_CALIBRATIONS] = {0};
 			uint64_t tick_total = 0;
@@ -45,6 +46,7 @@ namespace x86_64::APIC {
 			timer_calibrated = true;
 			lastTPS = ticks_per_second;
 		}
+
 		uint32_t timer_reload_value = ticks_per_second / frequency;
 
 		apic_base[REGISTER_LVT_TIMER] = BSP_VECTOR_APIC_TIMER | SELECT_TMR_PERIODIC;

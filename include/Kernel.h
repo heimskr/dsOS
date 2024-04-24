@@ -16,8 +16,6 @@ namespace Thorn {
 
 	class Kernel {
 		private:
-			uintptr_t memoryLow = 0;
-			uintptr_t memoryHigh = 0;
 			Memory memory;
 
 			Locked<x86_64::PageMeta4K> lockedPager;
@@ -58,9 +56,8 @@ namespace Thorn {
 
 			constexpr static PID MaxPID = std::numeric_limits<PID>::max() / 2;
 
-			/** A region at the very top of virtual memory is mapped to all physical memory. This address stores the
-			 *  start of that region. */
-			void *physicalMemoryMap = nullptr;
+			/** A region near the top of virtual memory is mapped to all physical memory. This address stores the start of that region. */
+			uintptr_t physicalMemoryMap = 0;
 
 			static Kernel *instance;
 			static Kernel & getInstance();

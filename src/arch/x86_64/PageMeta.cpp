@@ -7,23 +7,20 @@
 
 extern bool abouttodie;
 
-extern uint64_t low_page_directory_table;
-extern uint64_t high_page_directory_table;
-
 namespace x86_64 {
 	PageMeta::PageMeta(void *physical_start):
 		physicalStart(physical_start) {}
 
-	void * PageMeta::allocateFreePhysicalAddress(size_t consecutive_count) {
+	uintptr_t PageMeta::allocateFreePhysicalAddress(size_t consecutive_count) {
 		if (consecutive_count == 0)
-			return nullptr;
+			return 0;
 
 		if (consecutive_count == 1) {
 			int free_index = findFree();
 			if (free_index == -1)
-				return nullptr;
+				return 0;
 			mark(free_index, true);
-			return (void *) ((uintptr_t) physicalStart + free_index * pageSize());
+			return (uintptr_t) physicalStart + free_index * pageSize();
 		}
 
 		int index = -1;
@@ -33,7 +30,7 @@ namespace x86_64 {
 				if (!isFree(index + i))
 					goto nope; // sorry
 			mark(index, true);
-			return (void *) ((uintptr_t) physicalStart + index * pageSize());
+			return (uintptr_t) physicalStart + index * pageSize();
 			nope:
 			continue;
 		}
@@ -43,31 +40,32 @@ namespace x86_64 {
 		return reinterpret_cast<uintptr_t>(allocateFreePhysicalAddress(consecutive_count)) / THORN_PAGE_SIZE;
 	}
 
-	bool PageMeta::assignAddress(PageTableWrapper &wrapper, volatile void *virtual_address, volatile void *physical_address, uint64_t extra_meta) {
+	bool PageMeta::assignAddress(PageTableWrapper &wrapper, uintptr_t virtual_address, uintptr_t physical_address, uint64_t extra_meta) {
 		using PTW = PageTableWrapper;
 		uintptr_t out;
 		if (physicalMemoryMapReady) {
-			if ((uintptr_t) physical_address == 0xfee00000) printf("Assigning after PMM.\n");
+			if (physical_address == 0xfee00000)
+				printf("Assigning after PMM (virtual 0x%lx -> physical 0x%lx).\n", virtual_address, physical_address);
 			out = assign(wrapper, PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address),
 			             PTW::getPDTIndex(virtual_address), PTW::getPTIndex(virtual_address),
 			             physical_address, extra_meta);
 		} else {
-			if ((uintptr_t) physical_address == 0xfee00000)
+			if (physical_address == 0xfee00000)
 				printf("Assigning before PMM (virtual 0x%lx -> physical 0x%lx).\n", virtual_address, physical_address);
 			out = assignBeforePMM(wrapper, PTW::getPML4Index(virtual_address), PTW::getPDPTIndex(virtual_address), PTW::getPDTIndex(virtual_address),
 			                      PTW::getPTIndex(virtual_address), physical_address, extra_meta);
 		}
 
-		if ((uintptr_t) physical_address == 0xfee00000)
+		if (physical_address == 0xfee00000)
 			printf("assignAddress(0x%lx) -> 0x%lx\n", virtual_address, out);
 		return out;
 	}
 
-	bool PageMeta::identityMap(PageTableWrapper &wrapper, volatile void *address, uint64_t extra_meta) {
+	bool PageMeta::identityMap(PageTableWrapper &wrapper, uintptr_t address, uint64_t extra_meta) {
 		return assignAddress(wrapper, address, address, extra_meta);
 	}
 
-	bool PageMeta::modifyEntry(PageTableWrapper &wrapper, volatile void *virtual_address, std::function<uint64_t(uint64_t)> modifier) {
+	bool PageMeta::modifyEntry(PageTableWrapper &wrapper, uintptr_t virtual_address, std::function<uint64_t(uint64_t)> modifier) {
 		Thorn::Kernel *kernel = Thorn::Kernel::instance;
 		if (!kernel) {
 			printf("Kernel instance is null!\n");
@@ -99,24 +97,28 @@ namespace x86_64 {
 		return true;
 	}
 
-	bool PageMeta::andMeta(PageTableWrapper &wrapper, volatile void *virtual_address, uint64_t meta) {
+	bool PageMeta::andMeta(PageTableWrapper &wrapper, uintptr_t virtual_address, uint64_t meta) {
 		return modifyEntry(wrapper, virtual_address, [meta](uint64_t entry) {
 			return entry & meta;
 		});
 	}
 
-	bool PageMeta::orMeta(PageTableWrapper &wrapper, volatile void *virtual_address, uint64_t meta) {
+	bool PageMeta::orMeta(PageTableWrapper &wrapper, uintptr_t virtual_address, uint64_t meta) {
 		return modifyEntry(wrapper, virtual_address, [meta](uint64_t entry) {
 			return entry | meta;
 		});
 	}
 
-	bool PageMeta::freeEntry(PageTableWrapper &wrapper, volatile void *virtual_address) {
+	bool PageMeta::freeEntry(PageTableWrapper &wrapper, uintptr_t virtual_address) {
 		// printf("\e[31mfreeEntry\e[0m 0x%lx\n", virtual_address);
 		return modifyEntry(wrapper, virtual_address, [](uint64_t) { return 0; });
 	}
 
 	uint64_t PageMeta::addressToEntry(volatile void *address) const {
+		return addressToEntry(reinterpret_cast<uintptr_t>(address));
+	}
+
+	uint64_t PageMeta::addressToEntry(uintptr_t address) const {
 		return (((uint64_t) address) & ~0xfff) | MMU_PRESENT | MMU_WRITABLE;
 	}
 
@@ -124,13 +126,7 @@ namespace x86_64 {
 		PageMeta(nullptr), pages(-1) {}
 
 	PageMeta4K::PageMeta4K(void *physical_start, void *bitmap_address, int pages_):
-	PageMeta(physical_start), pages(pages_) {
-		const size_t bitmap_count = Thorn::Util::updiv(pages_, 8 * (int) sizeof(Bitmap));
-		bitmap = new (bitmap_address) Bitmap[bitmap_count];
-		const size_t page_count = Thorn::Util::updiv(bitmap_count * sizeof(Bitmap), 4096UL);
-		for (size_t i = 0; i < page_count; ++i)
-			assignAddress(Thorn::Kernel::instance->kernelPML4, static_cast<char *>(bitmap_address) + 4096 * i);
-	}
+		PageMeta(physical_start), pages(pages_) {}
 
 	size_t PageMeta4K::bitmapSize() const {
 		if (pages == -1 || !bitmap)
@@ -175,7 +171,7 @@ namespace x86_64 {
 	}
 
 	uintptr_t PageMeta4K::assign(PageTableWrapper &wrapper, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
-	                             volatile void *physical_address, uint64_t extra_meta) {
+	                             uintptr_t physical_address, uint64_t extra_meta) {
 		// serprintf("\e[32massign\e[0m %u, %u, %u, %u, 0x%lx, 0x%lx\n", pml4_index, pdpt_index, pdt_index, pt_index, physical_address, extra_meta);
 
 		if (pages == -1) {
@@ -193,7 +189,7 @@ namespace x86_64 {
 		}
 		if (!isPresent(wrapper.entries[pml4_index])) {
 			// Allocate a page for a new PDPT if the PML4E is empty.
-			if (void *free_addr = allocateFreePhysicalAddress()) {
+			if (auto free_addr = allocateFreePhysicalAddress()) {
 				wrapper.entries[pml4_index] = addressToEntry(free_addr);
 				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
@@ -211,7 +207,7 @@ namespace x86_64 {
 		pdpt = access(pdpt);
 		if (!isPresent(pdpt[pdpt_index])) {
 			// Allocate a page for a new PDT if the PDPE is empty.
-			if (void *free_addr = allocateFreePhysicalAddress()) {
+			if (uintptr_t free_addr = allocateFreePhysicalAddress()) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
 				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
@@ -229,7 +225,7 @@ namespace x86_64 {
 		pdt = access(pdt);
 		if (!isPresent(pdt[pdt_index])) {
 			// Allocate a page for a new PT if the PDE is empty.
-			if (void *free_addr = allocateFreePhysicalAddress()) {
+			if (uintptr_t free_addr = allocateFreePhysicalAddress()) {
 				pdt[pdt_index] = addressToEntry(free_addr);
 				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
@@ -250,7 +246,7 @@ namespace x86_64 {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {
 				pt[pt_index] = addressToEntry(physical_address) | extra_meta;
-			} else if (void *free_addr = allocateFreePhysicalAddress()) {
+			} else if (uintptr_t free_addr = allocateFreePhysicalAddress()) {
 				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
 				memset((char *) physicalMemoryMap + (uintptr_t) free_addr, 0, 4096);
 			} else {
@@ -266,7 +262,7 @@ namespace x86_64 {
 	}
 
 	uintptr_t PageMeta4K::assignBeforePMM(PageTableWrapper &wrapper, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index,
-	                                      uint16_t pt_index, volatile void *physical_address, uint64_t extra_meta) {
+	                                      uint16_t pt_index, uintptr_t physical_address, uint64_t extra_meta) {
 		// serprintf("\e[32massignBeforePMM\e[0m %u, %u, %u, %u, 0x%lx, 0x%lx\n", pml4_index, pdpt_index, pdt_index, pt_index, physical_address, extra_meta);
 
 		if (pages == -1) {
@@ -288,10 +284,10 @@ namespace x86_64 {
 		}
 		if (!isPresent(wrapper.entries[pml4_index])) {
 			// Allocate a page for a new PDPT if the PML4E is empty.
-			if (void *free_addr = allocateFreePhysicalAddress()) {
+			if (uintptr_t free_addr = allocateFreePhysicalAddress()) {
 				wrapper.entries[pml4_index] = addressToEntry(free_addr);
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((void *) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -307,10 +303,10 @@ namespace x86_64 {
 		pdpt = access(pdpt);
 		if (!isPresent(access(pdpt)[pdpt_index])) {
 			// Allocate a page for a new PDT if the PDPE is empty.
-			if (void *free_addr = allocateFreePhysicalAddress()) {
+			if (uintptr_t free_addr = allocateFreePhysicalAddress()) {
 				pdpt[pdpt_index] = addressToEntry(free_addr);
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((void *) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
@@ -323,20 +319,20 @@ namespace x86_64 {
 			wrapper.print(false);
 			for (;;) asm("hlt");
 		}
+
 		const volatile uint64_t *old_pdt = pdt;
 		pdt = access(pdt);
 		if (!isPresent(pdt[pdt_index])) {
 			// Allocate a page for a new PT if the PDE is empty.
-			if (void *free_addr = allocateFreePhysicalAddress()) {
+			if (uintptr_t free_addr = allocateFreePhysicalAddress()) {
 				pdt[pdt_index] = addressToEntry(free_addr);
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((void *) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");
 			}
 		}
-
 
 		volatile uint64_t *pt = (volatile uint64_t *) (pdt[pdt_index] & ~0xfff);
 		// printf("pdt = 0x%lx, index = %u, pt = 0x%lx\n", pdt, pdt_index, pt);
@@ -354,10 +350,10 @@ namespace x86_64 {
 			// Allocate a new page if the PTE is empty (or, optionally, use a provided physical address).
 			if (physical_address) {
 				pt[pt_index] = addressToEntry(physical_address);
-			} else if (void *free_addr = allocateFreePhysicalAddress()) {
+			} else if (uintptr_t free_addr = allocateFreePhysicalAddress()) {
 				pt[pt_index] = addressToEntry(free_addr) | extra_meta;
 				if (!disableMemset)
-					memset(free_addr, 0, 4096);
+					memset((void *) free_addr, 0, 4096);
 			} else {
 				printf("No free pages!\n");
 				for (;;) asm("hlt");

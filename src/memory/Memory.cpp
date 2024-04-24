@@ -57,7 +57,7 @@ namespace Thorn {
 			auto &pager = Kernel::getPager(pager_lock);
 			auto &wrapper = Kernel::instance->kernelPML4;
 			while (highestAllocated <= (uintptr_t) block + size) {
-				pager.assignAddress(wrapper, reinterpret_cast<void *>(highestAllocated));
+				pager.assignAddress(wrapper, highestAllocated);
 				highestAllocated += PAGE_LENGTH;
 			}
 		}
