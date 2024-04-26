@@ -60,7 +60,7 @@ namespace x86_64 {
 			                                  uintptr_t physical_address = 0, uint64_t extra_meta = 0) override;
 
 		public:
-			using Bitmap = int64_t;
+			using Bitmap = uint64_t;
 
 			/** Number of pages. */
 			int pages;

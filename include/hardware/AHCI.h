@@ -232,7 +232,7 @@ namespace Thorn::AHCI {
 		uint32_t rsv3;            // Reserved
 	};
 
-	typedef volatile struct TagHBAPort {
+	struct HBAPort {
 		uint32_t clb;       // 0x00: Command list base address, 1 KiB-aligned
 		uint32_t clbu;      // 0x04: Command list base address upper 32 bits
 		uint32_t fb;        // 0x08: FIS base address, 256-byte aligned
@@ -252,7 +252,7 @@ namespace Thorn::AHCI {
 		uint32_t fbs;       // 0x40: FIS-based switch control
 		uint32_t devslp;    // 0x44–0x6f: Device sleep
 		uint32_t vendor[4]; // 0x70–0x7f: vendor specific
-	} __attribute__((packed)) HBAPort;
+	} __attribute__((packed));
 
 	struct HBACommandHeader {
 		// DWORD 0
@@ -331,7 +331,7 @@ namespace Thorn::AHCI {
 		HBAPRDTEntry prdtEntry[1];
 	};
 
-	typedef volatile struct TagHBAMemory {
+	struct HBAMemory {
 		// 0x00 - 0x2B, Generic Host Control
 		uint32_t cap;     // 0x00: Host capability
 		uint32_t ghc;     // 0x04: Global host control
@@ -353,7 +353,7 @@ namespace Thorn::AHCI {
 
 		// 0x100–0x10ff: Port control registers
 		HBAPort ports[32];
-	} __attribute__((packed)) HBAMemory;
+	} __attribute__((packed));
 
 	class Port {
 		private:
@@ -362,16 +362,16 @@ namespace Thorn::AHCI {
 
 		public:
 			static constexpr size_t BLOCKSIZE = 512;
-			HBAPort *registers = nullptr;
-			HBAMemory *abar = nullptr;
-			HBACommandHeader *commandList = nullptr;
-			HBAFIS *fis = nullptr;
-			HBACommandTable *commandTables[8];
+			volatile HBAPort *registers = nullptr;
+			volatile HBAMemory *abar = nullptr;
+			volatile HBACommandHeader *commandList = nullptr;
+			volatile HBAFIS *fis = nullptr;
+			volatile HBACommandTable *commandTables[8];
 			Status status = Status::Uninitialized;
 			void *physicalBuffers[8];
 			DeviceType type = DeviceType::Null;
 
-			Port(HBAPort *, HBAMemory *);
+			Port(volatile HBAPort *, volatile HBAMemory *);
 
 			enum class AccessStatus: uint8_t {Success = 0, DiskError = 1, BadSlot = 2, Hung = 3};
 

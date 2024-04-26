@@ -11,7 +11,7 @@ namespace Thorn::AHCI {
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};
 
-	constexpr static int SPIN_COUNT = 10000;
+	constexpr static int SPIN_COUNT = 10'000;
 
 	Controller::Controller(PCI::Device *device_): device(device_) {
 		memset(ports, 0, sizeof(ports));
@@ -140,7 +140,7 @@ namespace Thorn::AHCI {
 			return;
 		}
 
-		HBACommandHeader &header = commandList[slot];
+		volatile HBACommandHeader &header = commandList[slot];
 		header.cfl = sizeof(FISRegH2D) / sizeof(uint32_t);
 		header.atapi = false;
 		header.write = false;
@@ -149,16 +149,18 @@ namespace Thorn::AHCI {
 		header.prdbc = 0;
 		header.pmport = 0;
 
-		HBACommandTable *table = commandTables[slot];
-		memset(table, 0, sizeof(HBACommandTable));
+		volatile auto memset_volatile = (void (* volatile)(volatile void *, int, size_t)) memset;
+
+		volatile HBACommandTable *table = commandTables[slot];
+		memset_volatile(table, 0, sizeof(HBACommandTable));
 
 		table->prdtEntry[0].dba = (uintptr_t) physicalBuffers[0] & 0xffffffff;
 		table->prdtEntry[0].dbaUpper = ((uintptr_t) physicalBuffers[0] >> 32) & 0xffffffff;
 		table->prdtEntry[0].dbc = BLOCKSIZE - 1;
 		table->prdtEntry[0].interrupt = true;
 
-		FISRegH2D *cfis = (FISRegH2D *) table->cfis;
-		memset(cfis, 0, sizeof(FISRegH2D));
+		volatile FISRegH2D *cfis = (volatile FISRegH2D *) table->cfis;
+		memset_volatile(cfis, 0, sizeof(FISRegH2D));
 
 		// printf("[Port::identify] Type: %s\n", deviceTypes[(int) identifyDevice()]);
 
@@ -220,7 +222,7 @@ namespace Thorn::AHCI {
 		}
 	}
 
-	Port::Port(HBAPort *port, HBAMemory *memory): registers(port), abar(memory) {
+	Port::Port(volatile HBAPort *port, volatile HBAMemory *memory): registers(port), abar(memory) {
 		registers->cmd = registers->cmd & ~HBA_PxCMD_ST;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
 		stop();
@@ -245,11 +247,13 @@ namespace Thorn::AHCI {
 		setFB(addr);
 		memset((void *) addr, 0, 4096);
 
+		volatile auto memset_volatile = (void (* volatile)(volatile void *, int, size_t)) memset;
+
 		commandList = (HBACommandHeader *) getCLB();
-		memset(commandList, 0, sizeof(HBACommandHeader));
+		memset_volatile(commandList, 0, sizeof(HBACommandHeader));
 
 		fis = (HBAFIS *) getFB();
-		memset(fis, 0, sizeof(HBAFIS));
+		memset_volatile(fis, 0, sizeof(HBAFIS));
 
 		fis->dsfis.type = FISType::DMASetup;
 		fis->psfis.type = FISType::PIOSetup;
@@ -284,7 +288,7 @@ namespace Thorn::AHCI {
 		Kernel::wait(1, 100);
 
 		{
-			int spin = 1000;
+			int spin = SPIN_COUNT;
 			while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 				Kernel::wait(1, 1000);
 
@@ -308,7 +312,7 @@ namespace Thorn::AHCI {
 			registers->serr = 0;
 			registers->is = 0;
 
-			spin = 1000;
+			spin = SPIN_COUNT;
 			while ((registers->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin--)
 				Kernel::wait(1, 1000);
 
@@ -482,7 +486,7 @@ namespace Thorn::AHCI {
 		registers->serr = 0;
 		registers->tfd = 0;
 
-		HBACommandHeader &header = commandList[slot];
+		volatile HBACommandHeader &header = commandList[slot];
 		header.cfl = sizeof(FISRegH2D) / sizeof(uint32_t);
 
 		header.atapi = type == DeviceType::SATAPI;
@@ -492,16 +496,18 @@ namespace Thorn::AHCI {
 		header.prdbc = 0;
 		header.pmport = 0;
 
-		HBACommandTable &table = *commandTables[slot];
-		memset(&table, 0, sizeof(table));
+		volatile auto memset_volatile = (void (* volatile)(volatile void *, int, size_t)) memset;
+
+		volatile HBACommandTable &table = *commandTables[slot];
+		memset_volatile(&table, 0, sizeof(table));
 
 		table.prdtEntry[0].dba = reinterpret_cast<uintptr_t>(buffer) & 0xffffffff;
 		table.prdtEntry[0].dbaUpper = (reinterpret_cast<uintptr_t>(buffer) >> 32) & 0xffffffff;
 		table.prdtEntry[0].dbc = BLOCKSIZE * count - 1;
 		table.prdtEntry[0].interrupt = true;
 
-		FISRegH2D &fis = (FISRegH2D &) table.cfis;
-		memset(&fis, 0, sizeof(fis));
+		volatile FISRegH2D &fis = (volatile FISRegH2D &) table.cfis;
+		memset_volatile(&fis, 0, sizeof(fis));
 
 		fis.type = FISType::RegH2D;
 		fis.c = true;

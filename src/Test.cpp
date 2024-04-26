@@ -980,9 +980,9 @@ namespace Thorn {
 			if (IDE::init() == 0)
 				tprintf("No IDE devices found.\n");
 		} else if (pieces[1] == "thornfat" || pieces[1] == "tfat" || pieces[1] == "driver") {
-			if (!context.device || !context.partition)
+			if (!context.device || !context.partition) {
 				tprintf("No partition is selected.\n");
-			else {
+			} else {
 				context.driver = new FS::ThornFAT::ThornFATDriver(context.partition);
 				tprintf("Initialized ThornFAT driver.\n");
 			}

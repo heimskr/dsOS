@@ -26,6 +26,10 @@ namespace Thorn {
 				}
 			}
 
+			bool try_unlock() {
+				return locked.exchange(false);
+			}
+
 		private:
 			Atomic<bool> locked;
 	};
@@ -92,6 +96,23 @@ namespace Thorn {
 				submutex.unlock();
 			}
 
+			bool try_unlock() {
+				submutex.lock();
+
+				if (locked && owner == currentThreadID()) {
+					assert(depth > 0);
+					if (--depth == 0) {
+						owner = 0;
+						locked = false;
+						submutex.unlock();
+						return true;
+					}
+				}
+
+				submutex.unlock();
+				return false;
+			}
+
 		private:
 			Mutex submutex;
 			Atomic<bool> locked;
@@ -145,7 +166,7 @@ namespace Thorn {
 						asm("hlt");
 				}
 
-				mutex->unlock();
+				mutex->try_unlock();
 			}
 
 			void release() {

@@ -9,10 +9,10 @@ namespace Thorn::FS {
 	std::string simplifyPath(std::string cwd, std::string path) {
 		if (cwd.empty())
 			cwd = "/";
-		
+
 		if (path.empty())
 			return cwd;
-		
+
 		if (path.front() != '/') {
 			if (cwd.back() == '/')
 				path = cwd + path;
@@ -51,8 +51,10 @@ namespace Thorn::FS {
 
 		path.clear();
 
-		for (const std::string &piece: split)
-			path += "/" + piece;
+		for (const std::string &piece: split) {
+			path += '/';
+			path += piece;
+		}
 
 		return path;
 	}
@@ -92,8 +94,10 @@ namespace Thorn::FS {
 
 		path.clear();
 
-		for (const std::string &piece: split)
-			path += "/" + piece;
+		for (const std::string &piece: split) {
+			path += '/';
+			path += piece;
+		}
 
 		return path;
 	}

@@ -82,9 +82,8 @@ namespace Thorn {
 		initPageDescriptors();
 		HELLO;
 
-		// These three lines are incredibly janky. Fixing them is important.
-		const uintptr_t bitmap_base = (uintptr_t) &_bitmap_start;
-		const uintptr_t physical_end =  (uintptr_t) &_kernel_physical_end;
+		const uintptr_t bitmap_base  = (uintptr_t) &_bitmap_start;
+		const uintptr_t physical_end = (uintptr_t) &_kernel_physical_end;
 
 		{
 			Lock<Mutex> lock;
@@ -93,9 +92,6 @@ namespace Thorn {
 			pager = x86_64::PageMeta4K((void *) physical_end, (void *) bitmap_base, (memory_high - physical_end) / 4096);
 
 			printf("physical_end = 0x%lx\n", physical_end);
-
-			// pager.assignSelf(kernelPML4);
-			// pager.clear();
 		}
 
 		// kernelPML4.print(false, false);

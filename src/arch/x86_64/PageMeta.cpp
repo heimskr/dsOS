@@ -126,7 +126,7 @@ namespace x86_64 {
 		PageMeta(nullptr), pages(-1) {}
 
 	PageMeta4K::PageMeta4K(void *physical_start, void *bitmap_address, int pages_):
-		PageMeta(physical_start), pages(pages_) {}
+		PageMeta(physical_start), pages(pages_), bitmap((Bitmap *) bitmap_address) {}
 
 	size_t PageMeta4K::bitmapSize() const {
 		if (pages == -1 || !bitmap)
@@ -151,9 +151,9 @@ namespace x86_64 {
 	int PageMeta4K::findFree(size_t start) const {
 		if (pages != -1)
 			for (size_t i = start; i < pages / (8 * sizeof(Bitmap)); ++i)
-				if (bitmap[i] != -1L)
-					for (unsigned int j = 0; j < 8 * sizeof(Bitmap); ++j)
-						if ((bitmap[i] & (1L << j)) == 0)
+				if (bitmap[i] != -1ul)
+					for (uint8_t j = 0; j < 8 * sizeof(Bitmap); ++j)
+						if ((bitmap[i] & (1ul << j)) == 0)
 							return i * 8 * sizeof(Bitmap) + j;
 		return -1;
 	}
@@ -164,10 +164,15 @@ namespace x86_64 {
 			return;
 		}
 
-		if (used)
+		if (used) {
 			bitmap[index / (8 * sizeof(Bitmap))] |=   1L << (index % (8 * sizeof(Bitmap)));
-		else
+		} else {
+			if (index == 2) {
+				printf("\e[31mMarking 2 (0xe77000) as free\e[39m\n");
+				Thorn::Kernel::backtrace();
+			}
 			bitmap[index / (8 * sizeof(Bitmap))] &= ~(1L << (index % (8 * sizeof(Bitmap))));
+		}
 	}
 
 	uintptr_t PageMeta4K::assign(PageTableWrapper &wrapper, uint16_t pml4_index, uint16_t pdpt_index, uint16_t pdt_index, uint16_t pt_index,
