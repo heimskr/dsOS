@@ -215,6 +215,10 @@ namespace Thorn {
 		std::string text;
 		size_t index = 0;
 
+		Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Green, Terminal::VGAColor::Black);
+		tprintf("> ");
+		Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::LightGray, Terminal::VGAColor::Black);
+
 		for (;;) {
 			asm volatile("hlt");
 			// Let's hope a keyboard interrupt doesn't occur here.
