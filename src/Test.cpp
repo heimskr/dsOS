@@ -408,17 +408,20 @@ namespace Thorn {
 			handleInput("sel part 0");
 			handleInput("init tfat");
 		} else if (pieces[0] == "printfat") {
-			if (!mainContext.driver) printf("Driver isn't ready.\n");
-			else if (!mainContext.driver->verify()) printf("Driver couldn't verify filesystem validity.\n");
-			else {
+			if (!mainContext.driver) {
+				printf("Driver isn't ready.\n");
+			} else if (!mainContext.driver->verify()) {
+				printf("Driver couldn't verify filesystem validity.\n");
+			} else {
 				size_t count = 100;
 				if (1 < pieces.size())
 					Util::parseUlong(pieces[1], count);
 				for (size_t i = 0; i < count; ++i)
 					printf("%lu -> %d\n", i, mainContext.driver->readFAT(i));
 			}
-		} else
+		} else {
 			tprintf("Unknown command.\n");
+		}
 	}
 
 	void sha1(const std::vector<std::string> &pieces, InputContext &context) {
