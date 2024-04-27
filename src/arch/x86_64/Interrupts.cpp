@@ -139,7 +139,6 @@ void irq1() {
 	// Keyboard::InputKey key = static_cast<Keyboard::InputKey>(byte);
 	if (Thorn::PS2Keyboard::scanmapNormal[byte].key == Thorn::Keyboard::InputKey::KeyLeftAlt)
 		looping = false;
-	printf("scan[0x%x]\n", byte);
 	scancodes_fifo.push(byte);
 	x86_64::PIC::sendEOI(1);
 }
