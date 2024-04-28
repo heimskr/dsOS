@@ -46,17 +46,19 @@ namespace Thorn {
 #ifdef DEBUG_ALLOCATION
 		printf("requestSpace(0x%lx, %lu)\n", last, size);
 #endif
-		BlockMeta *block = (BlockMeta *) realign((uintptr_t) end);
+		BlockMeta *block = reinterpret_cast<BlockMeta *>(realign(uintptr_t(end)));
 
 		if (last)
 			last->next = block;
+
+		end = reinterpret_cast<char *>(block) + size + sizeof(BlockMeta) + 1;
 
 #ifdef PROACTIVE_PAGING
 		{
 			Lock<Mutex> pager_lock;
 			auto &pager = Kernel::getPager(pager_lock);
 			auto &wrapper = Kernel::instance->kernelPML4;
-			while (highestAllocated <= (uintptr_t) block + size) {
+			while (highestAllocated <= uintptr_t(end)) {
 				pager.assignAddress(wrapper, highestAllocated);
 				highestAllocated += PAGE_LENGTH;
 			}
@@ -65,9 +67,8 @@ namespace Thorn {
 
 		block->size = size;
 		block->next = nullptr;
-		block->free = 0;
+		block->free = false;
 
-		end = reinterpret_cast<char *>(block) + block->size + sizeof(BlockMeta) + 1;
 		return block;
 	}
 

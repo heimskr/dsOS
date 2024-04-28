@@ -265,7 +265,7 @@ namespace Thorn::PCI {
 
 		if (vector & static_cast<uint8_t>(Vector::Legacy)) {
 			const uint8_t irq = getInterruptLine();
-			if (irq == 0xff) { 
+			if (irq == 0xff) {
 				printf("[PCI::Device::allocateVector] Legacy interrupts aren't supported by device.\n");
 				return 0xff;
 			} else {
@@ -387,6 +387,7 @@ namespace Thorn::PCI {
 					else
 						printf("%lu %x:%x:%x Vendor: %x, device: %x, class: %x, subclass: %x ",
 							device_count++, bus, device, function, vendor, device_id, baseclass, subclass);
+
 					if (Serial::ready)
 						Serial::write('\n');
 

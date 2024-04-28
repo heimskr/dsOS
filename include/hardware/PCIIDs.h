@@ -1,4 +1,6 @@
-#include <stdint.h>
+#pragma once
+
+#include <cstdint>
 
 namespace Thorn::PCI::ID {
 	static constexpr const char *vendor_0001 = "SafeNet (wrong ID)";

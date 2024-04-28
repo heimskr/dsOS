@@ -52,7 +52,7 @@ namespace Thorn {
 				}
 
 				ensureSpace(1);
-				auto [iter, inserted] = map.try_emplace(key, std::bit_cast<void *>(list.end()), std::move(value));
+				auto [iter, inserted] = map.try_emplace(key, nullptr, std::move(value));
 				assert(inserted);
 				list.push_front(iter);
 				iter->second.first = std::bit_cast<void *>(list.begin());

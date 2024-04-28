@@ -2,8 +2,6 @@
 #include "arch/x86_64/control_register.h"
 #include "arch/x86_64/CPU.h"
 #include "arch/x86_64/Interrupts.h"
-#include "arch/x86_64/PageMeta.h"
-#include "arch/x86_64/PageTableWrapper.h"
 #include "arch/x86_64/PIC.h"
 #include "hardware/Ports.h"
 #include "hardware/PS2Keyboard.h"
@@ -16,6 +14,11 @@
 
 // #define DEBUG_PAGE_FAULTS
 #define DEADLY_PAGE_FAULTS
+
+#ifdef DEBUG_PAGE_FAULTS
+#include "arch/x86_64/PageMeta.h"
+#include "arch/x86_64/PageTableWrapper.h"
+#endif
 
 extern bool irqInvoked;
 

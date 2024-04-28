@@ -179,7 +179,8 @@ namespace Thorn::AHCI {
 		cfis->lba3 = 0;
 		cfis->lba4 = 0;
 		cfis->lba5 = 0;
-		cfis->countLow = cfis->countHigh = 0;
+		cfis->countLow = 0;
+		cfis->countHigh = 0;
 		cfis->control = 0;
 
 		spin = SPIN_COUNT;
@@ -679,7 +680,7 @@ namespace Thorn::AHCI {
 				return status;
 			const size_t to_write = (BLOCKSIZE - offset) < count? BLOCKSIZE - offset : count;
 			memcpy(write_buffer + offset, cbuffer, to_write);
-			if ((status = write(lba, BLOCKSIZE, write_buffer) ) != AccessStatus::Success)
+			if ((status = write(lba, BLOCKSIZE, write_buffer)) != AccessStatus::Success)
 				return status;
 			count -= to_write;
 			++lba;

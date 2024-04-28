@@ -365,11 +365,11 @@ namespace Thorn::AHCI {
 		public:
 			constexpr static size_t BLOCKSIZE = 512;
 
+			Controller *parent = nullptr;
 			volatile HBAPort *registers = nullptr;
 			volatile HBAMemory *abar = nullptr;
 			volatile HBACommandHeader *commandList = nullptr;
 			volatile HBAFIS *fis = nullptr;
-			Controller *parent = nullptr;
 			volatile HBACommandTable *commandTables[8];
 			void *physicalBuffers[8];
 			Status status = Status::Uninitialized;
