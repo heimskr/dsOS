@@ -4,15 +4,22 @@
 #include "hardware/AHCI.h"
 
 namespace Thorn {
-	struct AHCIDevice: public StorageDevice {
-		AHCI::Port *port;
-		AHCIDevice() = delete;
-		AHCIDevice(AHCI::Port *port_): port(port_) {}
-		virtual ~AHCIDevice() {}
+	class AHCIDevice: public StorageDevice<AHCI::Port::BLOCKSIZE> {
+		public:
+			AHCI::Port *port;
 
-		virtual int read(void *buffer, size_t size, size_t offset) override;
-		virtual int write(const void *buffer, size_t size, size_t offset) override;
-		virtual int clear(size_t offset, size_t size) override;
-		virtual std::string getName() const override;
+			AHCIDevice(AHCI::Port *port_):
+				port(port_) {}
+
+			int read(void *buffer, size_t size, size_t offset) final;
+			int write(const void *buffer, size_t size, size_t offset) final;
+			int clear(size_t offset, size_t size) final;
+			void flush() final;
+			void flush(StorageCacheEntry<BlockSize> &, uint64_t block) final;
+			std::string getName() const final;
+
+		private:
+			int readCache(void *buffer, size_t size, size_t offset);
+			int writeCache(const void *buffer, size_t size, size_t offset);
 	};
 }

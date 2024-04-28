@@ -37,7 +37,7 @@ namespace Thorn {
 		AHCI::Port *port = nullptr;
 		bool ahci = true;
 		int idePort = -1;
-		StorageDevice *device = nullptr;
+		StorageDeviceBase *device = nullptr;
 		FS::Partition *partition = nullptr;
 		FS::ThornFAT::ThornFATDriver *driver = nullptr;
 		std::string path = "/";

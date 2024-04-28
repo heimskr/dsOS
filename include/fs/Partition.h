@@ -4,7 +4,7 @@
 #include <vector>
 
 namespace Thorn {
-	struct StorageDevice;
+	struct StorageDeviceBase;
 }
 
 namespace Thorn::FS {
@@ -18,13 +18,13 @@ namespace Thorn::FS {
 
 	struct Partition {
 		std::vector<Record> writeRecords, readRecords;
-		StorageDevice *parent;
+		StorageDeviceBase *parent;
 		/** Number of bytes after the start of the disk. */
 		size_t offset;
 		/** Length of the partition in bytes. */
 		size_t length;
 
-		Partition(StorageDevice *parent_, size_t offset_, size_t length_):
+		Partition(StorageDeviceBase *parent_, size_t offset_, size_t length_):
 			parent(parent_), offset(offset_), length(length_) {}
 
 		int read(void *buffer, size_t size, size_t byte_offset);

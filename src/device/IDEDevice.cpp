@@ -1,6 +1,5 @@
 #include "device/IDEDevice.h"
 #include "memory/Memory.h"
-#include "hardware/IDE.h"
 
 namespace Thorn {
 	int IDEDevice::read(void *buffer, size_t size, size_t offset) {

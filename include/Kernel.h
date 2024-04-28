@@ -15,7 +15,7 @@ namespace Thorn {
 	using PageFrameNumber = uint64_t;
 
 	struct StorageController;
-	struct StorageDevice;
+	struct StorageDeviceBase;
 
 	class Kernel {
 		private:
@@ -26,7 +26,7 @@ namespace Thorn {
 			std::unique_ptr<Locked<ProcessMap, RecursiveMutex>> processes;
 			std::unique_ptr<Locked<std::map<PageFrameNumber, PID>>> pageFrameProcesses;
 			std::unique_ptr<Locked<std::vector<std::unique_ptr<StorageController>>>> storageControllers;
-			std::unique_ptr<Locked<std::vector<std::unique_ptr<StorageDevice>>>> storageDevices;
+			std::unique_ptr<Locked<std::vector<std::unique_ptr<StorageDeviceBase>>>> storageDevices;
 
 			PID lastPID = 1;
 
