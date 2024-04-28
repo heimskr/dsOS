@@ -11,7 +11,7 @@ namespace Thorn::AHCI {
 
 	const char *deviceTypes[5] = {"Null", "SATA", "SEMB", "PortMultiplier", "SATAPI"};
 
-	constexpr static int SPIN_COUNT = 10'000;
+	constexpr static int SPIN_COUNT = 1'000;
 
 	Controller::Controller(PCI::Device *device_): device(device_) {
 		memset(ports, 0, sizeof(ports));
@@ -222,7 +222,7 @@ namespace Thorn::AHCI {
 		}
 	}
 
-	Port::Port(volatile HBAPort *port, volatile HBAMemory *memory): registers(port), abar(memory) {
+	Port::Port(Controller *parent_, volatile HBAPort *port, volatile HBAMemory *memory): parent(parent_), registers(port), abar(memory) {
 		registers->cmd = registers->cmd & ~HBA_PxCMD_ST;
 		registers->cmd = registers->cmd & ~HBA_PxCMD_FRE;
 		stop();
@@ -293,7 +293,7 @@ namespace Thorn::AHCI {
 				Kernel::wait(1, 1000);
 
 			if (spin <= 0) {
-				printf("[Port::Port] Port hung\n");
+				printf("[Port::Port] Port hung (%d)\n", __LINE__);
 				// Reset the port.
 				registers->sctl = SCTL_PORT_DET_INIT | SCTL_PORT_IPM_NOPART | SCTL_PORT_IPM_NOSLUM | SCTL_PORT_IPM_NODSLP;
 			}
@@ -317,7 +317,7 @@ namespace Thorn::AHCI {
 				Kernel::wait(1, 1000);
 
 			if (spin <= 0)
-				printf("[Port::Port] Port hung\n");
+				printf("[Port::Port] Port hung (%d)\n", __LINE__);
 		}
 
 
@@ -540,12 +540,14 @@ namespace Thorn::AHCI {
 		registers->ci = registers->ci | (1 << slot);
 
 		spin = SPIN_COUNT;
-		while((registers->ci & (1 << slot)) && spin--) {
+
+		while ((registers->ci & (1 << slot)) && spin--) {
 			if (registers->is & HBA_PxIS_TFES) {
 				printf("[Port::access] Disk error (serr: %x)\n", registers->serr);
 				stop();
 				return AccessStatus::DiskError;
 			}
+			Kernel::wait(1, 1000);
 		}
 
 		if (spin <= 0) {

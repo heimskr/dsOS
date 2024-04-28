@@ -651,7 +651,7 @@ namespace Thorn::FS::ThornFAT {
 			if (NEWFILE_SKIP_MAX < skipped)
 				DBGF(NEWFILEH, "  " IDS("... %d more"), skipped);
 
-			DBGF(NEWFILEH, "bs - sizeof(DirEntry) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  " 
+			DBGF(NEWFILEH, "bs - sizeof(DirEntry) < remaining  " UDBARR "  " BLR " - " BLR " < " BLR "  " UDBARR "  "
 				BLR " < " BLR, bs, sizeof(DirEntry), remaining, bs - sizeof(DirEntry), remaining);
 
 			if (bs - sizeof(DirEntry) < remaining) {

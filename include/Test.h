@@ -1,7 +1,7 @@
 #pragma once
 
 #include "hardware/Serial.h"
-#include "device/Device.h"
+#include "device/Storage.h"
 
 #include <memory>
 #include <string>
@@ -20,7 +20,7 @@ namespace Thorn::AHCI {
 	class Port;
 }
 
-namespace Thorn::Device {
+namespace Thorn {
 	struct AHCIDevice;
 }
 
@@ -37,7 +37,7 @@ namespace Thorn {
 		AHCI::Port *port = nullptr;
 		bool ahci = true;
 		int idePort = -1;
-		Device::DeviceBase *device = nullptr;
+		StorageDevice *device = nullptr;
 		FS::Partition *partition = nullptr;
 		FS::ThornFAT::ThornFATDriver *driver = nullptr;
 		std::string path = "/";

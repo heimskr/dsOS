@@ -355,23 +355,27 @@ namespace Thorn::AHCI {
 		HBAPort ports[32];
 	} __attribute__((packed));
 
+	class Controller;
+
 	class Port {
 		private:
 			ATA::DeviceInfo info;
 			bool identified;
 
 		public:
-			static constexpr size_t BLOCKSIZE = 512;
+			constexpr static size_t BLOCKSIZE = 512;
+
 			volatile HBAPort *registers = nullptr;
 			volatile HBAMemory *abar = nullptr;
 			volatile HBACommandHeader *commandList = nullptr;
 			volatile HBAFIS *fis = nullptr;
+			Controller *parent = nullptr;
 			volatile HBACommandTable *commandTables[8];
-			Status status = Status::Uninitialized;
 			void *physicalBuffers[8];
+			Status status = Status::Uninitialized;
 			DeviceType type = DeviceType::Null;
 
-			Port(volatile HBAPort *, volatile HBAMemory *);
+			Port(Controller *, volatile HBAPort *, volatile HBAMemory *);
 
 			enum class AccessStatus: uint8_t {Success = 0, DiskError = 1, BadSlot = 2, Hung = 3};
 

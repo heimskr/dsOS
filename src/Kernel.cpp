@@ -191,6 +191,7 @@ namespace Thorn {
 	void Kernel::initPointers() {
 		processes = std::make_unique<decltype(processes)::element_type>();
 		pageFrameProcesses = std::make_unique<decltype(pageFrameProcesses)::element_type>();
+		storageDevices = std::make_unique<decltype(storageDevices)::element_type>();
 	}
 
 	Process & Kernel::makeProcess() {

@@ -104,7 +104,7 @@ namespace Thorn {
 						if (port.clb == 0)
 							continue;
 
-						controller.ports[i] = new AHCI::Port(&port, abar);
+						controller.ports[i] = new AHCI::Port(&controller, &port, abar);
 						controller.ports[i]->init();
 						ATA::DeviceInfo info;
 						controller.ports[i]->identify(info);
@@ -171,7 +171,7 @@ namespace Thorn {
 
 					if (first_entry.typeGUID) {
 						printf("Using partition \"%s\".\n", std::string(first_entry).c_str());
-						Device::AHCIDevice device(port);
+						AHCIDevice device(port);
 						FS::Partition partition(&device, first_entry.firstLBA * AHCI::Port::BLOCKSIZE,
 							(first_entry.lastLBA - first_entry.firstLBA + 1) * AHCI::Port::BLOCKSIZE);
 						using namespace FS::ThornFAT;
@@ -910,8 +910,8 @@ namespace Thorn {
 			bool color = false;
 			Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::Magenta, Terminal::VGAColor::Black);
 
-			for (uint32_t bus = 0; bus < 256; ++bus)
-				for (uint32_t device = 0; device < 32; ++device)
+			for (uint32_t bus = 0; bus < 256; ++bus) {
+				for (uint32_t device = 0; device < 32; ++device) {
 					for (uint32_t function = 0; function < 8; ++function) {
 						const uint32_t vendor = PCI::getVendorID(bus, device, function);
 						if (vendor == PCI::INVALID_VENDOR || vendor == 0)
@@ -939,6 +939,9 @@ namespace Thorn {
 							color = !color;
 						}
 					}
+				}
+			}
+
 			Terminal::color = Terminal::vgaEntryColor(Terminal::VGAColor::LightGray, Terminal::VGAColor::Black);
 		} else if (pieces[1] == "bar" && pieces.size() == 5) {
 			long target_bus = -1, target_device = -1, target_function = -1;
@@ -993,8 +996,9 @@ namespace Thorn {
 				context.driver = new FS::ThornFAT::ThornFATDriver(context.partition);
 				tprintf("Initialized ThornFAT driver.\n");
 			}
-		} else
+		} else {
 			usage();
+		}
 	}
 
 	void select(const std::vector<std::string> &pieces, InputContext &context) {
@@ -1118,9 +1122,9 @@ namespace Thorn {
 			delete context.device;
 
 		if (context.ahci)
-			context.device = new Device::AHCIDevice(context.port);
+			context.device = new AHCIDevice(context.port);
 		else
-			context.device = new Device::IDEDevice(context.idePort);
+			context.device = new IDEDevice(context.idePort);
 
 		context.partition = new FS::Partition(context.device, entry.firstLBA * bs,
 				(entry.lastLBA - entry.firstLBA + 1) * bs);

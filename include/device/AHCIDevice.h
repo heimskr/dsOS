@@ -1,10 +1,10 @@
 #pragma once
 
-#include "device/Device.h"
+#include "device/Storage.h"
 #include "hardware/AHCI.h"
 
-namespace Thorn::Device {
-	struct AHCIDevice: public DeviceBase {
+namespace Thorn {
+	struct AHCIDevice: public StorageDevice {
 		AHCI::Port *port;
 		AHCIDevice() = delete;
 		AHCIDevice(AHCI::Port *port_): port(port_) {}

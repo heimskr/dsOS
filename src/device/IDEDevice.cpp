@@ -2,7 +2,7 @@
 #include "memory/Memory.h"
 #include "hardware/IDE.h"
 
-namespace Thorn::Device {
+namespace Thorn {
 	int IDEDevice::read(void *buffer, size_t size, size_t offset) {
 		if (offset % IDE::SECTOR_SIZE == 0 && size % IDE::SECTOR_SIZE == 0)
 			return IDE::readSectors(ideID, size / IDE::SECTOR_SIZE, offset / IDE::SECTOR_SIZE, (char *) buffer);

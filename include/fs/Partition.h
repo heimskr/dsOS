@@ -3,8 +3,8 @@
 #include <memory>
 #include <vector>
 
-namespace Thorn::Device {
-	struct DeviceBase;
+namespace Thorn {
+	struct StorageDevice;
 }
 
 namespace Thorn::FS {
@@ -18,13 +18,13 @@ namespace Thorn::FS {
 
 	struct Partition {
 		std::vector<Record> writeRecords, readRecords;
-		Device::DeviceBase *parent;
+		StorageDevice *parent;
 		/** Number of bytes after the start of the disk. */
 		size_t offset;
 		/** Length of the partition in bytes. */
 		size_t length;
 
-		Partition(Device::DeviceBase *parent_, size_t offset_, size_t length_):
+		Partition(StorageDevice *parent_, size_t offset_, size_t length_):
 			parent(parent_), offset(offset_), length(length_) {}
 
 		int read(void *buffer, size_t size, size_t byte_offset);

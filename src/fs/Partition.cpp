@@ -1,4 +1,4 @@
-#include "device/Device.h"
+#include "device/Storage.h"
 #include "fs/Partition.h"
 #include "lib/printf.h"
 #include "Kernel.h"

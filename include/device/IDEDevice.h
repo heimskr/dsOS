@@ -1,9 +1,9 @@
 #pragma once
 
-#include "device/Device.h"
+#include "device/Storage.h"
 
-namespace Thorn::Device {
-	struct IDEDevice: public DeviceBase {
+namespace Thorn {
+	struct IDEDevice: public StorageDevice {
 		uint8_t ideID;
 		IDEDevice() = delete;
 		IDEDevice(uint8_t ide_id): ideID(ide_id) {}
